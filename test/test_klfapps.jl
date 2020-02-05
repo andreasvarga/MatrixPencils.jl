@@ -80,7 +80,7 @@ mr = 2; nr = 3; ni = 2; nf = 10; ml = 5; nl = 4;
 mM = mr+ni+nf+ml;
 nM = nr+ni+nf+nl;
 M = [rand(Ty,mr,nM); 
-     zeros(Ty,ni,nr) one(Ty)*I(ni) rand(Ty,ni,nf+nl); 
+     zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
 N = [rand(Ty,mr,nM); 
@@ -179,7 +179,7 @@ mr = 2; nr = 3; ni = 2; nf = 10; ml = 5; nl = 4;
 mM = mr+ni+nf+ml;
 nM = nr+ni+nf+nl;
 M = [rand(Ty,mr,nM); 
-     zeros(Ty,ni,nr) one(Ty)*I(ni) rand(Ty,ni,nf+nl); 
+     zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
 N = [rand(Ty,mr,nM); 
@@ -285,7 +285,7 @@ mr = 2; nr = 3; ni = 2; nf = 10; ml = 5; nl = 4;
 mM = mr+ni+nf+ml;
 nM = nr+ni+nf+nl;
 M = [rand(Ty,mr,nM); 
-     zeros(Ty,ni,nr) one(Ty)*I(ni) rand(Ty,ni,nf+nl); 
+     zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
 N = [rand(Ty,mr,nM); 
@@ -388,7 +388,7 @@ mr = 2; nr = 3; ni = 2; nf = 10; ml = 5; nl = 4;
 mM = mr+ni+nf+ml;
 nM = nr+ni+nf+nl;
 M = [rand(Ty,mr,nM); 
-     zeros(Ty,ni,nr) one(Ty)*I(ni) rand(Ty,ni,nf+nl); 
+     zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
 N = [rand(Ty,mr,nM); 
@@ -560,7 +560,7 @@ for Ty in (Float64, Complex{Float64})
     mM = mr+ni+nf+ml;
     nM = nr+ni+nf+nl;
     M = [rand(Ty,mr,nM); 
-         zeros(Ty,ni,nr) one(Ty)*I(ni) rand(Ty,ni,nf+nl); 
+         zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
          zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
          zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
     N = [rand(Ty,mr,nM); 
@@ -579,7 +579,7 @@ for Ty in (Float64, Complex{Float64})
    mM = mr+ni+nf+ml;
    nM = nr+ni+nf+nl;
    M = [rand(Ty,mr,nM); 
-        zeros(Ty,ni,nr) one(Ty)*I(ni) rand(Ty,ni,nf+nl); 
+        zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
         zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
         zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
    N = [rand(Ty,mr,nM); 
