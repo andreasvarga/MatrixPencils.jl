@@ -44,8 +44,8 @@ N = [   13  26  25  17  24
         16  25  27  14  23 
         24  35  18  21  22  ];
 
-@time info = pkstruct(M, N)
-@test info.rki == [1] && info.lki == [1] && info.id == [1] && info.nf == 3
+@time rki, lki, id, nf = pkstruct(M, N)
+@test rki == [1] && lki == [1] && id == [1] && nf == 3
 
 # Test Suite 2 (Example 2.2.1, Beelen)
 M = zeros(14,16); 

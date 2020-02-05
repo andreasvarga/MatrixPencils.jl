@@ -243,9 +243,7 @@ struct KRInfo
    id::Vector{Int}
    nf::Int
    function KRInfo(rki,lki,id,nf)
-      if any(rki .< 0) || any(lki .< 0) || any(id .< 0) || nf < 0
-         error("no negative components allowed")
-      end
+      (any(rki .< 0) || any(lki .< 0) || any(id .< 0) || nf < 0) && error("no negative components allowed")
       new(rki,lki,id,nf)
    end
 end
@@ -465,17 +463,4 @@ function prank(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       end
       return prnk+n
    end
-end
-function prank(M::AbstractMatrix, N::UniformScaling; fast = false, atol1::Real = zero(eltype(M)), atol2::Real = zero(eltype(M)), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
-   nf = LinearAlgebra.checksquare(M) 
-   if N.λ == 0
-      prank = rank(M,atol = atol1, rtol = rtol)
-   else
-      prank = nf
-   end
-end
-function prank(M::AbstractMatrix; fast = false, atol1::Real = zero(eltype(M)), atol2::Real = zero(eltype(M)), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
-   prank = LinearAlgebra.checksquare(M) 
 end

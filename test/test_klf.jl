@@ -19,6 +19,24 @@ M = copy(M2); N = copy(N2);
 M2 = zeros(0,0); N2 = zeros(0,0);
 M = copy(M2); N = copy(N2); 
 
+@time M1, N1, Q, Z, ν, μ, nf, νl, μl = klf_left(M, N)
+@test norm(Q'*M2*Z-M1) < sqrt(eps(1.)) &&
+      norm(Q'*N2*Z-N1) < sqrt(eps(1.)) &&
+      ν == [] && μ == [] && νl == [] && μl == []  && nf == 0
+
+
+M2 = zeros(0,0); N2 = zeros(0,0);
+M = copy(M2); N = copy(N2);
+
+@time M1, N1, Q, Z, νr, μr, nf, ν, μ  = klf_right(M, N)
+@test norm(Q'*M2*Z-M) < sqrt(eps(1.)) &&
+      norm(Q'*N2*Z-N) < sqrt(eps(1.)) &&
+      νr == [] && μr == [] && ν == [] && μ == []  && nf == 0
+
+      
+M2 = zeros(0,0); N2 = zeros(0,0);
+M = copy(M2); N = copy(N2); 
+
 @time Q, Z, ν, μ, nf, νl, μl  = klf_left!(M, N)
 @test norm(Q'*M2*Z-M) < sqrt(eps(1.)) &&
       norm(Q'*N2*Z-N) < sqrt(eps(1.)) &&
@@ -36,6 +54,13 @@ M2 = zeros(0,0); N2 = zeros(0,0);
 M = copy(M2); N = copy(N2);
 
 @time M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl  = klf(M, N)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [] && μr == [] && νi == [] && νl == [] && μl == []  && nf == 0      
+
+M = copy(M2); N = copy(N2);
+
+@time M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl  = klf(M, N, finite_infinite = true)
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       νr == [] && μr == [] && νi == [] && νl == [] && μl == []  && nf == 0      
@@ -63,6 +88,23 @@ M = copy(M2); N = copy(N2);
 @test norm(Q'*M2*Z-M) < sqrt(eps(1.)) &&
       norm(Q'*N2*Z-N) < sqrt(eps(1.)) &&
       ν == [] && μ == [] && νl == [3] && μl == [0]  && nf == 0   
+
+M2 = zeros(3,0); N2 = zeros(3,0);
+M = copy(M2); N = copy(N2);
+
+@time M1, N1, Q, Z, ν, μ, nf, νl, μl = klf_left(M, N)
+@test norm(Q'*M2*Z-M1) < sqrt(eps(1.)) &&
+      norm(Q'*N2*Z-N1) < sqrt(eps(1.)) &&
+      ν == [] && μ == [] && νl == [3] && μl == [0]  && nf == 0   
+
+M2 = zeros(3,0); N2 = zeros(3,0);
+M = copy(M2); N = copy(N2);
+
+@time M1, N1, Q, Z, νr, μr, nf, ν, μ  = klf_right(M, N)
+@test norm(Q'*M2*Z-M1) < sqrt(eps(1.)) &&
+      norm(Q'*N2*Z-N1) < sqrt(eps(1.)) &&
+      νr == [] && μr == [] && ν == [3] && μ == [0] && nf == 0
+
 
 M2 = zeros(3,0); N2 = zeros(3,0);
 M = copy(M2); N = copy(N2);
@@ -107,9 +149,25 @@ M = copy(M2); N = copy(N2);
 
 M2 = zeros(0,3); N2 = zeros(0,3);
 M = copy(M2); N = copy(N2);
+
+@time M1, N1, Q, Z, ν, μ, nf, νl, μl = klf_left(M, N)
+@test norm(Q'*M2*Z-M1) < sqrt(eps(1.)) &&
+      norm(Q'*N2*Z-N1) < sqrt(eps(1.)) &&
+      ν == [0] && μ == [3] && νl == [] && μl == [] && nf == 0
+
+
+M2 = zeros(0,3); N2 = zeros(0,3);
+M = copy(M2); N = copy(N2);
 @time Q, Z, νr, μr, nf, ν, μ  = klf_right!(M, N)
 @test norm(Q'*M2*Z-M) < sqrt(eps(1.)) &&
       norm(Q'*N2*Z-N) < sqrt(eps(1.)) &&
+      νr == [0] && μr == [3] && ν == [] && μ == [] && nf == 0
+
+M2 = zeros(0,3); N2 = zeros(0,3);
+M = copy(M2); N = copy(N2);
+@time M1, N1, Q, Z, νr, μr, nf, ν, μ  = klf_right(M, N)
+@test norm(Q'*M2*Z-M1) < sqrt(eps(1.)) &&
+      norm(Q'*N2*Z-N1) < sqrt(eps(1.)) &&
       νr == [0] && μr == [3] && ν == [] && μ == [] && nf == 0
 
 

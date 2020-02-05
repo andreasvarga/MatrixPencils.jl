@@ -265,7 +265,7 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       Q, Z, νr, μr, nf, ν, μ, tol1 = klf_right!(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
                                                withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
-         return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ
+          return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ
       end
 
       """
@@ -280,11 +280,7 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       jM2 = nr+1:nr+sum(μ)
       M2 = view(M,:,jM2)
       N2 = view(N,:,jM2)
-      if withZ
-         Z2 = view(Z,:,jM2)
-      else
-         Z2 = nothing
-      end
+      withZ ? (Z2 = view(Z,:,jM2)) : (Z2 = nothing)
       νi, νl, μl = klf_left_refine!(ν, μ, M2, N2, Q, Z2, tol1, roff = mr,    
                                     withQ = withQ, withZ = withZ, fast = fast)
    else
