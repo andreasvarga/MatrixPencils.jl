@@ -56,9 +56,7 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = 
       # return withQ ? Matrix{T}(I(mM)) : nothing, withZ ? zeros(T,0,0) : nothing,  0, 0, npp
       return withQ ? Matrix{T}(I,mM,mM) : nothing, withZ ? zeros(T,0,0) : nothing,  0, 0, npp
    end
-   """
-   Step 0: Reduce M22 -λ N22 to the standard form
-   """
+   # Step 0: Reduce M22 -λ N22 to the standard form
    i11 = 1:roff
    i22 = roff+1:roff+npp
    j22 = coff+1:coff+npm
@@ -138,7 +136,8 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = 
       else
          Z = nothing
       end
-      N[i22,j22] = [ zeros(n,m) diagm(SVD.S[1:n]) ; zeros(p,npm) ]
+      #N[i22,j22] = [ zeros(n,m) diagm(SVD.S[1:n]) ; zeros(p,npm) ]
+      N[i22,j22] = [ zeros(n,m) Diagonal(SVD.S[1:n]) ; zeros(p,npm) ]
    end
    return Q, Z, n, m, p
 end
@@ -197,9 +196,7 @@ function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    ZERO = zero(T)
    mM = roff + npp + rtrail
    nM = coff + npm + ctrail
-   """
-   Step 1:
-   """
+   # Step 1:
    ia = roff+1:roff+n
    ja = coff+m+1:coff+npm
    jb = coff+1:coff+m
@@ -222,9 +219,7 @@ function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
       lmul!(QR.Q',C)
       withQ && rmul!(view(Q,:,ic),QR.Q) 
       D[:,:] = [ QR.R[1:τ,:]; zeros(p-τ,m) ]
-      """
-      Step 2:
-      """
+      # Step 2:
       k = 1
       for j = coff+1:coff+τ
          for ii = roff+n+k:-1:roff+1+k
@@ -300,9 +295,7 @@ function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    npm = n+m
    T = eltype(M)
    ZERO = zero(T)
-   """
-   Step 1:
-   """
+   # Step 1:
    mM = roff + npp + rtrail 
    nM = coff + npm + ctrail 
    T = eltype(M)
@@ -339,9 +332,7 @@ function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
       D[:,:] = [ zeros(p,m-τ)  QR.R[τ:-1:1,p:-1:1]' ]
       C[:,:] = C[QR.p,:]
       C[:,:] = reverse(C,dims=1)
-      """
-      Step 2:
-      """
+      # Step 2:
       k = 1
       for i = roff+npp:-1:roff+npp+1-τ     
          for jj = coff+m+1-k:coff+m+n-k
@@ -482,7 +473,7 @@ function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{A
          if ρ == mn
             return ρ
          else
-            B[ics,jcs] = [ diagm(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
+            B[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
             if ρ == 0
                return ρ
             end
@@ -634,7 +625,8 @@ function _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
          if ρ == pn
             return ρ
          else
-            C[ics,jcs] = [ zeros(p,pn-ρ) Q1*[zeros(p-ρ,ρ); diagm(reverse(SVD.S[1:ρ])) ] ] 
+            #C[ics,jcs] = [ zeros(p,pn-ρ) Q1*[zeros(p-ρ,ρ); diagm(reverse(SVD.S[1:ρ])) ] ] 
+            C[ics,jcs] = [ zeros(p,pn-ρ) Q1[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ] 
             if ρ == 0
                return ρ
             end

@@ -22,17 +22,13 @@ function isregular(M::AbstractMatrix, N::AbstractMatrix; atol1::Real = zero(elty
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N)) 
 
-   """
-   Step 0: Reduce to the standard form
-   """
+   # Step 0: Reduce to the standard form
    Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
    mrinf = 0
    nrinf = 0
    tol1 = max(atol1, rtol*opnorm(M,1))
    while m > 0
-      """
-      Steps 1 & 2: Standard algorithm PREDUCE
-      """
+      # Steps 1 & 2: Standard algorithm PREDUCE
       τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = false, roff = mrinf, coff = nrinf, withQ = false, withZ = false)
       ρ+τ == m || (return false)
       mrinf += ρ+τ
@@ -97,9 +93,7 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    i = 0
    muim1 = 0
    while m > 0 
-      """
-      Steps 1 & 2: Standard algorithm PREDUCE 
-      """
+      # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
       τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = fast, withQ = false, withZ = false)
@@ -116,9 +110,7 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    rtrail = 0
    ctrail = 0
    while p > 0
-      """
-      Step 3: Particular case of the dual PREDUCE algorithm 
-      """
+      # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
       ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
@@ -183,9 +175,7 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    i = 0
    muim1 = 0
    while m > 0 
-      """
-      Steps 1 & 2: Standard algorithm PREDUCE 
-      """
+      # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
       τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = fast, withQ = false, withZ = false)
@@ -202,9 +192,7 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    rtrail = 0
    ctrail = 0
    while p > 0
-      """
-      Step 3: Particular case of the dual PREDUCE algorithm 
-      """
+      # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
       ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
@@ -252,7 +240,7 @@ Base.iterate(info::KRInfo) = (info.rki, Val(:lki))
 Base.iterate(info::KRInfo, ::Val{:lki}) = (info.lki, Val(:id))
 Base.iterate(info::KRInfo, ::Val{:id}) = (info.id, Val(:nf))
 Base.iterate(info::KRInfo, ::Val{:nf}) = (info.nf, Val(:done))
-Base.iterate(info::KRInfo, ::Val{:done}) = nothing
+#Base.iterate(info::KRInfo, ::Val{:done}) = nothing
 """
     pkstruct(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> KRInfo
   
@@ -344,9 +332,7 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
    i = 0
    muim1 = 0
    while m > 0 
-      """
-      Steps 1 & 2: Standard algorithm PREDUCE 
-      """
+      # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
       τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = fast, withQ = false, withZ = false)
@@ -365,9 +351,7 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
    ctrail = 0
    j = 0
    while p > 0
-      """
-      Step 3: Particular case of the dual PREDUCE algorithm 
-      """
+      # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
       ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
@@ -448,9 +432,7 @@ function prank(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       mrinf = 0
       nrinf = 0
       while m > 0 
-         """
-         Steps 1 & 2: Standard algorithm PREDUCE 
-         """
+         # Steps 1 & 2: Standard algorithm PREDUCE 
          ired = mrinf+1:mM
          jred = nrinf+1:nM
          τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = false, withQ = false, withZ = false)
