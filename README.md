@@ -9,14 +9,11 @@
 
 ## About
 
-This collection of Julia functions is an attemp to implement high performance
-numerical software to efficiently perform manipulations of matrix pencils. The main goal is to provide a comprehensive set
-of computational tools which allow the solution of various structural problems arising in the study of linear systems described by linear differential- or difference-algebraic equations (also know as descriptor systems). The provided tools
-will be also instrumental for the analysis of generalized systems described by rational or polynomial matrices.
+The Kronecker-canonical form of a linear pencil `M − λN` basically characterizes the right and left singular structure and the eigenvalue structure of the pencil. The computation of the Kronecker-canonical form may involve the use of ill-conditioned similarity transformations and, therefore, is potentially numerically unstable. Fortunately, alternative staircase forms, called `Kronecker-like forms` (KLFs), can be determined by employing exclusively orthogonal or unitary similarity transformations and allow to obtain basically the same (or only a part of) structural information on the pencil `M − λN`. Various KLFs can serve to address, in a numerically reliable way, the main applications of the Kronecker form,
+such as the computation of minimal left or right nullspace bases, the computation of eigenvalues and (Smith) zeros, the determination of the normal rank of polynomial and rational matrices, computation of various factorizations of rational matrices, as well as the solution of linear equations with polynomial or rational matrices. The KLFs are also instrumental for solving computational problems in the analysis of generalized systems described by linear differential- or difference-algebraic equations (also known as descriptor systems).
 
-The available functions in the current version of the `MatrixPencils.jl` package cover several basic reductions of linear
-matrix pencils `M - λN` to block upper-triangular forms (also known as Kronecker-like forms) using orthogonal similarity
-transformations. The resulting condensed forms reveal a part or the full Kronecker structure of the pencil `M - λN` and allow to address several applications as the determination of the rank, finite and infinite eigenvalues or zeros (also known as roots) of `M - λN`. The implementation of basic functions rely on a set of flexible pencil manipulation tools, which allow to perform elementary row and column compresions which preserve the underlying basic form of the reduced pencil.
+This collection of Julia functions is an attemp to implement high performance numerical software to compute a range of
+KLFs which reveal the full or partial Kronecker structure of a linear pencil. The KLFs are computed by performing several pencil reduction operations on a reduced basic form of the initial pencil. These operations efficiently compress the rows or columns of certain submatrices to full rank matrices and simultaneously maintain the reduced basic form. The rank decisions involve the use of rank revealing QR-decompositions with colum pivoting or the, more reliable, SVD-decompositions. The overall computational complexity of all reduction algorithms is ``O(n^3)``, where ``n`` is the largest dimension of the pencil.
 
 The current version of the package includes the following functions:
 
@@ -40,4 +37,4 @@ The current version of the package includes the following functions:
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to forms with finite-infinite separated eigenvalues or to a block-diagonal structure), manipulation of structured linear pencils with application to polynomial and rational matrices, etc.
+The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to forms with separated finite and infinite eigenvalues or to a block-diagonal structure), manipulation of structured linear pencils with application to polynomial and rational matrices, etc.
