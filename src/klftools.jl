@@ -83,10 +83,8 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
 
-   """
-   Step 0: Reduce to the standard form
-   """
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast) 
+   # Step 0: Reduce to the standard form
+    Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast) 
    
    maxmn = max(mM,nM)
    μ = Vector{Int}(undef,maxmn)
@@ -107,17 +105,15 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
          p = 0
          return M, N, Q, Z, ν[1:1], μ[1:1], n, m, p
       end
-   
-      """
-      Reduce M-λN to the KLF by splitting the right-finite and infinite-left structures
 
-                       | Mrf - λ Nrf |     *        |
-           M1 - λ N1 = |-------------|--------------|
-                       |    0        | Mil -  λ Nil |
-       
-      where Mil -  λ Nil is in a staircase form.                 
-      """
-  
+      # Reduce M-λN to the KLF by splitting the right-finite and infinite-left structures
+      #
+      #                  | Mrf - λ Nrf |     *        |
+      #      M1 - λ N1 = |-------------|--------------|
+      #                  |    0        | Mil -  λ Nil |
+      # 
+      # where Mil -  λ Nil is in a staircase form.  
+
       mrinf = 0
       nrinf = 0
       rtrail = 0
@@ -125,9 +121,7 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
       i = 0
       tol1 = max(atol1, rtol*opnorm(M,1))     
       while p > 0
-         """
-         Step 1 & 2: Dual algorithm PREDUCE
-         """
+         # Step 1 & 2: Dual algorithm PREDUCE
          τ, ρ  = _preduce2!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
          i += 1
          ν[i] = p
@@ -148,14 +142,14 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
       elseif nM == 0
          return M, N, Q, Z, ν[1:0], μ[1:0], n, m, p
       end
-      """
-      Reduce M-λN to the KLF by splitting the right-infinite and finite-left structures
 
-                       | Mri - λ Nri |     *        |
-           M1 - λ N1 = |-------------|--------------|
-                       |    0        | Mfl -  λ Nfl |
-      where Mri - λ Nri is in a staircase form.                 
-      """
+      # Reduce M-λN to the KLF by splitting the right-infinite and finite-left structures
+      #
+      #                  | Mri - λ Nri |     *        |
+      #      M1 - λ N1 = |-------------|--------------|
+      #                  |    0        | Mfl -  λ Nfl |
+      # where Mri - λ Nri is in a staircase form.  
+
       mrinf = 0
       nrinf = 0
       i = 0
@@ -256,25 +250,24 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
    if finite_infinite
-      """
-      Reduce M-λN to the KLF exhibiting the right and finite structures
-                       [ Mr - λ Nr  |   *        |     *        ]
-           M1 - λ N1 = [    0       | Mf -  λ Nf |     *        ]
-                       [    0       |    0       | Mli -  λ Nli ]
-      """
+      
+      # Reduce M-λN to the KLF exhibiting the right and finite structures
+      #                  [ Mr - λ Nr  |   *        |     *        ]
+      #      M1 - λ N1 = [    0       | Mf -  λ Nf |     *        ]
+      #                  [    0       |    0       | Mli -  λ Nli ]
+      
       Q, Z, νr, μr, nf, ν, μ, tol1 = klf_right!(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
                                                withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
           return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ
       end
 
-      """
-      Reduce Mli-λNli to the KLF exhibiting the infinite and left structures and update M1 - λ N1 to
-                       [ Mr - λ Nr  |   *        |     *      |    *       ]
-          M2 -  λ N2 = [    0       | Mf -  λ Nf |     *      |    *       ]
-                       [    0       |    0       | Mi -  λ Ni |    *       ]
-                       [    0       |    0       |    0       | Ml -  λ Nl ]
-      """
+      # Reduce Mli-λNli to the KLF exhibiting the infinite and left structures and update M1 - λ N1 to
+      #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
+      #     M2 -  λ N2 = [    0       | Mf -  λ Nf |     *      |    *       ]
+      #                  [    0       |    0       | Mi -  λ Ni |    *       ]
+      #                  [    0       |    0       |    0       | Ml -  λ Nl ]
+
       mr = sum(νr)+nf
       nr = sum(μr)+nf
       jM2 = nr+1:nr+sum(μ)
@@ -284,24 +277,24 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       νi, νl, μl = klf_left_refine!(ν, μ, M2, N2, Q, Z2, tol1, roff = mr,    
                                     withQ = withQ, withZ = withZ, fast = fast)
    else
-      """
-      Reduce M-λN to the KLF exhibiting the left and finite structures
-                       [ Mri - λ Nri  |   *        |     *      ]
-           M1 - λ N1 = [     0        | Mf -  λ Nf |     *      ]
-                       [     0        |    0       | Ml -  λ Nl ]
-      """
+
+      # Reduce M-λN to the KLF exhibiting the left and finite structures
+      #                  [ Mri - λ Nri  |   *        |     *      ]
+      #      M1 - λ N1 = [     0        | Mf -  λ Nf |     *      ]
+      #                  [     0        |    0       | Ml -  λ Nl ]
+
       Q, Z, ν, μ, nf, νl, μl, tol1 = klf_left!(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
                                                withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
          return  M, N, Q, Z, ν, μ, ν[1:0], nf, νl, μl
       end
-      """
-      Reduce Mri-λNri to the KLF exhibiting the right and infinite structures and update M1 - λ N1 to
-                       [ Mr - λ Nr  |   *        |     *      |    *       ]
-          M2 -  λ N2 = [    0       | Mi -  λ Ni |     *      |    *       ]
-                       [    0       |    0       | Mf -  λ Nf |    *       ]
-                       [    0       |    0       |    0       | Ml -  λ Nl ]
-      """
+
+      # Reduce Mri-λNri to the KLF exhibiting the right and infinite structures and update M1 - λ N1 to
+      #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
+      #     M2 -  λ N2 = [    0       | Mi -  λ Ni |     *      |    *       ]
+      #                  [    0       |    0       | Mf -  λ Nf |    *       ]
+      #                  [    0       |    0       |    0       | Ml -  λ Nl ]
+
       iM11 = 1:sum(ν)
       M1 = view(M,iM11,:)
       N1 = view(N,iM11,:)
@@ -370,9 +363,7 @@ function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
 
-   """
-   Step 0: Reduce to the standard form
-   """
+   # Step 0: Reduce to the standard form
    Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast) 
    
    maxmn = max(mM,nM)
@@ -403,9 +394,7 @@ function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol
    tol1 = max(atol1, rtol*opnorm(M,1))
    
    while p > 0
-      """
-      Step 1 & 2: Dual algorithm PREDUCE
-      """
+      # Step 1 & 2: Dual algorithm PREDUCE
       τ, ρ  = _preduce2!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
       j += 1
       ν[j] = p
@@ -423,9 +412,7 @@ function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol
       N11 = view(N,imM11,1:nM)
    end
    while m > 0
-      """
-      Step 3: Particular case of the standard algorithm PREDUCE
-      """
+      # Step 3: Particular case of the standard algorithm PREDUCE
       ρ = _preduce3!(n, m, M11, N11, Q, Z, tol1, fast = fast, coff = nrinf, roff = mrinf, ctrail = ctrail,  withQ = withQ, withZ = withZ)
       i += 1
       νr[i] = ρ
@@ -503,9 +490,7 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol1
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
 
-   """
-   Step 0: Reduce to the standard form
-   """
+   # Step 0: Reduce to the standard form
    Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast) 
 
    maxmn = max(mM,nM)
@@ -514,7 +499,6 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol1
    μl = Vector{Int}(undef,maxmn)
    νl = Vector{Int}(undef,maxmn)
    nf = 0
-
 
    # fast returns for null dimensions
    if mM == 0 && nM == 0
@@ -535,9 +519,7 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol1
    tol1 = max(atol1, rtol*opnorm(M,1))
 
    while m > 0
-      """
-      Steps 1 & 2: Standard algorithm PREDUCE
-      """
+      # Steps 1 & 2: Standard algorithm PREDUCE
       τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, withQ = withQ, withZ = withZ)
       i += 1
       ν[i] = ρ+τ
@@ -554,9 +536,7 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol1
    nf = nM - nrinf
    p = mM - mrinf - nf
    while p > 0
-      """
-      Step 3: Particular case of the dual PREDUCE algorithm 
-      """
+      # Step 3: Particular case of the dual PREDUCE algorithm 
       ρ = _preduce4!(nf, m, p, M, N, Q, Z, tol1, fast = fast, roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, 
                      withQ = withQ, withZ = withZ) 
       j += 1
@@ -636,9 +616,8 @@ function klf_right!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = t
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    (!isa(M,Adjoint) && !isa(N,Adjoint)) || error("No adjoint inputs are supported")
-   """
-   Step 0: Reduce M22-λN22 to the standard form
-   """
+
+   # Step 0: Reduce M22-λN22 to the standard form
    Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withQ) 
    
    maxmn = max(mM,nM)
@@ -666,9 +645,7 @@ function klf_right!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = t
    tol1 = max(atol1, rtol*opnorm(M,1))
    
    while p > 0
-      """
-      Steps 1 & 2: Dual algorithm PREDUCE
-      """
+      # Steps 1 & 2: Dual algorithm PREDUCE
       τ, ρ = _preduce2!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
       j += 1
       ν[j] = p
@@ -686,9 +663,7 @@ function klf_right!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = t
       N11 = view(N,imM11,1:nM)
    end
    while m > 0
-      """
-      Step 3: Particular case of the standard algorithm PREDUCE
-      """
+      # Step 3: Particular case of the standard algorithm PREDUCE
       ρ = _preduce3!(n, m, M11, N11, Q, Z, tol1, fast = fast, coff = coff, roff = roff, ctrail = ctrail,  withQ = withQ, withZ = withZ)
       i += 1
       νr[i] = ρ
@@ -767,10 +742,8 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
    p = mri-n
 
    if n > 0
-      """
-      Step 0: Reduce Nri = [ 0 E11] to standard form, where E11 is full column rank
-                           [ 0 0  ]
-      """
+      # Step 0: Reduce Nri = [ 0 E11] to standard form, where E11 is full column rank
+      #                      [ 0 0  ]
       it = roff+1:roff+mri
       jt = coff+m+1:coff+nri
       tau = similar(N,n)
@@ -792,12 +765,10 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
    j = 0
 
    while p > 0
-      """
-      Steps 1 & 2: Dual algorithm PREDUCE to separate right-finite and infinite-left parts.
+      # Steps 1 & 2: Dual algorithm PREDUCE to separate right-finite and infinite-left parts.
 
-      Reduce Mri-λNri to [ Mr1-λNr1 * ; 0 Mi-λNi], where Mr1-λNr1 contains the right Kronecker structure and the empty
-      finite part and Mi-λNi contains the infinite elementary divisors and the empty left Kronecker structure.
-      """
+      # Reduce Mri-λNri to [ Mr1-λNr1 * ; 0 Mi-λNi], where Mr1-λNr1 contains the right Kronecker structure and the empty
+      # finite part and Mi-λNi contains the infinite elementary divisors and the empty left Kronecker structure.
       τ, ρ = _preduce2!(n,m,p,M,N,Q,Z,tol; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
       ρ+τ == p || error("The reduced pencil must not have left structure: try to adjust the tolerances")
       j += 1
@@ -816,9 +787,7 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
       N11 = view(N,imM11,1:nM)
    end
    while m > 0
-      """
-      Step 3: Particular form of the standard algorithm PREDUCE to reduce Mr1-λNr1 to Mr-λNr in  staircase form. 
-      """
+      # Step 3: Particular form of the standard algorithm PREDUCE to reduce Mr1-λNr1 to Mr-λNr in  staircase form. 
       ρ = _preduce3!(n, m, M11, N11, Q, Z, tol, fast = fast, coff = coff, roff = roff, ctrail = ctrail, withQ = withQ, withZ = withZ)
       i += 1
       νr[i] = ρ
@@ -899,9 +868,7 @@ function klf_left!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = tr
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    (!isa(M,Adjoint) && !isa(N,Adjoint)) || error("No adjoint inputs are supported")
 
-   """
-   Step 0: Reduce M22-λN22 to the standard form
-   """
+   # Step 0: Reduce M22-λN22 to the standard form
    Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withQ) 
 
    maxmn = max(mM,nM)
@@ -932,9 +899,7 @@ function klf_left!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = tr
    tol1 = max(atol1, rtol*opnorm(M,1))
 
    while m > 0
-      """
-      Steps 1 & 2: Standard algorithm PREDUCE
-      """
+      # Steps 1 & 2: Standard algorithm PREDUCE
       τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
       i += 1
       ν[i] = ρ+τ
@@ -947,9 +912,7 @@ function klf_left!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = tr
    end
    j = 0
    while p > 0
-      """
-      Step 3: Particular form of the dual algorithm PREDUCE
-      """
+      # Step 3: Particular form of the dual algorithm PREDUCE
       ρ = _preduce4!(n, 0, p, M, N, Q, Z, tol1, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
                      withQ = withQ, withZ = withZ) 
       j += 1
@@ -1036,10 +999,8 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
    m = nli-n
 
    if n > 0
-      """
-      Step 0: Reduce N = [ 0 E11] to standard form, where E11 is full row rank
-                         [ 0 0  ]
-      """
+      # Step 0: Reduce N = [ 0 E11] to standard form, where E11 is full row rank
+      #                    [ 0 0  ]
       it = roff+1:roff+n
       jt = coff+1:coff+nli
       tau = similar(N,n)
@@ -1058,9 +1019,7 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
  
    i = 0
    while m > 0
-      """
-      Steps 1 & 2: Standard algorithm
-      """
+      # Steps 1 & 2: Standard algorithm
       τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
       ρ+τ == m || error("The reduced pencil must not have right structure: try to adjust the tolerances")
       i += 1
@@ -1073,9 +1032,7 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
    end
    j = 0
    while p > 0
-      """
-      Step 3: Dual algorithm
-      """
+      # Step 3: Dual algorithm
       ρ = _preduce4!(n, 0, p, M, N, Q, Z, tol, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
                      withQ = withQ, withZ = withZ) 
       j += 1

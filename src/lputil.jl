@@ -50,9 +50,11 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = 
    if npp == 0 && npm == 0
       return withQ ? zeros(T,0,0) : nothing, withZ ? zeros(T,0,0) : nothing, 0, 0, 0
    elseif npp == 0
-      return withQ ? zeros(T,0,0) : nothing, withZ ? Matrix{T}(I(nM)) : nothing, 0, npm, 0
+      #return withQ ? zeros(T,0,0) : nothing, withZ ? Matrix{T}(I(nM)) : nothing, 0, npm, 0
+      return withQ ? zeros(T,0,0) : nothing, withZ ? Matrix{T}(I,nM,nM) : nothing, 0, npm, 0
    elseif npm == 0
-      return withQ ? Matrix{T}(I(mM)) : nothing, withZ ? zeros(T,0,0) : nothing,  0, 0, npp
+      # return withQ ? Matrix{T}(I(mM)) : nothing, withZ ? zeros(T,0,0) : nothing,  0, 0, npp
+      return withQ ? Matrix{T}(I,mM,mM) : nothing, withZ ? zeros(T,0,0) : nothing,  0, 0, npp
    end
    """
    Step 0: Reduce M22 -λ N22 to the standard form
@@ -87,13 +89,15 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = 
       # N23 <- QR.Q'*N23
       N[i22,jN23] = QR.Q'*N[i22,jN23]
       if withQ
-         Q = Matrix{T}(I(mM))
+         #Q = Matrix{T}(I(mM)) # Julia 1.2
+         Q = Matrix{T}(I,mM,mM)
          Q[i22,i22] = QR.Q*Q[i22,i22]
       else
          Q = nothing
       end
       if withZ
-         Z = Matrix{T}(I(nM))
+         #Z = Matrix{T}(I(nM)) # Julia 1.2
+         Z = Matrix{T}(I,nM,nM)
          Z[j22,j22] = LinearAlgebra.LAPACK.ormrz!('R',tran,R[i1,:],tau,Z[j22,j22])[invperm(QR.p),:]
          Z = Z[:,jp] 
       else
@@ -120,13 +124,15 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = 
       N[i22,jN23] = SVD.U'*N[i22,jN23]
       #Q = SVD.U
       if withQ
-         Q = Matrix{T}(I(mM))
+         # Q = Matrix{T}(I(mM)) # Julia 1.2
+         Q = Matrix{T}(I,mM,mM)
          Q[i22,i22] = SVD.U
       else
          Q = nothing
       end
       if withZ
-         Z = Matrix{T}(I(nM))
+         # Z = Matrix{T}(I(nM))  # Julia 1.2
+         Z = Matrix{T}(I,nM,nM)
          Z[j22,j22] = SVD.V
          Z[j22,j22] = Z[j22,jp] 
       else
