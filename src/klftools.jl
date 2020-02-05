@@ -156,10 +156,8 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
       tol1 = max(atol1, rtol*opnorm(M,1))
    
       while m > 0
-         """
-         Steps 1 & 2: Standard algorithm PREDUCE
-         """
-         τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, withQ = withQ, withZ = withZ)
+         # Steps 1 & 2: Standard algorithm PREDUCE
+          τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, withQ = withQ, withZ = withZ)
          i += 1
          ν[i] = ρ+τ
          μ[i] = m
@@ -238,8 +236,8 @@ The performed right orthogonal or unitary transformations are accumulated in the
 Otherwise, `Z` is set to `nothing`.  
 """
 function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_infinite::Bool = false, 
-   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))),
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)), withQ::Bool = true, withZ::Bool = true)
+             atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))),
+             rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)), withQ::Bool = true, withZ::Bool = true)
    
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))

@@ -1,9 +1,12 @@
 module Test_klfapps
 
+using Random
 using LinearAlgebra
 using MatrixPencils
 using Test
 
+
+#Random.seed!(21234)
 
 @testset "Matrix Pencils Structure Applications" begin
 
@@ -143,8 +146,8 @@ N = [   13  26  25  17  24
 
 @time val  = pzeros(M, N)
 @test length(val) == 3 &&
-      length(filter(y-> y == true,val .== Inf)) == 0 &&
-      length(filter(y-> y == true,val .< Inf)) == 3
+      length(filter(y-> y == true,isinf.(val))) == 0 &&
+      length(filter(y-> y == true,isfinite.(val))) == 3
 
 # Test Suite 2 (Example 2.2.1, Beelen)
 M = zeros(14,16); 
@@ -166,8 +169,8 @@ M2 = Q*M*Z; N2 = Q*N*Z;
 M = copy(M2); N = copy(N2); 
 @time val  = pzeros(M, N, fast = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test length(val) == 4 &&
-      length(filter(y-> y == true,val .== Inf)) == 1 &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == 3
+      length(filter(y-> y == true,isinf.(val))) == 1 &&
+      length(filter(y-> y == true,isfinite.(val))) == 3
 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
 for Ty in (Float64, Complex{Float64})
@@ -194,12 +197,12 @@ N = Q*N*Z;
 @time val  = pzeros(M, N, fast = true, atol1 = abstol, atol2 = abstol)
 @test length(val) == ni+nf-1 &&
       length(filter(y-> y == true,isinf.(val))) == ni-1 &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == nf
+      length(filter(y-> y == true,isfinite.(val))) == nf
 
 @time val  = pzeros(M, N, fast = false, atol1 = abstol, atol2 = abstol)
 @test length(val) == ni+nf-1 &&
       length(filter(y-> y == true,isinf.(val))) == ni-1 &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == nf
+      length(filter(y-> y == true,isfinite.(val))) == nf
 
 end
 end
@@ -247,8 +250,8 @@ N = [   13  26  25  17  24
 
 @time val  = peigvals(M, N)
 @test length(val) == 4 &&
-      length(filter(y-> y == true,val .== Inf)) == 1 &&
-      length(filter(y-> y == true,val .< Inf)) == 3
+      length(filter(y-> y == true,isinf.(val))) == 1 &&
+      length(filter(y-> y == true,isfinite.(val))) == 3
 
 # Test Suite 2 (Example 2.2.1, Beelen)
 M = zeros(14,16); 
@@ -270,8 +273,8 @@ M2 = Q*M*Z; N2 = Q*N*Z;
 M = copy(M2); N = copy(N2); 
 @time val  = peigvals(M, N, fast = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test length(val) == 6 &&
-      length(filter(y-> y == true,val .== Inf)) == 3 &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == 3
+      length(filter(y-> y == true,isinf.(val))) == 3 &&
+      length(filter(y-> y == true,isfinite.(val))) == 3
 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
 Ty = Float64
@@ -300,12 +303,12 @@ N = Q*N*Z;
 @time val  = peigvals(M, N, fast = true, atol1 = abstol, atol2 = abstol)
 @test length(val) == ni+nf &&
       length(filter(y-> y == true,isinf.(val))) == ni &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == nf
+      length(filter(y-> y == true,isfinite.(val))) == nf
 
 @time val  = peigvals(M, N, fast = false, atol1 = abstol, atol2 = abstol)
 @test length(val) == ni+nf &&
       length(filter(y-> y == true,isinf.(val))) == ni &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == nf
+      length(filter(y-> y == true,isfinite.(val))) == nf
 
 end
 end
@@ -352,8 +355,8 @@ N = [   13  26  25  17  24
 
 @time val  = pzeros(M, N)
 @test length(val) == 3 &&
-      length(filter(y-> y == true,val .== Inf)) == 0 &&
-      length(filter(y-> y == true,val .< Inf)) == 3
+      length(filter(y-> y == true,isinf.(val))) == 0 &&
+      length(filter(y-> y == true,isfinite.(val))) == 3
 
 # Test Suite 2 (Example 2.2.1, Beelen)
 M = zeros(14,16); 
@@ -375,11 +378,14 @@ M2 = Q*M*Z; N2 = Q*N*Z;
 M = copy(M2); N = copy(N2); 
 @time val  = pzeros(M, N, fast = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test length(val) == 4 &&
-      length(filter(y-> y == true,val .== Inf)) == 1 &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == 3
+      length(filter(y-> y == true,isinf.(val))) == 1 &&
+      length(filter(y-> y == true,isfinite.(val))) == 3
 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
+Ty = Complex{Float64}
+#Ty = Float64
 for Ty in (Float64, Complex{Float64})
+
 
 abstol = sqrt(eps(one(real(Ty))))
 
@@ -403,12 +409,12 @@ N = Q*N*Z;
 @time val  = pzeros(M, N, fast = true, atol1 = abstol, atol2 = abstol)
 @test length(val) == ni+nf-1 &&
       length(filter(y-> y == true,isinf.(val))) == ni-1 &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == nf
+      length(filter(y-> y == true,isfinite.(val))) == nf
 
 @time val  = pzeros(M, N, fast = false, atol1 = abstol, atol2 = abstol)
 @test length(val) == ni+nf-1 &&
       length(filter(y-> y == true,isinf.(val))) == ni-1 &&
-      length(filter(y-> y == true,abs.(val) .< Inf)) == nf
+      length(filter(y-> y == true,isfinite.(val))) == nf
 
 end
 end
