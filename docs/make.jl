@@ -20,8 +20,8 @@ makedocs(
   ]
 )
 
-# deploydocs(deps = nothing, make = nothing,
-#   repo = "github.com/andreasvarga/MatrixPencils.jl.git",
-#   target = "build",
-#   devbranch = "master"
-# )
+deploydocs(deps = nothing, make = nothing,
+  repo = "github.com/andreasvarga/MatrixPencils.jl.git",
+  target = "build",
+  devbranch = "master"
+)

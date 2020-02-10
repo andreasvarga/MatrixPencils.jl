@@ -6,7 +6,7 @@ using MatrixPencils
 using Test
 
 
-#Random.seed!(21234)
+Random.seed!(1234)
 
 @testset "Matrix Pencils Structure Applications" begin
 
@@ -76,6 +76,7 @@ Ty = Float64
 Ty = Complex{Float64}
 for Ty in (Float64, Complex{Float64})
 
+Ty = Complex{Float64}
 abstol = sqrt(eps(one(real(Ty))))
 
 # given structure 
@@ -175,6 +176,7 @@ M = copy(M2); N = copy(N2);
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
 for Ty in (Float64, Complex{Float64})
 
+Ty = Float64
 abstol = sqrt(eps(one(real(Ty))))
 
 # given structure 

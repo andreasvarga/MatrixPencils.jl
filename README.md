@@ -35,6 +35,8 @@ The current version of the package includes the following functions:
 * **peigvals** Computation of the finite and infinite eigenvalues.
 * **pzeros** Computation of the finite and infinite (Smith) zeros.
 
+A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
+
 ## Future plans
 
 The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to forms with separated finite and infinite eigenvalues or to a block-diagonal structure), manipulation of structured linear pencils with application to polynomial and rational matrices, etc.
