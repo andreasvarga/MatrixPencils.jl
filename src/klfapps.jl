@@ -1,51 +1,18 @@
 """
-    isregular(M, N; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
+    pzeros(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
 
-Test whether the linear pencil `M-λN` is regular (i.e., det(M-λN) !== 0). The underlying computational procedure
-reduces the pencil `M-λN` to an appropriate Kronecker-like form (KLF), which provides information on the rank of `M-λN`. 
+Return the (finite and infinite) Smith zeros of the linear pencil `M-λN` in `val`, information on the multiplicities of infinite zeros in `iz` and  the 
+information on the complete Kronecker-structure in the `KRInfo` object. 
 
-The keyword arguements `atol1`, `atol2` and `rtol` specify the absolute tolerance for the nonzero
-elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the relative tolerance for the nonzero elements of `M` and `N`, respectively. 
-The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
-machine epsilon of the element type of `M`. 
-"""
-function isregular(M::AbstractMatrix, N::AbstractMatrix; atol1::Real = zero(eltype(M)), atol2::Real = zero(eltype(M)), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
-   
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   mM == nM || (return false)
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N)) 
+The information on the multiplicities of infinite zeros is provided in the vector `iz`, whose `i`-th component `iz[i]` is the number of infinite zeros of multiplicity `i`. 
+Note that the multiplicities of infinite eigenvalues are in excess with one with respect to the multiplicities of infinite zeros. 
 
-   # Step 0: Reduce to the standard form
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
-   mrinf = 0
-   nrinf = 0
-   tol1 = max(atol1, rtol*opnorm(M,1))
-   while m > 0
-      # Steps 1 & 2: Standard algorithm PREDUCE
-      τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = false, roff = mrinf, coff = nrinf, withQ = false, withZ = false)
-      ρ+τ == m || (return false)
-      mrinf += ρ+τ
-      nrinf += m
-      n -= ρ
-      m = ρ
-      p -= τ 
-   end
-   return true                                            
-end
-"""
-    pzeros(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> values
+The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
+number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
+and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
 
-Return the (finite and infinite) Smith zeros of the linear pencil `M-λN`. 
 The computation of the zeros is performed by reducing the pencil `M-λN` to an appropriate Kronecker-like form (KLF) 
 exhibiting the spliting of the infinite and finite eigenvalue structures of the pencil `M-λN`. 
-The multiplicities of infinite eigenvalues are in excess with one with respect to the multiplicities of infinite zeros. 
 The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
@@ -67,6 +34,12 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    T <: BlasFloat || (T = promote_type(Float64,T))
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
+
+   maxmn = max(mM,nM)
+   rki = Vector{Int}(undef,maxmn)
+   id = Vector{Int}(undef,maxmn)
+   lki = Vector{Int}(undef,maxmn)
+
    
    # # alternative computation
    # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
@@ -85,48 +58,66 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    # if1 = mr+1:mr+nf
    # jf1 = nr+1:nr+nf
    # return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(nzi) ]
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
+
+   # Step 0: Reduce to the standard form
+   Q = nothing
+   Z = nothing
+   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
+
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
    nrinf = 0
-   nzi = 0
+   niz = 0
    i = 0
-   muim1 = 0
    while m > 0 
       # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
-      τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = fast, withQ = false, withZ = false)
+      τ, ρ = _preduce1!(n, m, p, view(M,ired,jred), view(N,ired,jred), Q, Z, tol1; 
+                        fast = fast, withQ = false, withZ = false)
       i += 1
-      i > 2 && (nzi += (muim1 - m)*(i-2))
-      muim1 = ρ+τ
-      mrinf += muim1
+      mui = ρ+τ
+      rki[i] = m - mui
+      id[i]  = τ
+      mrinf += mui
       nrinf += m
+      i > 1 && (niz += τ*(i-1))
       n -= ρ
       m = ρ
       p -= τ 
    end
-   nzi += muim1*(i-1)
+
    rtrail = 0
    ctrail = 0
+   j = 0
    while p > 0
       # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
       ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
+      j += 1
       rtrail += p
       ctrail += ρ
+      lki[j] = p - ρ
       n -= ρ
       p = ρ
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),nzi) ]
+   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),niz) ], deltrz(id[2:i]), 
+          KRInfo(deltrz(rki[1:i]), deltrz(lki[1:j]), deltrz(id[1:i]), n)
 end
 """
-    peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> values
+    peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, KRInfo)
 
-Return the (finite and infinite) eigenvalues of the linear pencil `M-λN`. The computation of the eigenvalues
+Return the (finite and infinite) eigenvalues of the linear pencil `M-λN` in `val` and the 
+information on the complete Kronecker-structure in the `KRInfo` object. 
+
+The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
+number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
+and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref).  
+
+The computation of the eigenvalues
 is performed by reducing the pencil `M-λN` to an appropriate Kronecker-like form (KLF) exhibiting the spliting 
 of the infinite and finite eigenvalue structures of the pencil `M-λN`.
 The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
@@ -167,30 +158,40 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    # if1 = mr+1:mr+nf
    # jf1 = nr+1:nr+nf
    # return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ]
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
+   maxmn = max(mM,nM)
+   rki = Vector{Int}(undef,maxmn)
+   id = Vector{Int}(undef,maxmn)
+   lki = Vector{Int}(undef,maxmn)
+
+   Q = nothing
+   Z = nothing
+   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
+
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
    nrinf = 0
    ni = 0
    i = 0
-   muim1 = 0
    while m > 0 
       # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
-      τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = fast, withQ = false, withZ = false)
+      τ, ρ = _preduce1!(n, m, p, view(M,ired,jred), view(N,ired,jred), Q, Z, tol1; 
+                        fast = fast, withQ = false, withZ = false)
       i += 1
-      i > 1 && (ni += (muim1 - m)*(i-1))
-      muim1 = ρ+τ
-      mrinf += muim1
+      mui = ρ+τ
+      rki[i] = m - mui
+      id[i]  = τ
+      mrinf += mui
       nrinf += m
+      ni += τ*i
       n -= ρ
       m = ρ
       p -= τ 
    end
-   ni += muim1*i
    rtrail = 0
    ctrail = 0
+   j = 0
    while p > 0
       # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
@@ -198,12 +199,15 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
       rtrail += p
       ctrail += ρ
+      j += 1
+      lki[j] = p - ρ
       n -= ρ
       p = ρ
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ]
+   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ], 
+          KRInfo(deltrz(rki[1:i]), deltrz(lki[1:j]), deltrz(id[1:i]), n)
 end
 """
     KRInfo
@@ -287,7 +291,7 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
    
    # # alternative computation
    # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-   # withQ = false, withZ = false, fast = false)
+   #                                          withQ = false, withZ = false, fast = fast)
    # rki = μr-νr
    # nb = length(μ)
    # if nb > 0
@@ -324,29 +328,31 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
    id = Vector{Int}(undef,maxmn)
    lki = Vector{Int}(undef,maxmn)
 
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
+   Q = nothing
+   Z = nothing
+   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
+   
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
    nrinf = 0
    ni = 0
    i = 0
-   muim1 = 0
    while m > 0 
       # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
-      τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = fast, withQ = false, withZ = false)
+      τ, ρ = _preduce1!(n, m, p, view(M,ired,jred), view(N,ired,jred), Q, Z, tol1; 
+                        fast = fast, withQ = false, withZ = false)
       i += 1
-      muim1 = ρ+τ
-      rki[i] = m - muim1
-      i > 1 && (id[i-1] = m - muim1)
-      mrinf += muim1
+      mui = ρ+τ
+      rki[i] = m - mui
+      id[i]  = τ
+      mrinf += mui
       nrinf += m
       n -= ρ
       m = ρ
       p -= τ 
    end
-   i > 0 && (id[i] = muim1)
    rtrail = 0
    ctrail = 0
    j = 0
@@ -365,18 +371,8 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
    return KRInfo(deltrz(rki[1:i]), deltrz(lki[1:j]), deltrz(id[1:i]), n)
 end
 function deltrz(ind)
-   nb = length(ind)
-   k = nb
-   if nb > 0
-      for i = nb:-1:1
-         if ind[i] == 0 
-            k -= 1
-         else
-            break
-         end
-      end
-   end
-   return  ind[1:k]
+   k = findlast(!iszero,ind)
+   k === nothing ? (return ind[1:0]) : (return ind[1:k]) 
 end
 """
     prank(M::AbstractMatrix, N::AbstractMatrix; fast = true, atol1::Real=0, atol2::Real=0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ)
@@ -398,7 +394,7 @@ using rank decisions based on rank revealing SVD-decompositions.
 
 !!! compat "Julia 1.1"
     The use of `atol` and `rtol` keyword arguments in rank determinations requires at least Julia 1.1. 
-    To enforce compatibiöity with Julia 1.0, the newer function rank in Julia 1.1 has been explicitly included. 
+    To enforce compatibility with Julia 1.0, the newer function rank in Julia 1.1 has been explicitly included. 
 """
 function prank(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
    atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
@@ -425,7 +421,10 @@ function prank(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       # M, N, Q, Z, ν, μ, n = klf_rlsplit(M, N; fast = false, finite_infinite = false, atol1 = atol1, atol2 = atol2, 
       #                                   rtol = rtol, withQ = false, withZ = false)
       # return sum(ν) + n
-      Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
+      Q = nothing
+      Z = nothing
+      n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
+ 
       n == min(mM,nM) && (return n)
       prnk = 0
       tol1 = max(atol1, rtol*opnorm(M,1))

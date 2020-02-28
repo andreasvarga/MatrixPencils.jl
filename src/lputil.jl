@@ -1,6 +1,7 @@
 """
-    _preduceBF!(M, N; fast = true, atol = 0, rtol, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
-                withQ = true, withZ = true) -> Q, Z, n, m, p
+    _preduceBF!(M, N, Q, Z, L::Union{AbstractMatrix,Missing}, R::Union{AbstractMatrix,Missing}; 
+                fast = true, atol = 0, rtol, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
+                withQ = true, withZ = true) -> n, m, p
 
 Reduce the partitioned linear pencil `M - λN` 
 
@@ -9,15 +10,21 @@ Reduce the partitioned linear pencil `M - λN`
               [   0         0         *  ] rtrail
                 coff       npm     ctrail
   
-to an equivalent basic form `F - λG = Q'(M - λN)Z` using orthogonal transformation matrices `Q` and `Z` 
+to an equivalent basic form `F - λG = Q1'*(M - λN)*Z1` using orthogonal transformation matrices `Q1` and `Z1` 
 such that the subpencil `M22 - λN22` is transformed into the following standard form
  
                        | B  | A-λE | 
           F22 - λG22 = |----|------| ,        
                        | D  |  C   |
+
 where `E` is an `nxn` non-singular matrix, and `A`, `B`, `C`, `D` are `nxn`-, `nxm`-, `pxn`- and `pxm`-dimensional matrices,
 respectively. The order `n` of `E` is equal to the numerical rank of `N` determined using the absolute tolerance `atol` and 
 relative tolerance `rtol`. `M` and `N` are overwritten by `F` and `G`, respectively. 
+
+The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
+`Z` (i.e., `Z <- Z*Z1`), if `withZ = true`. 
+
+The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 
 If `fast = true`, `E` is determined upper triangular using a rank revealing QR-decomposition with column pivoting of `N22` 
 and `n` is evaluated as the number of nonzero diagonal elements of the R factor, whose magnitudes are greater than 
@@ -27,12 +34,14 @@ If `fast = false`,  `E` is determined diagonal using a rank revealing SVD-decomp
 is the largest singular value. 
 The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
 """
-function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = zero(eltype(M)),  
-                    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
-                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
-                    withQ = true, withZ = true) where T1 <: BlasFloat
+function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
+                     Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing},
+                     L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+                     atol::Real = zero(eltype(M)), rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
+                     fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
+                     withQ = true, withZ = true) where T1 <: BlasFloat
+   # In interest of performance, no dimensional checks are performed                  
    mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    T = eltype(M)
    npp = mM-rtrail-roff
    npm = nM-ctrail-coff
@@ -45,17 +54,9 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = 
    #
    # where M22 and N22 are npp x npm matrices
 
+   # fast return for null dimensions
+   (npp == 0 || npm == 0) && (return 0, npm, npp)  
 
-   # fast returns for null dimensions
-   if npp == 0 && npm == 0
-      return withQ ? zeros(T,0,0) : nothing, withZ ? zeros(T,0,0) : nothing, 0, 0, 0
-   elseif npp == 0
-      #return withQ ? zeros(T,0,0) : nothing, withZ ? Matrix{T}(I(nM)) : nothing, 0, npm, 0
-      return withQ ? zeros(T,0,0) : nothing, withZ ? Matrix{T}(I,nM,nM) : nothing, 0, npm, 0
-   elseif npm == 0
-      # return withQ ? Matrix{T}(I(mM)) : nothing, withZ ? zeros(T,0,0) : nothing,  0, 0, npp
-      return withQ ? Matrix{T}(I,mM,mM) : nothing, withZ ? zeros(T,0,0) : nothing,  0, 0, npp
-   end
    # Step 0: Reduce M22 -λ N22 to the standard form
    i11 = 1:roff
    i22 = roff+1:roff+npp
@@ -65,88 +66,90 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; atol::Real = 
    jN23 = coff+npm+1:nM
    eltype(M) <: Complex ? tran = 'C' : tran = 'T'
    if fast
-      # compute the complete orthogonal decomposition of N22 using the rank revealing QR-factorization
-      QR = qr!(view(N,i22,j22), Val(true))
-      tol = max(atol, rtol*abs(QR.R[1,1]))
-      n = count(x -> x > tol, abs.(diag(QR.R))) 
+      # compute in-place the QR-decomposition N22*P2 = Q2*[R2;0] with column pivoting 
+      N22 = view(N,i22,j22)
+      _, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(N22)
+      tol = max(atol, rtol*abs(N22[1,1]))
+      n = count(x -> x > tol, abs.(diag(N22))) 
       m = npm-n
       p = npp-n
       i1 = 1:n
-      R, tau = LinearAlgebra.LAPACK.tzrzf!(QR.R[i1,:])
+      # [M22 M23] <- Q2'*[M22 M23]
+      LinearAlgebra.LAPACK.ormqr!('L',tran,N22,τ,view(M,i22,j23))
+      # [M12; M22] <- [M12; M22]*P2
+      M[i12,j22] = M[i12,j22[jpvt]]      
+      # N23 <- Q2'*N23
+      LinearAlgebra.LAPACK.ormqr!('L',tran,N22,τ,view(N,i22,jN23))
+      # N12 <- N12*P2
+      N[i11,j22] = N[i11,j22[jpvt]]
+      # Q <- Q*Q2
+      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',N22,τ,view(Q,:,i22))
+      # Z <- Z*P2
+      withZ && (Z[:,j22] = Z[:,j22[jpvt]])
+      # L <- Q2'*L
+      ismissing(L) || LinearAlgebra.LAPACK.ormqr!('L',tran,N22,τ,view(L,i22,:))
+      # N22 = [R2;0] 
+      N22[:,:] = [ triu(N22[i1,:]); zeros(T,p,npm) ]
+       # R <- R*P2
+      ismissing(R) || (R[:,j22] = R[:,j22[jpvt]])
+      
+      # compute in-place the complete orthogonal decomposition N22*Z2*Pc2 = [0 E; 0 0] with E nonsingular and UT
+      _, tau = LinearAlgebra.LAPACK.tzrzf!(view(N22,i1,:))
       jp = [coff+n+1:coff+npm; coff+1:coff+n] 
-      # [M12; M22] <- [M12; M22]*P*Z*Pc
-      M[i12,j22] = M[i12,j22[QR.p]]
-      M[i12,j22] = LinearAlgebra.LAPACK.ormrz!('R',tran,R[i1,:],tau,M[i12,j22])
+      N22r = view(N22,i1,:)
+      # [M12; M22] <- [M12; M22]*Z2*Pc2
+      LinearAlgebra.LAPACK.ormrz!('R',tran,N22r,tau,view(M,i12,j22))
       M[i12,j22] = M[i12,jp]
-      # [M22 M23] <- QR.Q'*[M22 M23]
-      M[i22,j23] = QR.Q'*M[i22,j23]
-      # N12 <- N12*P*Z*Pc
-      N[i11,j22] = N[i11,j22[QR.p]]
-      N[i11,j22] = LinearAlgebra.LAPACK.ormrz!('R',tran,R[i1,:],tau,N[i11,j22])
+      # N12 <- N12*Z2*Pc2
+      LinearAlgebra.LAPACK.ormrz!('R',tran,N22r,tau,view(N,i11,j22))
       N[i11,j22] = N[i11,jp]
-      # N23 <- QR.Q'*N23
-      N[i22,jN23] = QR.Q'*N[i22,jN23]
-      if withQ
-         #Q = Matrix{T}(I(mM)) # Julia 1.2
-         Q = Matrix{T}(I,mM,mM)
-         Q[i22,i22] = QR.Q*Q[i22,i22]
-      else
-         Q = nothing
-      end
       if withZ
-         #Z = Matrix{T}(I(nM)) # Julia 1.2
-         Z = Matrix{T}(I,nM,nM)
-         Z[j22,j22] = LinearAlgebra.LAPACK.ormrz!('R',tran,R[i1,:],tau,Z[j22,j22])[invperm(QR.p),:]
-         Z = Z[:,jp] 
-      else
-         Z = nothing
+         LinearAlgebra.LAPACK.ormrz!('R',tran,N22r,tau,view(Z,:,j22))
+         Z[:,j22] = Z[:,jp] 
       end
-      N[i22,j22] = [ zeros(n,m) triu(R[i1,i1]); zeros(p,npm) ]
+      # R <- R*Z2*Pc2
+      ismissing(R) || (LinearAlgebra.LAPACK.ormrz!('R',tran,N22r,tau,view(R,:,j22)); R[:,j22] = R[:,jp]) 
+      N22[:,:] = [ zeros(n,m) triu(N22[i1,i1]); zeros(p,npm) ]
    else
       # compute the complete orthogonal decomposition of N22 using the SVD-decomposition
-      SVD = svd!(view(N,i22,j22), full = true)
-      tol = max(atol, rtol*SVD.S[1])
-      n = count(x -> x > tol, SVD.S) 
+      U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',view(N,i22,j22))
+      tol = max(atol, rtol*S[1])
+      n = count(x -> x > tol, S) 
       m = npm-n
       p = npp-n
       jp = [coff+n+1:coff+npm; coff+1:coff+n] 
       # [M12; M22] <- [M12; M22]*V*Pc
-      M[i12,j22] = M[i12,j22]*SVD.V
+      M[i12,j22] = M[i12,j22]*Vt'
       M[i12,j22] = M[i12,jp]
       # [M22 M23] <- U'*[M22 M23]
-      M[i22,j23] = SVD.U'*M[i22,j23]
+      M[i22,j23] = U'*M[i22,j23]
       # N12 <- N12*V*Pc
-      N[i11,j22] = N[i11,j22]*SVD.V
+      N[i11,j22] = N[i11,j22]*Vt'
       N[i11,j22] = N[i11,jp]
       # N23 <- U'*N23
-      N[i22,jN23] = SVD.U'*N[i22,jN23]
-      #Q = SVD.U
-      if withQ
-         # Q = Matrix{T}(I(mM)) # Julia 1.2
-         Q = Matrix{T}(I,mM,mM)
-         Q[i22,i22] = SVD.U
-      else
-         Q = nothing
-      end
+      N[i22,jN23] = U'*N[i22,jN23]
+      # Q <- Q*SVD.U
+      withQ && (Q[:,i22] = Q[:,i22]*U)
+      # Z <- Q*SVD.V
       if withZ
-         # Z = Matrix{T}(I(nM))  # Julia 1.2
-         Z = Matrix{T}(I,nM,nM)
-         Z[j22,j22] = SVD.V
-         Z[j22,j22] = Z[j22,jp] 
-      else
-         Z = nothing
+         Z[:,j22] = Z[:,j22]*Vt'
+         Z[:,j22] = Z[:,jp] 
       end
-      #N[i22,j22] = [ zeros(n,m) diagm(SVD.S[1:n]) ; zeros(p,npm) ]
-      N[i22,j22] = [ zeros(n,m) Diagonal(SVD.S[1:n]) ; zeros(p,npm) ]
+      # L <- U'*L
+      ismissing(L) || (L[i22,:] = U'*L[i22,:])
+      # R <- R*V
+      ismissing(R) || (R[:,j22] = R[:,j22]*Vt'; R[:,j22] = R[:,jp] )
+      N[i22,j22] = [ zeros(n,m) Diagonal(S[1:n]) ; zeros(p,npm) ]
    end
-   return Q, Z, n, m, p
+   return n, m, p
 end
 """
-    _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing},
-               Z::Union{AbstractMatrix,Nothing}, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
-               withQ = true, withZ = true)
+    _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix, N::AbstractMatrix,
+               Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol,
+               L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+               fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true)
 
-Reduce the structured pencil  
+Reduce the structured pencil  `M - λN`
 
      M = [ *  * *  *  ] roff          N = [ *  * *  *  ] roff
          [ 0  B A  *  ] n                 [ 0  0 E  *  ] n
@@ -154,9 +157,9 @@ Reduce the structured pencil
          [ 0  * *  *  ] rtrail            [ 0  * *  *  ] rtrail
          coff m n ctrail                  coff m n ctrail
 
-with E upper triangular and nonsingular to the following form
+with E upper triangular and nonsingular to the following form `M1 - λN1 = Q1'*(M - λN)*Z1` with
 
-     M = [ *   *    *    *    *  ] roff        N = [ *   *  *   *    *   ] roff
+    M1 = [ *   *    *    *    *  ] roff       N1 = [ *   *  *   *    *   ] roff
          [ 0   B1   A11 A12   *  ] τ+ρ             [ 0   0  E11 E12  *   ] τ+ρ
          [ 0   0    B2  A22   *  ] n-ρ             [ 0   0  0   E22  *   ] n-ρ
          [ 0   0    D2  C2    *  ] p-τ             [ 0   0  0   0    *   ] p-τ
@@ -164,12 +167,15 @@ with E upper triangular and nonsingular to the following form
           coff m    ρ  n-ρ ctrail                   coff m  ρ  n-ρ ctrail   
 
 where τ = rank D, B1 is full row rank, and E11 and E22 are upper triangular and nonsingular.
-The performed orthogonal or unitary transformations are accumulated in `Q`, if `withQ = true`, and 
-`Z`, if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
+`Z` (i.e., `Z <- Z*Z1`), if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+
+The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
-function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing},
-         Z::Union{AbstractMatrix,Nothing}, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
-         withQ = true, withZ = true)
+function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol,
+                    L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) where T1 <: BlasFloat
    #  Steps 1 and 2: QR- or SVD-decomposition based full column compression of [B; D] with the UT-form preservation of E
    #  Reduce the structured pencil  
    #
@@ -181,12 +187,12 @@ function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    #
    #  with E upper triangular and nonsingular to the following form
    #
-   #  M = [ *   *    *    *    *  ] roff        N = [ *   *  *   *    *   ] roff
-   #      [ 0   B1   A11 A12   *  ] τ+ρ             [ 0   0  E11 E12  *   ] τ+ρ
-   #      [ 0   0    B2  A22   *  ] n-ρ             [ 0   0  0   E22  *   ] n-ρ
-   #      [ 0   0    D2  C2    *  ] p-τ             [ 0   0  0   0    *   ] p-τ
-   #      [ 0   *    *   *     *  ] rtrail          [ 0   *  *   *    *   ] rtrail
-   #       coff m    ρ  n-ρ ctrail                   coff m  ρ  n-ρ ctrail   
+   #  M1 = [ *   *    *    *    *  ] roff        N1 = [ *   *  *   *    *   ] roff
+   #       [ 0   B1   A11 A12   *  ] τ+ρ              [ 0   0  E11 E12  *   ] τ+ρ
+   #       [ 0   0    B2  A22   *  ] n-ρ              [ 0   0  0   E22  *   ] n-ρ
+   #       [ 0   0    D2  C2    *  ] p-τ              [ 0   0  0   0    *   ] p-τ
+   #       [ 0   *    *   *     *  ] rtrail           [ 0   *  *   *    *   ] rtrail
+   #        coff m    ρ  n-ρ ctrail                    coff m  ρ  n-ρ ctrail   
    #
    #  where τ = rank D, B1 is full row rank and E11 and E22 are upper triangular and nonsingular.
 
@@ -198,7 +204,7 @@ function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    nM = coff + npm + ctrail
    # Step 1:
    ia = roff+1:roff+n
-   ja = coff+m+1:coff+npm
+   ja = coff+m+1:nM
    jb = coff+1:coff+m
    B = view(M,ia,jb) 
    BD = view(M,roff+1:roff+npp,jb)
@@ -206,18 +212,20 @@ function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
       # compress D to [D1 D2;0 0] with D1 invertible 
       ic = roff+n+1:roff+npp
       D = view(M,ic,jb)
-      C = view(M,ic,ja)
+      CE = view(M,ic,ja)
+      EE = view(N,ic,coff+npm+1:nM)
       if fast
          QR = qr!(D, Val(true))
          τ = count(x -> x > tol, abs.(diag(QR.R))) 
       else
-         #τ = rank(D; atol = tol)
          τ = count(x -> x > tol, svdvals(D))
          QR = qr!(D, Val(true))
       end
       B[:,:] = B[:,QR.p]
-      lmul!(QR.Q',C)
+      lmul!(QR.Q',CE)
+      lmul!(QR.Q',EE)
       withQ && rmul!(view(Q,:,ic),QR.Q) 
+      ismissing(L) || lmul!(QR.Q',view(L,ic,:))
       D[:,:] = [ QR.R[1:τ,:]; zeros(p-τ,m) ]
       # Step 2:
       k = 1
@@ -226,16 +234,17 @@ function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
             iim1 = ii-1
             G, M[iim1,j] = givens(M[iim1,j],M[ii,j],iim1,ii)
             M[ii,j] = ZERO
-            lmul!(G,view(M,:,j+1:coff+m+n))
+            lmul!(G,view(M,:,j+1:nM))
             lmul!(G,view(N,:,ja))  # more efficient computation possible by selecting only the relevant columns
             withQ && rmul!(Q,G')
+            ismissing(L) || lmul!(G,L)
          end
          k += 1
       end
    else
       τ = 0
    end
-   ρ = _preduce3!(n, m-τ, M, N, Q, Z, tol, fast = fast, coff = coff+τ, roff = roff+τ, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
+   ρ = _preduce3!(n, m-τ, M, N, Q, Z, tol, L, R, fast = fast, coff = coff+τ, roff = roff+τ, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
    if p > 0
       irt = 1:(τ+ρ)
       BD[irt,:] = BD[irt,invperm(QR.p)]
@@ -243,9 +252,10 @@ function _preduce1!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    return τ, ρ 
 end
 """
-    _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing},
-               Z::Union{AbstractMatrix,Nothing}, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
-               withQ = true, withZ = true)
+    _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix, N::AbstractMatrix, 
+               Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol,
+               L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+               fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true)
 
 Reduce the structured pencil  
 
@@ -255,9 +265,9 @@ Reduce the structured pencil
          [ 0  0 0   *  ] rtrail            [ 0  0 0  *   ] rtrail
          coff m n ctrail                   coff m n ctrail
 
-with `E` upper triangular and nonsingular to the following form
+with `E` upper triangular and nonsingular to the following form `M1 - λN1 = Q1'*(M - λN)*Z1` with
 
-     M = [ *    *   *    *    *  ] roff        N = [ *   *  *   *    *   ] roff
+    M1 = [ *    *   *    *    *  ] roff       N1 = [ *   *  *   *    *   ] roff
          [ *    B1  A11 A12   *  ] n-ρ             [ 0   0  E11 E12  *   ] τ+ρ
          [ *    D1  C1  A22   *  ] ρ               [ 0   0  0   E22  *   ] n-ρ
          [ 0    0   0   C2    *  ] p               [ 0   0  0   0    *   ] p-τ
@@ -265,12 +275,15 @@ with `E` upper triangular and nonsingular to the following form
           coff m-τ n-ρ τ+ρ ctrail                   coff m  ρ  n-ρ ctrail   
 
 where `τ = rank D`, `C2` is full column rank and `E11` and `E22` are upper triangular and nonsingular. 
-The performed orthogonal or unitary transformations are accumulated in `Q`, if `withQ = true`, and 
-`Z`, if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
+`Z` (i.e., `Z <- Z*Z1`), if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+
+The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
-function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing},
-          Z::Union{AbstractMatrix,Nothing}, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
-          withQ = true, withZ = true)
+function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol, 
+                    L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) where T1 <: BlasFloat
    #  Steps 1 and 2: QR- or SVD-decomposition based full column compression of [D C] with the UT-form preservation of E
    #  Reduce the structured pencil  
    #
@@ -282,11 +295,11 @@ function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    #
    #  with E upper triangular and nonsingular to the following form
    #
-   #  M = [ *    *   *    *    *  ] roff        N = [ *   *  *   *    *   ] roff
-   #      [ *    B1  A11 A12   *  ] n-ρ             [ 0   0  E11 E12  *   ] τ+ρ
-   #      [ *    D1  C1  A22   *  ] ρ               [ 0   0  0   E22  *   ] n-ρ
-   #      [ 0    0   0   C2    *  ] p               [ 0   0  0   0    *   ] p-τ
-   #      [ 0    0   0   0     *  ] rtrail          [ 0   0  0   0    *   ] rtrail
+   #  M1 = [ *    *   *    *    *  ] roff       N1 = [ *   *  *   *    *   ] roff
+   #       [ *    B1  A11 A12   *  ] n-ρ             [ 0   0  E11 E12  *   ] τ+ρ
+   #       [ *    D1  C1  A22   *  ] ρ               [ 0   0  0   E22  *   ] n-ρ
+   #       [ 0    0   0   C2    *  ] p               [ 0   0  0   0    *   ] p-τ
+   #       [ 0    0   0   0     *  ] rtrail          [ 0   0  0   0    *   ] rtrail
    #       coff m-τ n-ρ τ+ρ ctrail                   coff m  ρ  n-ρ ctrail   
    #
    #  where τ = rank D, C2 is full column rank and E11 and E22 are upper triangular and nonsingular.
@@ -306,6 +319,7 @@ function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    jb = coff+1:coff+m
    jdc = coff+1:nM
    BE = view(M,ia,jb) 
+   EE = view(N,1:roff,jb) 
    DC = view(M,ic,coff+1:coff+npm)
    C = view(M,ic,jc)
    
@@ -329,6 +343,9 @@ function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
          rmul!(Z1,QR.Q) 
          Z1[:,:] = Z1[:,jt]
       end
+      ismissing(R) || ( rmul!(view(R,:,jb),QR.Q); R[:,jb] = R[:,reverse(jb)] )
+      rmul!(EE,QR.Q)  
+      EE[:,:] = EE[:,jt]      # BE*Q*P2
       D[:,:] = [ zeros(p,m-τ)  QR.R[τ:-1:1,p:-1:1]' ]
       C[:,:] = C[QR.p,:]
       C[:,:] = reverse(C,dims=1)
@@ -343,13 +360,14 @@ function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
              rmul!(view(M,1:i-1,jdc),G')  
              rmul!(view(N,1:i,jdc),G')  
              withZ && rmul!(Z,G')
-          end
+             ismissing(R) || rmul!(R,G')
+            end
          k += 1
       end
    else
       τ = 0
    end
-   ρ = _preduce4!(n, m-τ, p-τ, M, N, Q, Z, tol, fast = fast, coff = coff, roff = roff, rtrail = rtrail+τ, ctrail = ctrail+τ, withQ = withQ, withZ = withZ)
+   ρ = _preduce4!(n, m-τ, p-τ, M, N, Q, Z, tol, L, R, fast = fast, coff = coff, roff = roff, rtrail = rtrail+τ, ctrail = ctrail+τ, withQ = withQ, withZ = withZ)
    if m > 0
       jrt = npm-(τ+ρ)+1:npm
       DC[:,jrt] = reverse(DC[:,jrt],dims=1)
@@ -358,7 +376,9 @@ function _preduce2!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    return τ, ρ 
 end
 """
-    _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol; 
+    _preduce3!(n::Int, m::Int, M::AbstractMatrix, N::AbstractMatrix, 
+               Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol,
+               L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
                fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0,  withQ = true, withZ = true)
 
 Reduce the structured pencil  
@@ -368,20 +388,24 @@ Reduce the structured pencil
         [ 0  *  *   *  ] rtrail      [ 0  *  *   *  ] rtrail
         coff m  n ctrail             coff m  n ctrail
 
-with `E` upper triangular and nonsingular to the following form
+with `E` upper triangular and nonsingular to the following form `M1 - λN1 = Q1'*(M - λN)*Z1` with
 
         [ *  *   *   *     *  ] roff        [ *  *  *   *     *  ] roff
-    M = [ 0  B1  A11 A12   *  ] n-ρ     N = [ 0  0  E11 E12   *  ] n-ρ
-        [ 0  0   A21 A22   *  ] ρ           [ 0  0  0   E22   *  ] ρ
+   M1 = [ 0  B1  A11 A12   *  ] ρ      N1 = [ 0  0  E11 E12   *  ] ρ
+        [ 0  0   A21 A22   *  ] n-ρ         [ 0  0  0   E22   *  ] n-ρ
         [ 0  *   *   *     *  ] rtrail      [ 0  *  *   *     *  ] rtrail
-        coff m  n-ρ  ρ   ctrail             coff m  n-ρ ρ   ctrail
+        coff m   ρ   n-ρ ctrail             coff m  ρ   n-ρ ctrail
 
-where `B1` has full row rank and `E11` and `E22` are upper triangular and nonsingular. 
-The performed orthogonal or unitary transformations are accumulated in `Q`, if `withQ = true`, and 
-`Z`, if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+where `B1` has full row rank `ρ` and `E11` and `E22` are upper triangular and nonsingular. 
+The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
+`Z` (i.e., `Z <- Z*Z1`), if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+
+The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
-function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol; 
-                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0,  withQ = true, withZ = true)
+function _preduce3!(n::Int, m::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol,
+                    L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0,  withQ = true, withZ = true) where T1 <: BlasFloat
    #  Step 3: QR- or SVD-decomposition based full row compression of B and UT-form preservation of E
    #  Reduce the structured pencil  
    #
@@ -393,8 +417,8 @@ function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{A
    #  with E upper triangular and nonsingular to the following form
    #
    #       [ *  *   *   *     *  ] roff        [ *  *  *   *     *  ] roff
-   #   M = [ 0  B1  A11 A12   *  ] n-ρ     N = [ 0  0  E11 E12   *  ] n-ρ
-   #       [ 0  0   A21 A22   *  ] ρ           [ 0  0  0   E22   *  ] ρ
+   #  M1 = [ 0  B1  A11 A12   *  ] ρ      N1 = [ 0  0  E11 E12   *  ] ρ
+   #       [ 0  0   A21 A22   *  ] n-ρ         [ 0  0  0   E22   *  ] n-ρ
    #       [ 0  *   *   *     *  ] rtrail      [ 0  *  *   *     *  ] rtrail
    #       coff m  n-ρ  ρ   ctrail             coff m  n-ρ ρ   ctrail
    #
@@ -436,12 +460,14 @@ function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{A
              lmul!(G,view(M,ib,coff+j+1:nM))
              lmul!(G,view(N,ib,coff+m+iim1:nM))
              withQ && rmul!(view(Q,:,ib),G') 
+             ismissing(L) || lmul!(G,view(L,ib,:))
              G, r = givens(conj(E[ii,ii]),conj(E[ii,iim1]),ii,iim1)
              E[ii,ii] = conj(r)
              E[ii,iim1] = ZERO 
              rmul!(view(N,1:roff+iim1,je),G')
              withZ && rmul!(view(Z,:,je),G') 
              rmul!(view(M,:,je),G')
+             ismissing(R) || rmul!(view(R,:,je),G') 
          end
       end
       B[:,:] = [ B[1:ρ,invperm(jp)]; zeros(T,n-ρ,m) ]
@@ -450,18 +476,20 @@ function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{A
         for j = 1:m
           for ii = n:-1:j+1
             iim1 = ii-1
-             G, B[iim1,j] = givens(B[iim1,j],B[ii,j],iim1,ii)
+            G, B[iim1,j] = givens(B[iim1,j],B[ii,j],iim1,ii)
             B[ii,j] = ZERO
             lmul!(G,view(M,ib,coff+j+1:nM))
             lmul!(G,view(N,ib,coff+m+iim1:nM))
             withQ && rmul!(view(Q,:,ib),G') 
+            ismissing(L) || lmul!(G,view(L,ib,:))
             G, r = givens(conj(E[ii,ii]),conj(E[ii,iim1]),ii,iim1)
             E[ii,ii] = conj(r)
             E[ii,iim1] = ZERO 
             rmul!(view(N,1:roff+iim1,je),G')
             withZ && rmul!(view(Z,:,je),G') 
             rmul!(view(M,:,je),G')
-          end
+            ismissing(R) || rmul!(view(R,:,je),G') 
+         end
         end
       end
       mn = min(n,m)
@@ -483,6 +511,7 @@ function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{A
          withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
          N[ibt,jt] = SVD.U'*N[ibt,jt]
          M[ibt,jt] = SVD.U'*M[ibt,jt]
+         ismissing(L) || (L[ibt,:] = SVD.U'*L[ibt,:])
          tau = similar(N,mn)
          jt1 = coff+m+1:coff+m+mn
          E11 = view(N,ibt,jt1)
@@ -491,6 +520,7 @@ function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{A
          LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(M,:,jt1))
          withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
          LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(N,1:roff,jt1))
+         ismissing(R) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(R,:,jt1)) 
          triu!(E11)
       else
          ρ = 0
@@ -499,8 +529,10 @@ function _preduce3!(n::Int,m::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{A
    return ρ 
 end
 """
-    _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol; 
-               fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true)
+    _preduce4!(n::Int, m::Int, p::Int, M::AbstractMatrix, N::AbstractMatrix, 
+               Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol,
+               L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+               fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0,  withQ = true, withZ = true)
 
 Reduce the structured pencil  
 
@@ -510,9 +542,9 @@ Reduce the structured pencil
         [ 0  *  *   *  ] rtrail            [ 0  *  *   *  ] rtrail
         coff m  n ctrail                   coff m  n ctrail
 
-with `E` upper triangular and nonsingular to the following form
+with `E` upper triangular and nonsingular to the following form `M1 - λN1 = Q1'*(M - λN)*Z1` with
 
-    M = [ *  *   *   *    * ] roff          N = [ *  *  *   *    * ] roff
+   M1 = [ *  *   *   *    * ] roff         N1 = [ *  *  *   *    * ] roff
         [ 0  B1  A11 A12  * ]  n-ρ              [ 0  0  E11 E12  * ]  n-ρ
         [ 0  B2  A21 A22  * ]  ρ                [ 0  0  0   E22  * ]  ρ
         [ 0  0   0   C1   * ]  p                [ 0  0  0   0    * ]  p
@@ -520,11 +552,15 @@ with `E` upper triangular and nonsingular to the following form
         coff m  n-ρ  ρ ctrail                   coff m n-ρ  ρ ctrail   
 
 where `C1` has full column rank and `E11` and `E22` are upper triangular and nonsingular. 
-The performed orthogonal or unitary transformations are accumulated in `Q`, if `withQ = true`, and 
-`Z`, if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
+`Z` (i.e., `Z <- Z*Z1`), if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
+
+The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
-function _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::Union{AbstractMatrix,Nothing}, Z::Union{AbstractMatrix,Nothing}, tol; 
-                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true)
+function _preduce4!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1},N::AbstractMatrix{T1},
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol, 
+                    L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
+                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) where T1 <: BlasFloat
    #  Step 4: QR- or SVD-decomposition based full column compression of C and UT-form preservation of E
    #  Reduce the structured pencil  
    #
@@ -536,12 +572,12 @@ function _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
    #
    #  with E upper triangular and nonsingular to the following form
    #
-   #  M = [ *  *   *   *    * ] roff          N = [ *  *  *   *    * ] roff
-   #      [ 0  B1  A11 A12  * ]  n-ρ              [ 0  0  E11 E12  * ]  n-ρ
-   #      [ 0  B2  A21 A22  * ]  ρ                [ 0  0  0   E22  * ]  ρ
-   #      [ 0  0   0   C1   * ]  p                [ 0  0  0   0    * ]  p
-   #      [ 0  *   *   *    * ] rtrail            [ 0  *  *   *    * ] rtrail
-   #      coff m  n-ρ  ρ ctrail                   coff m n-ρ  ρ ctrail   
+   #  M1 = [ *  *   *   *    * ] roff         N1 = [ *  *  *   *    * ] roff
+   #       [ 0  B1  A11 A12  * ]  n-ρ              [ 0  0  E11 E12  * ]  n-ρ
+   #       [ 0  B2  A21 A22  * ]  ρ                [ 0  0  0   E22  * ]  ρ
+   #       [ 0  0   0   C1   * ]  p                [ 0  0  0   0    * ]  p
+   #       [ 0  *   *   *    * ] rtrail            [ 0  *  *   *    * ] rtrail
+   #       coff m  n-ρ  ρ ctrail                   coff m n-ρ  ρ ctrail   
    #
    #  where C1 has full column rank and E11 and E22 are upper triangular and nonsingular. 
    npp = n+p
@@ -585,11 +621,13 @@ function _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
              rmul!(AE,G')
              rmul!(view(N,1:roff+jjp1,jc),G')
              withZ && rmul!(view(Z,:,jc),G') 
+             ismissing(R) || rmul!(view(R,:,jc),G')
              G, E[jj,jj] = givens(E[jj,jj],E[jjp1,jj],jj,jjp1)
              E[jjp1,jj] = ZERO
              lmul!(G,view(N,ie,coff+m+jjp1:nM))
              withQ && rmul!(view(Q,:,ie),G') 
              lmul!(G,view(M,ie,coff+1:nM))
+             ismissing(L) || lmul!(G,view(L,ie,:))
          end
       end
       C[:,1:n] = [ zeros(T,p,n-ρ)  C[invperm(jp),n-ρ+1:n]];
@@ -606,12 +644,14 @@ function _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
                 rmul!(AE,G')
                 rmul!(view(N,1:roff+jjp1,jc),G')
                 withZ && rmul!(view(Z,:,jc),G') 
+                ismissing(R) || rmul!(view(R,:,jc),G')
                 G, E[jj,jj] = givens(E[jj,jj],E[jjp1,jj],jj,jjp1)
                 E[jjp1,jj] = ZERO
                 lmul!(G,view(N,ie,coff+m+jjp1:nM))
                 withQ && rmul!(view(Q,:,ie),G') 
                 lmul!(G,view(M,ie,coff+1:nM))
-            end
+                ismissing(L) || lmul!(G,view(L,ie,:))
+               end
          end
       end
       pn = min(n,p)
@@ -620,21 +660,21 @@ function _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
          jcs = n-pn+1:n
          SVD = svd(C[ics,jcs], full = true)
          ρ = count(x -> x > tol, SVD.S) 
-         Z1 = reverse(SVD.V,dims=2)
-         Q1 = reverse(SVD.U,dims=2)
          if ρ == pn
             return ρ
          else
-            #C[ics,jcs] = [ zeros(p,pn-ρ) Q1*[zeros(p-ρ,ρ); diagm(reverse(SVD.S[1:ρ])) ] ] 
-            C[ics,jcs] = [ zeros(p,pn-ρ) Q1[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ] 
+            Q1 = reverse(SVD.U,dims=2)
+            C[ics,jcs] = [ zeros(T,p,pn-ρ) Q1[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ] 
             if ρ == 0
                return ρ
             end
          end
+         Z1 = reverse(SVD.V,dims=2)
          jt = coff+npm-pn+1:coff+npm
          withZ && (Z[:,jt] = Z[:,jt]*Z1) 
          M[1:roff+n,jt] = M[1:roff+n,jt]*Z1
          N[1:roff+n,jt] = N[1:roff+n,jt]*Z1    # more efficient computation possible
+         ismissing(R) || (M[:,jt] = M[:,jt]*Z1)
          it = roff+n-pn+1:roff+n
          jt1 = coff+n+m+1:nM
          tau = similar(N,pn)
@@ -644,6 +684,7 @@ function _preduce4!(n::Int,m::Int,p::Int,M::AbstractMatrix,N::AbstractMatrix,Q::
          LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(M,it,coff+1:nM))
          withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E22,tau,view(Q,:,it)) 
          LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(N,it,jt1))
+         ismissing(L) || LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(L,it,:))
          triu!(E22)
       else
          ρ = 0

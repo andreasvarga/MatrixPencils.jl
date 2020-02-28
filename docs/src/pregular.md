@@ -2,4 +2,5 @@
 
 ```@docs
 isregular
+fisplit
 ```

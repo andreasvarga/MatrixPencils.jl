@@ -37,6 +37,7 @@ The current version of the package includes the following functions:
 | Function | Description |
 | :--- | :--- |
 | **isregular** | Checking the regularity of a pencil |
+| **fisplit** | Finite-infinite eigenvalue splitting |
 
 **Some applications of matrix pencil computations**
 
@@ -51,9 +52,13 @@ A complete list of implemented functions is available [here](https://sites.googl
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to forms with finite-infinite separated eigenvalues or to a block-diagonal structure), manipulation of structured linear pencils with application to polynomial and rational matrices, etc.
+The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), manipulation of structured linear pencils with application to polynomial and rational matrices, etc.
 
 ## Release Notes
+
+### Version 0.2.0
+
+This release include a new tool for finite-infinite eigenvalue splitting of a regular pencil and substantial improvements of the modularization and interfaces of implemented basic pencil operations. 
 
 ### Version 0.1.0
 

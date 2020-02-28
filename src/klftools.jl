@@ -70,9 +70,9 @@ The performed right orthogonal or unitary transformations are accumulated in the
 Otherwise, `Z` is set to `nothing`.  
 """
 function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_infinite::Bool = false, 
-   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)), 
-   withQ::Bool = true, withZ::Bool = true)
+                     atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
+                     rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)), 
+                     withQ::Bool = true, withZ::Bool = true)
    
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
@@ -83,8 +83,11 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
 
+   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
+   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
+
    # Step 0: Reduce to the standard form
-    Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast) 
+   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast) 
    
    maxmn = max(mM,nM)
    μ = Vector{Int}(undef,maxmn)
@@ -106,7 +109,7 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
          return M, N, Q, Z, ν[1:1], μ[1:1], n, m, p
       end
 
-      # Reduce M-λN to the KLF by splitting the right-finite and infinite-left structures
+      # Reduce M-λN to a KLF which exhibits the splitting the right-finite and infinite-left structures
       #
       #                  | Mrf - λ Nrf |     *        |
       #      M1 - λ N1 = |-------------|--------------|
@@ -122,7 +125,9 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
       tol1 = max(atol1, rtol*opnorm(M,1))     
       while p > 0
          # Step 1 & 2: Dual algorithm PREDUCE
-         τ, ρ  = _preduce2!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
+         τ, ρ  = _preduce2!(n, m, p, M, N, Q, Z, tol1; fast = fast, 
+                            roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, 
+                            withQ = withQ, withZ = withZ)
          i += 1
          ν[i] = p
          μ[i] = ρ+τ
@@ -143,7 +148,7 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
          return M, N, Q, Z, ν[1:0], μ[1:0], n, m, p
       end
 
-      # Reduce M-λN to the KLF by splitting the right-infinite and finite-left structures
+      # Reduce M-λN to a KLF which exhibits the splitting the right-infinite and finite-left structures
       #
       #                  | Mri - λ Nri |     *        |
       #      M1 - λ N1 = |-------------|--------------|
@@ -157,7 +162,8 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
    
       while m > 0
          # Steps 1 & 2: Standard algorithm PREDUCE
-          τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, withQ = withQ, withZ = withZ)
+          τ, ρ = _preduce1!( n, m, p, M, N, Q, Z, tol1; fast = fast, 
+                            roff = mrinf, coff = nrinf, withQ = withQ, withZ = withZ)
          i += 1
          ν[i] = ρ+τ
          μ[i] = m
@@ -247,20 +253,26 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
    T <: BlasFloat || (T = promote_type(Float64,T))
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
+
+   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
+   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
+
+   # Step 0: Reduce to the standard form
+   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast) 
    if finite_infinite
       
-      # Reduce M-λN to the KLF exhibiting the right and finite structures
+      # Reduce M-λN to a KLF exhibiting the right and finite structures
       #                  [ Mr - λ Nr  |   *        |     *        ]
       #      M1 - λ N1 = [    0       | Mf -  λ Nf |     *        ]
       #                  [    0       |    0       | Mli -  λ Nli ]
       
-      Q, Z, νr, μr, nf, ν, μ, tol1 = klf_right!(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-                                               withQ = withQ, withZ = withZ, fast = fast)
+      νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+                                          withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
           return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ
       end
 
-      # Reduce Mli-λNli to the KLF exhibiting the infinite and left structures and update M1 - λ N1 to
+      # Reduce Mli-λNli to a KLF exhibiting the infinite and left structures and update M1 - λ N1 to
       #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
       #     M2 -  λ N2 = [    0       | Mf -  λ Nf |     *      |    *       ]
       #                  [    0       |    0       | Mi -  λ Ni |    *       ]
@@ -276,18 +288,18 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
                                     withQ = withQ, withZ = withZ, fast = fast)
    else
 
-      # Reduce M-λN to the KLF exhibiting the left and finite structures
+      # Reduce M-λN to a KLF exhibiting the left and finite structures
       #                  [ Mri - λ Nri  |   *        |     *      ]
       #      M1 - λ N1 = [     0        | Mf -  λ Nf |     *      ]
       #                  [     0        |    0       | Ml -  λ Nl ]
 
-      Q, Z, ν, μ, nf, νl, μl, tol1 = klf_left!(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-                                               withQ = withQ, withZ = withZ, fast = fast)
+      ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+                                         withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
          return  M, N, Q, Z, ν, μ, ν[1:0], nf, νl, μl
       end
 
-      # Reduce Mri-λNri to the KLF exhibiting the right and infinite structures and update M1 - λ N1 to
+      # Reduce Mri-λNri to a KLF exhibiting the right and infinite structures and update M1 - λ N1 to
       #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
       #     M2 -  λ N2 = [    0       | Mi -  λ Ni |     *      |    *       ]
       #                  [    0       |    0       | Mf -  λ Nf |    *       ]
@@ -297,7 +309,7 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       M1 = view(M,iM11,:)
       N1 = view(N,iM11,:)
       νr, μr, νi = klf_right_refine!(ν, μ, M1, N1, Q, Z, tol1, ctrail = nM-sum(μ),   
-                                          withQ = withQ, withZ = withZ, fast = fast)
+                                     withQ = withQ, withZ = withZ, fast = fast)
    end
    return  M, N, Q, Z, νr, μr, νi, nf, νl, μl                                             
 end
@@ -321,7 +333,7 @@ The full row rank pencil `Mr-λNr`, in a staircase form, contains the right Kron
 where `Er` is upper triangular and nonsingular. 
 The `nr`-dimensional vectors `νr` and `μr` contain the row and, respectively, column dimensions of the blocks
 of the staircase form  `Mr-λNr` such that `i`-th block has dimensions `νr[i] x μr[i]` and 
-has full row rank. The difference `μr[i]-νr[i]` for `i = 1, 2, ..., nb` is the number of elementary Kronecker blocks
+has full row rank. The difference `μr[i]-νr[i]` for `i = 1, 2, ..., nr` is the number of elementary Kronecker blocks
 of size `(i-1) x i`.
 
 The `nf x nf` pencil `Mf-λNf` is regular and contains the finite elementary divisors of `M-λN`. 
@@ -349,8 +361,10 @@ Note: If the pencil `M - λN` has full row rank, then the regular pencil `Mli-λ
 square upper triangular diagonal blocks (i.e.,`μ[j] = ν[j]`), and the difference `ν[nb-j+1]-ν[nb-j]` for 
 `j = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `j` (with `ν[0] = 0`).
 """
-function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), withQ::Bool = true, withZ::Bool = true)
+function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
+                   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
+                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
+                   withQ::Bool = true, withZ::Bool = true)
    
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
@@ -361,67 +375,17 @@ function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
 
+   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
+   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
+
    # Step 0: Reduce to the standard form
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast) 
-   
-   maxmn = max(mM,nM)
-   μr = Vector{Int}(undef,maxmn)
-   νr = Vector{Int}(undef,maxmn)
-   μ = Vector{Int}(undef,maxmn)
-   ν = Vector{Int}(undef,maxmn)
-   nf = 0
-     
-   # fast returns for null dimensions
-   if mM == 0 && nM == 0
-      return M, N, Q, Z, νr, μr, nf, ν, μ
-   elseif mM == 0
-      νr[1] = 0
-      μr[1] = nM
-      return M, N, Q, Z, νr[1:1], μr[1:1], nf, ν[1:0], μ[1:0]
-   elseif nM == 0
-      ν[1] = mM
-      μ[1] = 0
-      return M, N, Q, Z, νr[1:0], μr[1:0], nf, ν[1:1], μ[1:1]
-   end
-   
-   mrinf = 0
-   nrinf = 0
-   rtrail = 0
-   ctrail = 0
-   j = 0
-   tol1 = max(atol1, rtol*opnorm(M,1))
-   
-   while p > 0
-      # Step 1 & 2: Dual algorithm PREDUCE
-      τ, ρ  = _preduce2!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
-      j += 1
-      ν[j] = p
-      μ[j] = ρ+τ
-      ctrail += ρ+τ
-      rtrail += p
-      n -= ρ
-      p = ρ
-      m -= τ 
-   end
-   i = 0
-   if m > 0
-      imM11 = 1:mM-rtrail
-      M11 = view(M,imM11,1:nM)
-      N11 = view(N,imM11,1:nM)
-   end
-   while m > 0
-      # Step 3: Particular case of the standard algorithm PREDUCE
-      ρ = _preduce3!(n, m, M11, N11, Q, Z, tol1, fast = fast, coff = nrinf, roff = mrinf, ctrail = ctrail,  withQ = withQ, withZ = withZ)
-      i += 1
-      νr[i] = ρ
-      μr[i] = m
-      mrinf += ρ
-      nrinf += m
-      n -= ρ
-      m = ρ
-   end
-   
-   return M, N, Q, Z, νr[1:i], μr[1:i], n, reverse(ν[1:j]), reverse(μ[1:j])
+   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast,withQ = withQ, withZ = withZ) 
+
+   νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+                                       withQ = withQ, withZ = withZ, fast = fast)
+
+   return M, N, Q, Z, νr, μr, nf, ν, μ
+
 end
 """
     klf_left(M, N; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, nf, νl, μl)
@@ -476,9 +440,11 @@ Note: If the pencil `M - λN` has full column rank, then the regular pencil `Mri
 square upper triangular diagonal blocks (i.e.,`μ[i] = ν[i]`), and the difference `ν[i+1]-ν[i]` for `i = 1, 2, ..., nb` 
 is the number of infinite elementary divisors of degree `i` (with `ν[nb+1] = 0`).
 """
-function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), withQ::Bool = true, withZ::Bool = true)
-
+function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
+                  atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
+                  rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
+                  withQ::Bool = true, withZ::Bool = true)
+  
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    isa(M,Adjoint) && (M = copy(M))
@@ -488,65 +454,16 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, atol1
    eltype(M) == T || (M = convert(Matrix{T},M))
    eltype(N) == T || (N = convert(Matrix{T},N))
 
+   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
+   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
+
    # Step 0: Reduce to the standard form
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast) 
+   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast,withQ = withQ, withZ = withZ) 
 
-   maxmn = max(mM,nM)
-   μ = Vector{Int}(undef,maxmn)
-   ν = Vector{Int}(undef,maxmn)
-   μl = Vector{Int}(undef,maxmn)
-   νl = Vector{Int}(undef,maxmn)
-   nf = 0
+   ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+                                      withQ = withQ, withZ = withZ, fast = fast)
 
-   # fast returns for null dimensions
-   if mM == 0 && nM == 0
-      return M, N, Q, Z, ν, μ, nf, νl, μl
-   elseif mM == 0
-      ν[1] = 0
-      μ[1] = nM
-      return M, N, Q, Z, ν[1:1], μ[1:1], nf, νl[1:0], μl[1:0]
-   elseif nM == 0
-      νl[1] = mM
-      μl[1] = 0
-      return M, N, Q, Z, ν[1:0], μ[1:0], nf, νl[1:1], μl[1:1]
-   end
- 
-   mrinf = 0
-   nrinf = 0
-   i = 0
-   tol1 = max(atol1, rtol*opnorm(M,1))
-
-   while m > 0
-      # Steps 1 & 2: Standard algorithm PREDUCE
-      τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = mrinf, coff = nrinf, withQ = withQ, withZ = withZ)
-      i += 1
-      ν[i] = ρ+τ
-      μ[i] = m
-      mrinf += ρ+τ
-      nrinf += m
-      n -= ρ
-      m = ρ
-      p -= τ 
-   end
-   rtrail = 0
-   ctrail = 0
-   j = 0
-   nf = nM - nrinf
-   p = mM - mrinf - nf
-   while p > 0
-      # Step 3: Particular case of the dual PREDUCE algorithm 
-      ρ = _preduce4!(nf, m, p, M, N, Q, Z, tol1, fast = fast, roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, 
-                     withQ = withQ, withZ = withZ) 
-      j += 1
-      νl[j] = p
-      μl[j] = ρ
-      rtrail += p
-      ctrail += ρ
-      nf -= ρ
-      p = ρ
-   end
- 
-   return M, N, Q, Z, ν[1:i], μ[1:i], nf, reverse(νl[1:j]), reverse(μl[1:j])
+   return M, N, Q, Z, ν, μ, nf, νl, μl
 end
 """
     klf_right!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, νr, μr, nf, ν, μ, tol)
@@ -558,7 +475,7 @@ Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant su
               [   0         0        *  ] rtrail
                 coff        n     ctrail
   
-to an equivalent form `F - λG = Q'(M - λN)Z` using orthogonal or unitary transformation matrices `Q` and `Z` 
+to an equivalent form `F - λG = Q1'*(M - λN)*Z1` using orthogonal or unitary transformation matrices `Q1` and `Z1` 
 such that the subpencil `M22 - λN22` is transformed into the following Kronecker-like form exhibiting 
 its right and finite Kronecker structures:
 
@@ -599,24 +516,26 @@ for the nonzero elements of `M` and `N`. The internally employed absolute tolera
 nonzero elements of `M` is returned in `tol`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
-The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
-Otherwise, `Q` is not modified.   
-The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
-Otherwise, `Z` is not modified.   
-
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` (i.e., `Q <- Q*Q1`) 
+if `withQ = true`. Otherwise, `Q` is not modified.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` (i.e., `Z <- Z*Z1`) 
+if `withZ = true`. Otherwise, `Z` is not modified.   
+ 
 Note: If the subpencil `M22 - λN22` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
 square upper triangular diagonal blocks (i.e.,`μ[i] = ν[i]`), and the difference `ν[nb-i+1]-ν[nb-i]` for 
 `i = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` (with `ν[0] = 0`).
 """
-function klf_right!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
-                   roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+function klf_right!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}; 
+                    fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
+                    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
+                    roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    (!isa(M,Adjoint) && !isa(N,Adjoint)) || error("No adjoint inputs are supported")
 
    # Step 0: Reduce M22-λN22 to the standard form
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withQ) 
+   #n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withQ) 
    
    maxmn = max(mM,nM)
    μr = Vector{Int}(undef,maxmn)
@@ -628,15 +547,15 @@ function klf_right!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = t
  
    # fast returns for null dimensions
    if mM == 0 && nM == 0
-      return Q, Z, νr, μr, nf, ν, μ, tol1
+      return νr, μr, nf, ν, μ, tol1
    elseif mM == 0
       νr[1] = 0
       μr[1] = nM
-      return Q, Z, νr[1:1], μr[1:1], nf, ν[1:0], μ[1:0], tol1
+      return νr[1:1], μr[1:1], nf, ν[1:0], μ[1:0], tol1
    elseif nM == 0
       ν[1] = mM
       μ[1] = 0
-      return Q, Z, νr[1:0], μr[1:0], nf, ν[1:1], μ[1:1], tol1
+      return νr[1:0], μr[1:0], nf, ν[1:1], μ[1:1], tol1
    end
 
    j = 0
@@ -672,7 +591,7 @@ function klf_right!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = t
       m = ρ
    end
 
-   return Q, Z, νr[1:i], μr[1:i], n, reverse(ν[1:j]), reverse(μ[1:j]), tol1
+   return νr[1:i], μr[1:i], n, reverse(ν[1:j]), reverse(μ[1:j]), tol1
 end
 """
 
@@ -685,7 +604,7 @@ Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant su
              [   0         0        *  ] rtrail
                coff      nri     ctrail
 
-to an equivalent form `F - λG = Q'(M - λN)Z` using orthogonal or unitary transformation matrices `Q` and `Z` 
+to an equivalent form `F - λG = Q1'*(M - λN)*Z1` using orthogonal or unitary transformation matrices `Q1` and `Z1` 
 such that the full row rank subpencil `Mri-λNri`is transformed into the 
 following Kronecker-like form  exhibiting its right and infinite Kronecker structures:
 
@@ -717,10 +636,10 @@ divisors of degree `i` (with `νi[0] = 0` and `μ[nb+1] = 0`).
 
 `F` and `G` are returned in `M` and `N`, respectively.  
 
-The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true` or  
-`Q` is unchanged if `withQ = false` .  
-The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true` or  
-`Z` is unchanged if `withZ = false` .  
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` (i.e., `Q <- Q*Q1`) 
+if `withQ = true`. Otherwise, `Q` is not modified.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` (i.e., `Z <- Z*Z1`) 
+if `withZ = true`. Otherwise, `Z` is not modified.   
 """
 function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Q::Union{AbstractMatrix{T1},Nothing},
    Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
@@ -808,7 +727,7 @@ Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant su
               [   0         0        *  ] rtrail
                 coff        n     ctrail
   
-to an equivalent form `F - λG = Q'(M - λN)Z` using orthogonal or unitary transformation matrices `Q` and `Z` 
+to an equivalent form `F - λG = Q1'*(M - λN)*Z1` using orthogonal or unitary transformation matrices `Q1` and `Z1` 
 such that the subpencil `M22 - λN22`  is transformed into the following Kronecker-like form exhibiting 
 its finite and left Kronecker structures
  
@@ -850,24 +769,23 @@ for the nonzero elements of `M` and `N`. The internally employed absolute tolera
 nonzero elements of `M` is returned in `tol`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
-The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
-Otherwise, `Q` is not modified.   
-The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
-Otherwise, `Z` is not modified.  
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` (i.e., `Q <- Q*Q1`) 
+if `withQ = true`. Otherwise, `Q` is not modified.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` (i.e., `Z <- Z*Z1`) 
+if `withZ = true`. Otherwise, `Z` is not modified.   
 
 Note: If the pencil `M22 - λN22` has full column rank, then the regular pencil `Mri-λNri` is in a staircase form with
 square diagonal blocks (i.e.,`μ[i] = ν[i]`), and the difference `ν[i]-ν[i+1]` for `i = 1, 2, ..., nb` 
 is the number of infinite elementary divisors of degree `i` (with `ν[nb+1] = 0`).
 """
-function klf_left!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
-   roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+function klf_left!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
+                   Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}; 
+                   fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
+                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
+                   roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    (!isa(M,Adjoint) && !isa(N,Adjoint)) || error("No adjoint inputs are supported")
-
-   # Step 0: Reduce M22-λN22 to the standard form
-   Q, Z, n, m, p = _preduceBF!(M, N; atol = atol2, rtol = rtol, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withQ) 
 
    maxmn = max(mM,nM)
    μ = Vector{Int}(undef,maxmn)
@@ -877,18 +795,17 @@ function klf_left!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = tr
    nf = 0
    tol = atol1
 
-
    # fast returns for null dimensions
    if mM == 0 && nM == 0
-      return Q, Z, ν, μ, nf, νl, μl, tol
+      return ν, μ, nf, νl, μl, tol
    elseif mM == 0
       ν[1] = 0
       μ[1] = nM
-      return Q, Z, ν[1:1], μ[1:1], nf, νl[1:0], μl[1:0], tol
+      return ν[1:1], μ[1:1], nf, νl[1:0], μl[1:0], tol
    elseif nM == 0
       νl[1] = mM
       μl[1] = 0
-      return Q, Z, ν[1:0], μ[1:0], nf, νl[1:1], μl[1:1], tol
+      return ν[1:0], μ[1:0], nf, νl[1:1], μl[1:1], tol
    end
 
    mrinf = 0
@@ -922,7 +839,7 @@ function klf_left!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}; fast::Bool = tr
       p = ρ
    end
  
-   return Q, Z, ν[1:i], μ[1:i], n, reverse(νl[1:j]), reverse(μl[1:j]), tol1
+   return ν[1:i], μ[1:i], n, reverse(νl[1:j]), reverse(μl[1:j]), tol1
 end
 """
     klf_left_refine!(ν, μ, M, N, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (νi, νl, μl)
@@ -934,7 +851,7 @@ Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant su
              [   0         0        *  ] rtrail
                coff      nli     ctrail
 
-to an equivalent form `F - λG = Q'(M - λN)Z` using orthogonal or unitary transformation matrices `Q` and `Z` 
+to an equivalent form `F - λG = Q1'*(M - λN)*Z1` using orthogonal or unitary transformation matrices `Q1` and `Z1` 
 such that the full column rank subpencil `Mli-λNli`is transformed into the 
 following Kronecker-like form  exhibiting its infinite and left Kronecker structures:
 
@@ -975,10 +892,10 @@ Kronecker blocks of size `j x (j-1)`.
 
 `F` and `G` are returned in `M` and `N`, respectively.  
 
-The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true` or  
-`Q` is unchanged if `withQ = false` .  
-The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true` or  
-`Z` is unchanged if `withZ = false` .  
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` (i.e., `Q <- Q*Q1`) 
+if `withQ = true`. Otherwise, `Q` is not modified.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` (i.e., `Z <- Z*Z1`) 
+if `withZ = true`. Otherwise, `Z` is not modified.   
 """
 function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Q::Union{AbstractMatrix{T1},Nothing},
    Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
