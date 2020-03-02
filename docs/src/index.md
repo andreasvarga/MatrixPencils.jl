@@ -58,7 +58,7 @@ The collection of tools will be extended by adding new functionality, such as to
 
 ### Version 0.2.0
 
-This release include a new tool for finite-infinite eigenvalue splitting of a regular pencil and substantial improvements of the modularization and interfaces of implemented basic pencil operations. 
+This release include a new tool for finite-infinite eigenvalue splitting of a regular pencil and substantial improvements of the modularization and interfaces of implemented basic pencil operations.
 
 ### Version 0.1.0
 

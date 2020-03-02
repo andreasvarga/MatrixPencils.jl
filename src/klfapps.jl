@@ -1,13 +1,15 @@
 """
     pzeros(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
 
-Return the (finite and infinite) Smith zeros of the linear pencil `M-λN` in `val`, information on the multiplicities of infinite zeros in `iz` and  the 
+Return the (finite and infinite) Smith zeros of the linear pencil `M-λN` in `val`, the multiplicities of infinite zeros in `iz` and  the 
 information on the complete Kronecker-structure in the `KRInfo` object. 
 
-The information on the multiplicities of infinite zeros is provided in the vector `iz`, whose `i`-th component `iz[i]` is the number of infinite zeros of multiplicity `i`. 
-Note that the multiplicities of infinite eigenvalues are in excess with one with respect to the multiplicities of infinite zeros. 
+The information on the multiplicities of infinite zeros is provided in the vector `iz`, 
+where each `i`-th element `iz[i]` is equal to `k-1`, where `k` is the order of an infinite elementary divisor with `k > 0`.
+The number of infinite zeros contained in `val` is the sum of the components of `iz`. 
 
-The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
+The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, 
+infinite elementary divisors `id` and the
 number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
 and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
 
@@ -104,8 +106,8 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),niz) ], deltrz(id[2:i]), 
-          KRInfo(deltrz(rki[1:i]), deltrz(lki[1:j]), deltrz(id[1:i]), n)
+   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),niz) ], minf(id[2:i]), 
+           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
     peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, KRInfo)
@@ -207,7 +209,7 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
    return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ], 
-          KRInfo(deltrz(rki[1:i]), deltrz(lki[1:j]), deltrz(id[1:i]), n)
+          KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
     KRInfo
@@ -216,14 +218,14 @@ Kronecker-structure object definition.
 
 If `info::KRInfo` is the Kronecker-structure object, then:
 
-`info.rki` is a vector which specifies the right Kronecker structure: there are `info.rki[i]` 
-elementary Kronecker blocks of size `(i-1) x i`;
+`info.rki` is a vector, whose components contains the column dimensions of  
+elementary Kronecker blocks of the form `(k-1) x k`;
 
-`info.lki` is a vector which specifies the left Kronecker structure: there are `info.lki[i]` 
-elementary Kronecker blocks of size `i x (i-1)`;
+`info.lki` is a vector, whose components contains the row dimensions of  
+elementary Kronecker blocks of the form `k x (k-1)`;
 
-`info.id` is a vector which specifies the infinite elementary divisors: there are `info.id[i]` 
-infinite elementary divisors of degree `i`; 
+`info.id` is a vector, whose components contains the orders of the infinite elementary divisors (i.e., the
+multiplicities of infinite eigenvalues). 
 
 `info.nf` is the number of finite eigenvalues.
 
@@ -255,22 +257,23 @@ number of finite eigenvalues `nf` can be obtained from `KRInfo` as `KRInfo.rki`,
 and `KRInfo.nf`, respectively.  
 The determination of the Kronecker-structure information is performed by reducing the pencil `M-λN` to an 
 appropriate Kronecker-like form (KLF) exhibiting all structural elements of the pencil `M-λN`.
-The reduction is performed using orthonal similarity transformations and involves rank decisions based 
+The reduction is performed using orthogonal similarity transformations and involves rank decisions based 
 on rank reevealing QR-decompositions with column pivoting, if `fast = true`, or, the more reliable, 
 SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations. 
 
-The right Kronecker indices are provided in the integer vector `rki`, whose `i`-th element `rki[i]` is 
-the number of elementary Kronecker blocks of size `(i-1) x i`. The sum of elements of `rki` is the dimension of 
-the right nullspace of the pencil `M-λN`. 
+The right Kronecker indices are provided in the integer vector `rki`, where each `i`-th element `rki[i]` is 
+the column dimension `k` of an elementary Kronecker block of size `(k-1) x k`. 
+The number of elements of `rki` is the dimension of 
+the right nullspace of the pencil `M-λN` and their sum is the least degree of a right polynomial nullspace basis. 
 
-The left Kronecker indices are provided in the integer vector `lki`, whose `i`-th element `lki[i]` is 
-the number of elementary Kronecker blocks of size `i x (i-1)`. The sum of elements of `lki` is the dimension of 
-the left nullspace of the pencil `M-λN`. 
+The left Kronecker indices are provided in the integer vector `lki`, where each `i`-th element `lki[i]` is 
+the row dimension `k` of an elementary Kronecker block of size `k x (k-1)`. 
+The number of elements of `lki` is the dimension of 
+the left nullspace of the pencil `M-λN` and their sum is the least degree of a left polynomial nullspace basis. 
 
-The infinite elementary divisors are provided in the integer vector `id`, whose `i`-th element `id[i]` is the number of
-infinite elementary divisors of degree `i`. The sum `Sum_i(id[i]*i)` is the number of infinite eigenvalues of 
-the pencil `M-λN`. 
+The multiplicities of infinite eigenvalues are provided in the integer vector `id`, where each `i`-th element `id[i]` is
+the order of an infinite elementary divisor (i.e., the multiplicity of an infinite eigenvalue). 
 
 The keyword arguements `atol1`, `atol2`  and `rtol` specify the absolute tolerance for the nonzero
 elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the relative tolerance for the nonzero elements of `M` and `N`, respectively. 
@@ -368,12 +371,44 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
       n -= ρ
       p = ρ
    end
-   return KRInfo(deltrz(rki[1:i]), deltrz(lki[1:j]), deltrz(id[1:i]), n)
+   #return KRInfo(deltrz(rki[1:i]), deltrz(lki[1:j]), deltrz(id[1:i]), n)
+   return KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 function deltrz(ind)
    k = findlast(!iszero,ind)
    k === nothing ? (return ind[1:0]) : (return ind[1:k]) 
 end
+function kroni(ind)
+   k = findlast(!iszero,ind)
+   k === nothing && (return ind[1:0]) 
+   ni = sum(ind[1:k])
+   ki = similar(ind,ni)
+   ii = 0
+   for i = 1:k
+       iip = ii+ind[i]
+       for j = ii+1:iip
+         ki[j] = i-1
+       end
+       ii = iip 
+   end
+   return ki 
+end
+function minf(ind)
+   k = findlast(!iszero,ind)
+   k === nothing && (return ind[1:0]) 
+   ni = sum(ind[1:k])
+   mi = similar(ind,ni)
+   ii = 0
+   for i = 1:k
+       iip = ii+ind[i]
+       for j = ii+1:iip
+         mi[j] = i
+       end
+       ii = iip 
+   end
+   return mi 
+end
+
 """
     prank(M::AbstractMatrix, N::AbstractMatrix; fast = true, atol1::Real=0, atol2::Real=0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ)
 

@@ -15,7 +15,8 @@ using Random
 export klf, klf_left, klf_right, klf_rlsplit
 export prank, pkstruct, peigvals, pzeros, KRInfo
 export isregular, fisplit
-#export sklf_right!, sklf_left! 
+#export sreduceBF, sklf_right!, sklf_left! 
+#export sprank, spkstruct, speigvals, spzeros
 #export dss, ss, gnrank, gzero, gpole
 #export LTISystem, AbstractDescriptorStateSpace
 #export _preduceBF!, _preduce1!, _preduce2!, _preduce3!, _preduce4!
@@ -26,6 +27,7 @@ include("klftools.jl")
 include("regtools.jl")
 include("klfapps.jl")
 #include("sklftools.jl")
+#include("sklfapps.jl")
 #include("dstools.jl")
 include("lputil.jl")
 #include("slputil.jl")

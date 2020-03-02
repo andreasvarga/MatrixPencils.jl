@@ -390,11 +390,11 @@ Reduce the structured pencil
 
 with `E` upper triangular and nonsingular to the following form `M1 - λN1 = Q1'*(M - λN)*Z1` with
 
-        [ *  *   *   *     *  ] roff        [ *  *  *   *     *  ] roff
-   M1 = [ 0  B1  A11 A12   *  ] ρ      N1 = [ 0  0  E11 E12   *  ] ρ
-        [ 0  0   A21 A22   *  ] n-ρ         [ 0  0  0   E22   *  ] n-ρ
-        [ 0  *   *   *     *  ] rtrail      [ 0  *  *   *     *  ] rtrail
-        coff m   ρ   n-ρ ctrail             coff m  ρ   n-ρ ctrail
+         [ *  *   *   *     *  ] roff        [ *  *  *   *     *  ] roff
+    M1 = [ 0  B1  A11 A12   *  ] ρ      N1 = [ 0  0  E11 E12   *  ] ρ
+         [ 0  0   A21 A22   *  ] n-ρ         [ 0  0  0   E22   *  ] n-ρ
+         [ 0  *   *   *     *  ] rtrail      [ 0  *  *   *     *  ] rtrail
+         coff m   ρ   n-ρ ctrail             coff m  ρ   n-ρ ctrail
 
 where `B1` has full row rank `ρ` and `E11` and `E22` are upper triangular and nonsingular. 
 The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
@@ -544,12 +544,12 @@ Reduce the structured pencil
 
 with `E` upper triangular and nonsingular to the following form `M1 - λN1 = Q1'*(M - λN)*Z1` with
 
-   M1 = [ *  *   *   *    * ] roff         N1 = [ *  *  *   *    * ] roff
-        [ 0  B1  A11 A12  * ]  n-ρ              [ 0  0  E11 E12  * ]  n-ρ
-        [ 0  B2  A21 A22  * ]  ρ                [ 0  0  0   E22  * ]  ρ
-        [ 0  0   0   C1   * ]  p                [ 0  0  0   0    * ]  p
-        [ 0  *   *   *    * ] rtrail            [ 0  *  *   *    * ] rtrail
-        coff m  n-ρ  ρ ctrail                   coff m n-ρ  ρ ctrail   
+    M1 = [ *  *   *   *    * ] roff         N1 = [ *  *  *   *    * ] roff
+         [ 0  B1  A11 A12  * ]  n-ρ              [ 0  0  E11 E12  * ]  n-ρ
+         [ 0  B2  A21 A22  * ]  ρ                [ 0  0  0   E22  * ]  ρ
+         [ 0  0   0   C1   * ]  p                [ 0  0  0   0    * ]  p
+         [ 0  *   *   *    * ] rtrail            [ 0  *  *   *    * ] rtrail
+         coff m  n-ρ  ρ ctrail                   coff m n-ρ  ρ ctrail   
 
 where `C1` has full column rank and `E11` and `E22` are upper triangular and nonsingular. 
 The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
