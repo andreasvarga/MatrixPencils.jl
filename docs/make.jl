@@ -10,7 +10,9 @@ makedocs(
      "Home"   => "index.md",
      "Library" => [
         "klftools.md",
+        "sklftools.md",
         "klfapps.md",
+        "sklfapps.md",
         "pregular.md"
      ],
      "Internal" => [

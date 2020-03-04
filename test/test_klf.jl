@@ -771,7 +771,7 @@ M = copy(M2); N = copy(N2);
 @time M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl  = klf(M, N, fast = fast, finite_infinite = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
-      νr == [2, 1, 0] && μr == [4, 2, 1] && νi == [1, 2] && νl == [1, 1, 1, 2] && μl == [0, 1, 1, 1] && nf == 3
+      νr == [2, 1, 0] && μr == [4, 2, 1] && νi == [2, 1] && νl == [1, 1, 1, 2] && μl == [0, 1, 1, 1] && nf == 3
 
 
 M = copy(M2'); N = copy(N2'); 
@@ -784,7 +784,7 @@ M = copy(M2'); N = copy(N2');
 @time M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = klf(M, N, fast = fast, finite_infinite = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2'*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2'*Z1-N1) < sqrt(eps(1.)) &&
-      νr == [1, 1, 1, 0] && μr == [2, 1, 1, 1] && νi == [1, 2] && νl == [1, 2, 4] && μl == [0, 1, 2] && nf == 3
+      νr == [1, 1, 1, 0] && μr == [2, 1, 1, 1] && νi == [2, 1] && νl == [1, 2, 4] && μl == [0, 1, 2] && nf == 3
 
 
 # intermediary computation

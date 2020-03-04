@@ -216,7 +216,10 @@ where: (1) `Mi-λNi`, in staircase form, contains the infinite elementary diviso
 (2) `Mf-λNf` contains the infinite elementary divisors of `M-λN` and 
 `Nf` is upper triangular and nonsingular.
 The `ni`-dimensional vector `νi` contains the dimensions of the square blocks of the staircase form  `Mi-λNi` 
-such that the `i`-th block has dimensions `νi[i] x νi[i]`. The difference `νi[i]-νi[i-1]` for `i = 1, 2, ..., ni` 
+such that the `i`-th block has dimensions `νi[i] x νi[i]`. 
+If `finite_infinite = true`, the difference `νi[i]-νi[i+1]` for `i = 1, 2, ..., ni` 
+is the number of infinite elementary divisors of degree `i` (with `νi[ni] = 0`).
+If `finite_infinite = false`, the difference `νi[ni-i+1]-νi[ni-i]` for `i = 1, 2, ..., ni` 
 is the number of infinite elementary divisors of degree `i` (with `νi[0] = 0`).
 
 The full column rank pencil `Ml-λNl`, in a staircase form, contains the left Kronecker indices of `M-λN` and has the form
@@ -266,7 +269,7 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       #      M1 - λ N1 = [    0       | Mf -  λ Nf |     *        ]
       #                  [    0       |    0       | Mli -  λ Nli ]
       
-      νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+      νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                           withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
           return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ
@@ -293,7 +296,7 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       #      M1 - λ N1 = [     0        | Mf -  λ Nf |     *      ]
       #                  [     0        |    0       | Ml -  λ Nl ]
 
-      ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+      ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                          withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
          return  M, N, Q, Z, ν, μ, ν[1:0], nf, νl, μl
@@ -381,7 +384,7 @@ function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    # Step 0: Reduce to the standard form
    n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast,withQ = withQ, withZ = withZ) 
 
-   νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+   νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                        withQ = withQ, withZ = withZ, fast = fast)
 
    return M, N, Q, Z, νr, μr, nf, ν, μ
@@ -460,13 +463,13 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    # Step 0: Reduce to the standard form
    n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast,withQ = withQ, withZ = withZ) 
 
-   ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol1 = atol1, atol2 = atol2, rtol = rtol,  
+   ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                       withQ = withQ, withZ = withZ, fast = fast)
 
    return M, N, Q, Z, ν, μ, nf, νl, μl
 end
 """
-    klf_right!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, νr, μr, nf, ν, μ, tol)
+    klf_right!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol = 0, rtol, withQ = true, withZ = true) -> (Q, Z, νr, μr, nf, ν, μ, tol)
 
 Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
 
@@ -510,9 +513,8 @@ The difference `ν[nb-i+1]-μ[nb-i+1]` for `i = 1, 2, ..., nb` is the number of 
 `i x (i-1)`. The difference `μ[nb-i+1]-ν[nb-i]` for `i = 1, 2, ..., nb` is the number of infinite elementary 
 divisors of degree `i` (with `ν[0] = 0`).
 
-The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
-nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,  and the relative tolerance 
-for the nonzero elements of `M` and `N`. The internally employed absolute tolerance  for the 
+The keyword arguments `atol` and `rtol`, specify the absolute and relative tolerances for the 
+nonzero elements of `M`, respectively. The internally employed absolute tolerance  for the 
 nonzero elements of `M` is returned in `tol`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
@@ -527,8 +529,8 @@ square upper triangular diagonal blocks (i.e.,`μ[i] = ν[i]`), and the differen
 """
 function klf_right!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
                     Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}; 
-                    fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-                    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
+                    fast::Bool = true, atol::Real = zero(real(eltype(M))), 
+                    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
                     roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
@@ -543,27 +545,29 @@ function klf_right!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMa
    μ = Vector{Int}(undef,maxmn)
    ν = Vector{Int}(undef,maxmn)
    nf = 0
-   tol1 = atol1
+   tol = atol
  
    # fast returns for null dimensions
    if mM == 0 && nM == 0
-      return νr, μr, nf, ν, μ, tol1
+      return νr, μr, nf, ν, μ, tol
    elseif mM == 0
       νr[1] = 0
       μr[1] = nM
-      return νr[1:1], μr[1:1], nf, ν[1:0], μ[1:0], tol1
+      return νr[1:1], μr[1:1], nf, ν[1:0], μ[1:0], tol
    elseif nM == 0
       ν[1] = mM
       μ[1] = 0
-      return νr[1:0], μr[1:0], nf, ν[1:1], μ[1:1], tol1
+      return νr[1:0], μr[1:0], nf, ν[1:1], μ[1:1], tol
    end
 
    j = 0
-   tol1 = max(atol1, rtol*opnorm(M,1))
+   tol = max(atol, rtol*opnorm(M,1))
    
    while p > 0
       # Steps 1 & 2: Dual algorithm PREDUCE
-      τ, ρ = _preduce2!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
+      τ, ρ = _preduce2!(n, m, p, M, N, Q, Z, tol; 
+                        fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
+                        withQ = withQ, withZ = withZ)
       j += 1
       ν[j] = p
       μ[j] = ρ+τ
@@ -581,7 +585,8 @@ function klf_right!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMa
    end
    while m > 0
       # Step 3: Particular case of the standard algorithm PREDUCE
-      ρ = _preduce3!(n, m, M11, N11, Q, Z, tol1, fast = fast, coff = coff, roff = roff, ctrail = ctrail,  withQ = withQ, withZ = withZ)
+      ρ = _preduce3!(n, m, M11, N11, Q, Z, tol, 
+                     fast = fast, coff = coff, roff = roff, ctrail = ctrail,  withQ = withQ, withZ = withZ)
       i += 1
       νr[i] = ρ
       μr[i] = m
@@ -591,11 +596,11 @@ function klf_right!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMa
       m = ρ
    end
 
-   return νr[1:i], μr[1:i], n, reverse(ν[1:j]), reverse(μ[1:j]), tol1
+   return νr[1:i], μr[1:i], n, reverse(ν[1:j]), reverse(μ[1:j]), tol
 end
 """
 
-     klf_right_refine!(ν, μ, M, N, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (νr, μr, νi)
+     klf_right_refine!(ν, μ, M, N, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) -> (νr, μr, νi)
 
 Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
 
@@ -686,7 +691,9 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
 
       # Reduce Mri-λNri to [ Mr1-λNr1 * ; 0 Mi-λNi], where Mr1-λNr1 contains the right Kronecker structure and the empty
       # finite part and Mi-λNi contains the infinite elementary divisors and the empty left Kronecker structure.
-      τ, ρ = _preduce2!(n,m,p,M,N,Q,Z,tol; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
+      τ, ρ = _preduce2!(n, m, p, M, N, Q, Z, tol; 
+                        fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
+                        withQ = withQ, withZ = withZ)
       ρ+τ == p || error("The reduced pencil must not have left structure: try to adjust the tolerances")
       j += 1
       νi[j] = p
@@ -705,7 +712,8 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
    end
    while m > 0
       # Step 3: Particular form of the standard algorithm PREDUCE to reduce Mr1-λNr1 to Mr-λNr in  staircase form. 
-      ρ = _preduce3!(n, m, M11, N11, Q, Z, tol, fast = fast, coff = coff, roff = roff, ctrail = ctrail, withQ = withQ, withZ = withZ)
+      ρ = _preduce3!(n, m, M11, N11, Q, Z, tol, fast = fast, 
+                     coff = coff, roff = roff, ctrail = ctrail, withQ = withQ, withZ = withZ)
       i += 1
       νr[i] = ρ
       μr[i] = m
@@ -718,7 +726,7 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
    return νr[1:i], μr[1:i], reverse(νi[1:j])
 end
 """
-    klf_left!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, ν, μ, nf, νl, μl, tol)
+    klf_left!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol = 0, rtol, withQ = true, withZ = true) -> (Q, Z, ν, μ, nf, νl, μl, tol)
 
 Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
 
@@ -763,9 +771,8 @@ of the staircase form  `Ml-λNl` such that `j`-th block has dimensions `νl[nl-j
 The difference `νl[nl-j+1]-μl[nl-j+1]` for `j = 1, 2, ..., nl` is the number of elementary Kronecker blocks of size 
 `j x (j-1)`.
 
-The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
-nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,  and the relative tolerance 
-for the nonzero elements of `M` and `N`. The internally employed absolute tolerance  for the 
+The keyword arguments `atol` and `rtol`, specify the absolute and relative tolerances for the 
+nonzero elements of `M`, respectively. The internally employed absolute tolerance  for the 
 nonzero elements of `M` is returned in `tol`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
@@ -780,8 +787,8 @@ is the number of infinite elementary divisors of degree `i` (with `ν[nb+1] = 0`
 """
 function klf_left!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}; 
-                   fast::Bool = true, atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
+                   fast::Bool = true, atol::Real = zero(real(eltype(M))), 
+                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
                    roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
@@ -793,7 +800,7 @@ function klf_left!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMat
    μl = Vector{Int}(undef,maxmn)
    νl = Vector{Int}(undef,maxmn)
    nf = 0
-   tol = atol1
+   tol = atol
 
    # fast returns for null dimensions
    if mM == 0 && nM == 0
@@ -811,11 +818,13 @@ function klf_left!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMat
    mrinf = 0
    nrinf = 0
    i = 0
-   tol1 = max(atol1, rtol*opnorm(M,1))
+   tol = max(atol, rtol*opnorm(M,1))
 
    while m > 0
       # Steps 1 & 2: Standard algorithm PREDUCE
-      τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol1; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
+      τ, ρ = _preduce1!(n, m, p, M, N, Q, Z, tol; 
+                        fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
+                        withQ = withQ, withZ = withZ)
       i += 1
       ν[i] = ρ+τ
       μ[i] = m
@@ -828,7 +837,8 @@ function klf_left!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMat
    j = 0
    while p > 0
       # Step 3: Particular form of the dual algorithm PREDUCE
-      ρ = _preduce4!(n, 0, p, M, N, Q, Z, tol1, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
+      ρ = _preduce4!(n, 0, p, M, N, Q, Z, tol, 
+                     fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
                      withQ = withQ, withZ = withZ) 
       j += 1
       νl[j] = p
@@ -839,10 +849,10 @@ function klf_left!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMat
       p = ρ
    end
  
-   return ν[1:i], μ[1:i], n, reverse(νl[1:j]), reverse(μl[1:j]), tol1
+   return ν[1:i], μ[1:i], n, reverse(νl[1:j]), reverse(μl[1:j]), tol
 end
 """
-    klf_left_refine!(ν, μ, M, N, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (νi, νl, μl)
+    klf_left_refine!(ν, μ, M, N, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) -> (νi, νl, μl)
 
 Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
 
@@ -935,7 +945,9 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
    i = 0
    while m > 0
       # Steps 1 & 2: Standard algorithm
-      τ, ρ = _preduce1!(n,m,p,M,N,Q,Z,tol; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
+      τ, ρ = _preduce1!(n, m, p, M, N, Q, Z, tol; 
+                        fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
+                        withQ = withQ, withZ = withZ)
       ρ+τ == m || error("The reduced pencil must not have right structure: try to adjust the tolerances")
       i += 1
       νi[i] = m
@@ -948,7 +960,8 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
    j = 0
    while p > 0
       # Step 3: Dual algorithm
-      ρ = _preduce4!(n, 0, p, M, N, Q, Z, tol, fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
+      ρ = _preduce4!(n, 0, p, M, N, Q, Z, tol, fast = fast, 
+                     roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
                      withQ = withQ, withZ = withZ) 
       j += 1
       νl[j] = p
@@ -959,5 +972,5 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
       p = ρ
    end
  
-   return reverse(νi[1:i]), reverse(νl[1:j]), reverse(μl[1:j])
+   return νi[1:i], reverse(νl[1:j]), reverse(μl[1:j])
 end

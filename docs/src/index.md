@@ -20,6 +20,9 @@ KLFs which reveal the full or partial Kronecker structure of a linear pencil. Th
 
 The implemented basic pencil reduction operations are described in [1] and [2], and form the basis of the implemented **PREDUCE** procedure described in [3].  
 
+A set of functions is provided to address pencil manipulation problems for structured linear pencils of the form 
+`M − λN = [A - λE B; C D]`. Linear pencils with this structure frequently arise from the linearization of polynomial or rational matrices.  
+
 The available functions in the `MatrixPencils.jl` package cover both real and complex numerical data.
 The current version of the package includes the following functions:
 
@@ -31,6 +34,15 @@ The current version of the package includes the following functions:
 | **klf_left** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
 | **klf_right** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
 | **klf_rlsplit** | Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures |
+
+**Manipulation of structured linear matrix pencils of the form [A-λE B; C D]**
+
+| Function | Description |
+| :--- | :--- |
+| **sklf** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
+| **sklf_left** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
+| **sklf_right** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
+
 
 **Manipulation of regular linear matrix pencils**
 
@@ -48,21 +60,34 @@ The current version of the package includes the following functions:
 | **peigvals** | Computation of the finite and infinite eigenvalues |
 | **pzeros** | Computation of the finite and infinite (Smith) zeros |
 
+**Some applications to structured linear matrix pencils of the form [A-λE B; C D]**
+
+| Function | Description |
+| :--- | :--- |
+| **spkstruct** | Determination of the complete Kronecker structure |
+| **sprank** | Determination of the normal rank |
+| **speigvals** | Computation of the finite and infinite eigenvalues |
+| **spzeros** | Computation of the finite and infinite (Smith) zeros |
+
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), manipulation of structured linear pencils with application to polynomial and rational matrices, etc.
+The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), manipulation of structured linear pencils arising from the linearization of polynomial and rational matrices (e.g., computation of strong linearizations), etc.
 
 ## Release Notes
 
+### Version 0.3.0
+
+This release includes implementations of several reductions of structured linear pencils to various KLFs and covers some straightforward applications such as the computation of finite and infinite eigenvalues and zeros, the determination of the normal rank, the determination of Kronecker indices and infinite eigenvalue structure.
+
 ### Version 0.2.0
 
-This release include a new tool for finite-infinite eigenvalue splitting of a regular pencil and substantial improvements of the modularization and interfaces of implemented basic pencil operations.
+This release includes a new tool for finite-infinite eigenvalue splitting of a regular pencil and substantial improvements of the modularization and interfaces of implemented basic pencil operations.
 
 ### Version 0.1.0
 
-This is the initial release covering prototype implementations of several pencil reduction algorithms to various KLFs and some straightforward applications such as the computation of finite and infinite eigenvalues or, the determination of the normal rank, Kronecker indices and infinite eigenvalue structure.
+This is the initial release providing prototype implementations of several pencil reduction algorithms to various KLFs and covering some straightforward applications such as the computation of finite and infinite eigenvalues and zeros, the determination of the normal rank, Kronecker indices and infinite eigenvalue structure.
 
 ## Main developer
 

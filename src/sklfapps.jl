@@ -1,15 +1,20 @@
 """
-    pzeros(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
+    spzeros(A, E, B, C, D; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
 
-Return the (finite and infinite) Smith zeros of the linear pencil `M-λN` in `val`, the multiplicities of infinite zeros in `iz` and  the 
+Return the (finite and infinite) Smith zeros of the structured linear pencil `M-λN` 
+
+              | A-λE | B | 
+     M - λN = |------|---|
+              |  C   | D |  
+
+in `val`, information on the multiplicities of infinite zeros in `iz` and  the 
 information on the complete Kronecker-structure in the `KRInfo` object. 
 
 The information on the multiplicities of infinite zeros is provided in the vector `iz`, 
 where each `i`-th element `iz[i]` is equal to `k-1`, where `k` is the order of an infinite elementary divisor with `k > 0`.
 The number of infinite zeros contained in `val` is the sum of the components of `iz`. 
 
-The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, 
-infinite elementary divisors `id` and the
+The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
 number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
 and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
 
@@ -24,48 +29,22 @@ elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 
 """
-function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
-   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
-
+function spzeros(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
+    B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+    fast::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+    atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
+ 
+   # Step 0: Reduce to the standard form
+   M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false)
    mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
-
+   T = eltype(M)
+  
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
    lki = Vector{Int}(undef,maxmn)
-
-   
-   # # alternative computation
-   # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-   # withQ = false, withZ = false, fast = false)
-
-   # nzi = 0
-   # nb = length(μ)
-   # if nb > 0
-   #    id = reverse([μ[1:1];μ[2:nb]-ν[1:nb-1]])
-   #    for i = 2:nb
-   #       nzi += id[i]*(i-1)
-   #    end
-   # end
-   # mr = sum(νr)  
-   # nr = sum(μr)
-   # if1 = mr+1:mr+nf
-   # jf1 = nr+1:nr+nf
-   # return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(nzi) ]
-
-   # Step 0: Reduce to the standard form
-   Q = nothing
-   Z = nothing
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
-
+ 
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
    nrinf = 0
@@ -110,10 +89,15 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
-    peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, KRInfo)
+    speigvals(A, E, B, C, D; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
 
-Return the (finite and infinite) eigenvalues of the linear pencil `M-λN` in `val` and the 
-information on the complete Kronecker-structure in the `KRInfo` object. 
+Return the (finite and infinite) eigenvalues of the structured linear pencil `M-λN`  
+
+              | A-λE | B | 
+     M - λN = |------|---|
+              |  C   | D |  
+
+in `val` and the information on the complete Kronecker-structure in the `KRInfo` object. 
 
 The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
 number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
@@ -131,43 +115,21 @@ elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 
 """
-function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
-   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
+function speigvals(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
+   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   fast::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+   atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+   rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
 
+   # Step 0: Reduce to the standard form
+   M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false)
    mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
-
-   # # alternative computation 
-   # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-   #                                          withQ = false, withZ = false, fast = false)
-   # ni = 0
-   # nb = length(μ)
-   # if nb > 0
-   #    id = reverse([μ[1:1];μ[2:nb]-ν[1:nb-1]])
-   #    for i = 1:nb
-   #       ni += id[i]*i
-   #    end
-   # end
-   # mr = sum(νr)
-   # nr = sum(μr)
-   # if1 = mr+1:mr+nf
-   # jf1 = nr+1:nr+nf
-   # return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ]
+   T = eltype(M)
+ 
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
    lki = Vector{Int}(undef,maxmn)
-
-   Q = nothing
-   Z = nothing
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
 
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
@@ -212,52 +174,22 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
-    KRInfo
+    spkstruct(A, E, B, C, D; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> KRInfo
   
-Kronecker-structure object definition. 
+Determine the Kronecker-structure information of the structured linear pencil `M-λN` 
 
-If `info::KRInfo` is the Kronecker-structure object, then:
+              | A-λE | B | 
+     M - λN = |------|---|
+              |  C   | D |  
 
-`info.rki` is a vector, whose components contains the column dimensions of  
-elementary Kronecker blocks of the form `(k-1) x k`;
-
-`info.lki` is a vector, whose components contains the row dimensions of  
-elementary Kronecker blocks of the form `k x (k-1)`;
-
-`info.id` is a vector, whose components contains the orders of the infinite elementary divisors (i.e., the
-multiplicities of infinite eigenvalues). 
-
-`info.nf` is the number of finite eigenvalues.
-
-Destructuring via iteration produces the components `info.rki`, `info.lki`, `info.id`, and `info.nf`.
-"""
-struct KRInfo
-   rki::Vector{Int}
-   lki::Vector{Int}
-   id::Vector{Int}
-   nf::Int
-   function KRInfo(rki,lki,id,nf)
-      (any(rki .< 0) || any(lki .< 0) || any(id .< 0) || nf < 0) && error("no negative components allowed")
-      new(rki,lki,id,nf)
-   end
-end
-# iteration for destructuring into components
-Base.iterate(info::KRInfo) = (info.rki, Val(:lki))
-Base.iterate(info::KRInfo, ::Val{:lki}) = (info.lki, Val(:id))
-Base.iterate(info::KRInfo, ::Val{:id}) = (info.id, Val(:nf))
-Base.iterate(info::KRInfo, ::Val{:nf}) = (info.nf, Val(:done))
-#Base.iterate(info::KRInfo, ::Val{:done}) = nothing
-"""
-    pkstruct(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> KRInfo
-  
-Determine the Kronecker-structure information of the linear pencil `M-λN` and return an `KRInfo` object. 
+and return an `KRInfo` object. 
 
 The right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
 number of finite eigenvalues `nf` can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
 and `KRInfo.nf`, respectively.  
 The determination of the Kronecker-structure information is performed by reducing the pencil `M-λN` to an 
 appropriate Kronecker-like form (KLF) exhibiting all structural elements of the pencil `M-λN`.
-The reduction is performed using orthogonal similarity transformations and involves rank decisions based 
+The reduction is performed using orthonal similarity transformations and involves rank decisions based 
 on rank reevealing QR-decompositions with column pivoting, if `fast = true`, or, the more reliable, 
 SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations. 
@@ -280,60 +212,21 @@ elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 
 """
-function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Real = zero(eltype(M)), atol2::Real = zero(eltype(M)), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2))) 
+function spkstruct(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
+   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   fast::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+   atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+   rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
 
+   # Step 0: Reduce to the standard form
+   M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false)
    mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
-   
-   # # alternative computation
-   # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-   #                                          withQ = false, withZ = false, fast = fast)
-   # rki = μr-νr
-   # nb = length(μ)
-   # if nb > 0
-   #    id = [μ[1:1];μ[2:end]-ν[1:end-1]]
-   #    k = 0
-   #    for i = 1:nb
-   #        if id[i] == 0 
-   #           k += 1
-   #        else
-   #           break
-   #        end
-   #    end
-   #    id = reverse(id[k+1:end])
-   # else
-   #    id = μ
-   # end
-   # lki = reverse(ν-μ)
-   # if nb > 0
-   #    k = nb
-   #    for i = nb:-1:1
-   #       if lki[i] == 0 
-   #          k -= 1
-   #       else
-   #          break
-   #       end
-   #    end
-   #    lki = lki[1:k]
-   # end
-   # #return rki, id, nf, lki
-   # return KRInfo(rki, lki, id, nf)
-
+   T = eltype(M)
+  
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
    lki = Vector{Int}(undef,maxmn)
-
-   Q = nothing
-   Z = nothing
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
    
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
@@ -373,46 +266,17 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
    end
    return KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
-function deltrz(ind)
-   k = findlast(!iszero,ind)
-   k === nothing ? (return ind[1:0]) : (return ind[1:k]) 
-end
-function kroni(ind)
-   k = findlast(!iszero,ind)
-   k === nothing && (return ind[1:0]) 
-   ni = sum(ind[1:k])
-   ki = similar(ind,ni)
-   ii = 0
-   for i = 1:k
-       iip = ii+ind[i]
-       for j = ii+1:iip
-         ki[j] = i-1
-       end
-       ii = iip 
-   end
-   return ki 
-end
-function minf(ind)
-   k = findlast(!iszero,ind)
-   k === nothing && (return ind[1:0]) 
-   ni = sum(ind[1:k])
-   mi = similar(ind,ni)
-   ii = 0
-   for i = 1:k
-       iip = ii+ind[i]
-       for j = ii+1:iip
-         mi[j] = i
-       end
-       ii = iip 
-   end
-   return mi 
-end
 
 """
-    prank(M::AbstractMatrix, N::AbstractMatrix; fastrank = true, atol1::Real=0, atol2::Real=0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ)
+    sprank(A, E, B, C, D; fastrank = true, atol1::Real=0, atol2::Real=0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ)
 
-Compute the normal rank of a linear matrix pencil `M - λN`. If `fastrank = true`, the rank is evaluated 
-by counting how many singular values of `M - γ N` have magnitude greater than `max(max(atol1,atol2), rtol*σ₁)`,
+Compute the normal rank of the structured  linear matrix pencil `M - λN`
+
+              | A-λE | B | 
+     M - λN = |------|---|.
+              |  C   | D |  
+
+If `fastrank = true`, the rank is evaluated by counting how many singular values of `M - γ N` have magnitude greater than `max(max(atol1,atol2), rtol*σ₁)`,
 where `σ₁` is the largest singular value of `M - γ N` and `γ` is a randomly generated value. If `fastrank = false`, 
 the rank is evaluated as `nr + ni + nf + nl`, where `nr` and `nl` are the sums of right and left Kronecker indices, 
 respectively, while `ni` and `nf` are the number of finite and infinite eigenvalues, respectively. The sums `nr+ni` and  
@@ -430,35 +294,99 @@ using rank decisions based on rank revealing SVD-decompositions.
     The use of `atol` and `rtol` keyword arguments in rank determinations requires at least Julia 1.1. 
     To enforce compatibility with Julia 1.0, the newer function rank in Julia 1.1 has been explicitly included. 
 """
-function prank(M::AbstractMatrix, N::AbstractMatrix; fastrank::Bool = true, 
-   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
-
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
+function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
+   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   fastrank::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+   atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
+   rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
 
    if fastrank
-      nrmM = opnorm(M,1)
-      nrmM == zero(nrmM) && (return rank(N, atol = atol2, rtol = rtol))
-      nrmN = opnorm(N,1)
-      nrmN == zero(nrmN) && (return rank(M, atol = atol1, rtol = rtol))
-      scale = nrmM/nrmN*rand()
-      return rank(M+scale*N, atol = max(atol1,atol2), rtol = rtol)
+      xor(ismissing(A),ismissing(E)) && error("A and E must be both either present or missing")               
+      ismissing(A) && !ismissing(B) && error("B can not be present if A is missing")  
+      ismissing(A) && !ismissing(C) && error("C can not be present if A is missing")  
+      !ismissing(D) && !ismissing(B) && ismissing(C)  && error("D can not be present if C is missing") 
+      !ismissing(D) && !ismissing(C) && ismissing(B)  && error("D can not be present if B is missing") 
+      eident = (typeof(E) == UniformScaling{Bool}) 
+      if ismissing(A) && ismissing(D)
+         return 0
+      elseif ismissing(A) 
+         return rank(D,atol = atol1, rtol = rtol)
+      elseif ismissing(B) && ismissing(C)
+         isa(A,Adjoint) && (A = copy(A))
+         isa(E,Adjoint) && (E = copy(E))
+         ndx, nx = size(A)
+         eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
+         eident ? T = eltype(A) : T = promote_type(eltype(A), eltype(E))
+         T <: BlasFloat || (T = promote_type(Float64,T))
+         nu = 0
+         B = zeros(T,ndx,nu)
+         ny = 0
+         C = zeros(T,ny,nx)
+         D = zeros(T,ny,nu)
+      elseif ismissing(B)
+         isa(A,Adjoint) && (A = copy(A))
+         isa(E,Adjoint) && (E = copy(E))
+         ndx, nx = size(A)
+         eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
+         nx == size(C,2) || throw(DimensionMismatch("A and C must have the same number of columns"))
+         T = promote_type(eltype(A), eltype(E), eltype(C) )
+         T <: BlasFloat || (T = promote_type(Float64,T))
+         nu = 0
+         B = zeros(T,ndx,nu)
+         ny = size(C,1)
+         D = zeros(T,ny,nu)
+      elseif ismissing(C)
+         isa(A,Adjoint) && (A = copy(A))
+         isa(E,Adjoint) && (E = copy(E))
+         ndx, nx = size(A)
+         eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
+         ndx == size(B,1) || throw(DimensionMismatch("A and B must have the same number of rows"))
+         T = promote_type(eltype(A), eltype(E), eltype(B), eltype(E), eltype(A), eltype(E), )
+         T <: BlasFloat || (T = promote_type(Float64,T))
+         ny = 0
+         C = zeros(T,ny,nx)
+         nu = size(B,2)
+         D = zeros(T,ny,nu)
+      else
+         isa(A,Adjoint) && (A = copy(A))
+         isa(E,Adjoint) && (E = copy(E))
+         ndx, nx = size(A)
+         T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
+         eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and M must have the same dimensions"))
+         ny, nu = size(D)
+         (ndx,nu) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
+         (ny,nx) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
+         T = promote_type(eltype(A), eltype(E), eltype(B), eltype(C), eltype(D))
+         T <: BlasFloat || (T = promote_type(Float64,T))        
+      end
+   
+      eident || (T = promote_type(T,eltype(E)))
+      T <: BlasFloat || (T = promote_type(Float64,T))
+      if eident 
+         ndx == nx || throw(DimensionMismatch("A must be a square matrix"))
+      end
+   
+   
+      (!ismissing(A) && eltype(A) !== T) && (A = convert(Matrix{T},A))
+      (!eident && !ismissing(E) && eltype(E) !== T) && (E = convert(Matrix{T},E))
+      (!ismissing(B) && eltype(B) !== T) && (B = convert(Matrix{T},B))
+      (!ismissing(C) && eltype(C) !== T) && (C = convert(Matrix{T},C))
+      (!ismissing(D) && eltype(D) !== T) && (D = convert(Matrix{T},D))
+      if eident 
+         scale = opnorm(A,1)*rand()
+         return rank([A+scale*E B; C D], atol = atol1, rtol = rtol)
+      else
+         nrmN = opnorm(E,1)
+         nrmN == zero(nrmN) && (return rank([A B; C D], atol = atol1, rtol = rtol))
+         nrmM = max(opnorm(A,1), opnorm(B,1), opnorm(C,Inf), opnorm(D,1))
+         scale = nrmM/nrmN*rand()
+         return rank([A+scale*E B; C D], atol = max(atol1,atol2), rtol = rtol)
+      end
    else
-      # # alternative (less efficient) computation using the KLF exhibiting the spliting of right-left Kronecker structures
-      # M, N, Q, Z, ν, μ, n = klf_rlsplit(M, N; fast = false, finite_infinite = false, atol1 = atol1, atol2 = atol2, 
-      #                                   rtol = rtol, withQ = false, withZ = false)
-      # return sum(ν) + n
-      Q = nothing
-      Z = nothing
-      n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
- 
+      M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, 
+                                      fast = false, withQ = false, withZ = false)
+      mM, nM = size(M)
+      
       n == min(mM,nM) && (return n)
       prnk = 0
       tol1 = max(atol1, rtol*opnorm(M,1))
@@ -468,7 +396,8 @@ function prank(M::AbstractMatrix, N::AbstractMatrix; fastrank::Bool = true,
          # Steps 1 & 2: Standard algorithm PREDUCE 
          ired = mrinf+1:mM
          jred = nrinf+1:nM
-         τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = false, withQ = false, withZ = false)
+         τ, ρ = _preduce1!(n, m, p, view(M,ired,jred), view(N,ired,jred), Q, Z, tol1; 
+                           fast = false, withQ = false, withZ = false)
          prnk += ρ+τ
          mrinf += ρ+τ
          nrinf += m

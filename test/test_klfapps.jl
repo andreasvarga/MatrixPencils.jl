@@ -344,19 +344,19 @@ for fast in (false,true)
 
 
 M = zeros(0,0); N = zeros(0,0);
-@test prank(M, N, fast = fast) == 0
+@test prank(M, N, fastrank = fast) == 0
 
 M = zeros(3,0); N = zeros(3,0);
-@test prank(M, N, fast = fast) == 0
+@test prank(M, N, fastrank = fast) == 0
 
 
 M = zeros(0,3); N = zeros(0,3);
-@test prank(M, N, fast = fast) == 0
+@test prank(M, N, fastrank = fast) == 0
 
 M = zeros(1,1); N = ones(1,1);
-@test prank(M, N, fast = fast) == 1
+@test prank(M, N, fastrank = fast) == 1
 
-@test prank(N, M, fast = fast) == 1
+@test prank(N, M, fastrank = fast) == 1
 
 
 M = [  22  34  31   31  17
@@ -370,7 +370,7 @@ N = [   13  26  25  17  24
         26  40  19  25  25 
         16  25  27  14  23 
         24  35  18  21  22  ];
-@test prank(M, N, fast = fast) == 4
+@test prank(M, N, fastrank = fast) == 4
 
 
 # Test Suite 2 (Example 2.2.1, Beelen)
@@ -392,7 +392,7 @@ M2 = Q*M*Z; N2 = Q*N*Z;
 
 M = copy(M2); N = copy(N2); 
 
-@test prank(M, N, fast = fast) == 12
+@test prank(M, N, fastrank = fast) == 12
 
 
 Ty = Float64
@@ -406,7 +406,7 @@ r = 5; n = 20;
 M = rand(Ty,r,n)
 N = rand(Ty,r,n)
 
-@time prnk = prank(M, N, fast = fast)
+@time prnk = prank(M, N, fastrank = fast)
 @test prnk == r
 
 
@@ -415,7 +415,7 @@ r = 5; m = 20;
 M = rand(Ty,m,r)
 N = rand(Ty,m,r)
 
-@time prnk = prank(M, N, fast = fast)
+@time prnk = prank(M, N, fastrank = fast)
 @test prnk == r
 
 
@@ -426,7 +426,7 @@ Z = rand(Ty,n,n);
 M = Q*[ rand(Ty,r,r) zeros(Ty,r,n-r); zeros(Ty,m-r,n) ]*Z;
 N = Q*[ rand(Ty,r,r) zeros(Ty,r,n-r); zeros(Ty,m-r,n) ]*Z;
 
-@time prnk = prank(M, N, atol1 = 100*eps(opnorm(M,1)), atol2 = 100*eps(opnorm(N,1)), fast = fast)
+@time prnk = prank(M, N, atol1 = 100*eps(opnorm(M,1)), atol2 = 100*eps(opnorm(N,1)), fastrank = fast)
 @test prnk == r
 
 end

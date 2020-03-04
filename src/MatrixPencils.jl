@@ -8,15 +8,15 @@ const BlasComplex = Union{ComplexF64,ComplexF32}
 using LinearAlgebra
 using Random
 
-# include("lapackutil2.jl")
-# using .LapackUtil2: larfg!, larfgl!, larf!
+include("lapackutil2.jl")
+using .LapackUtil2: larfg!, larfgl!, larf!
 
 
 export klf, klf_left, klf_right, klf_rlsplit
 export prank, pkstruct, peigvals, pzeros, KRInfo
 export isregular, fisplit
-#export sreduceBF, sklf_right!, sklf_left! 
-#export sprank, spkstruct, speigvals, spzeros
+export sreduceBF, sklf, sklf_right, sklf_left, sklf_right!, sklf_left! 
+export sprank, spkstruct, speigvals, spzeros
 #export dss, ss, gnrank, gzero, gpole
 #export LTISystem, AbstractDescriptorStateSpace
 #export _preduceBF!, _preduce1!, _preduce2!, _preduce3!, _preduce4!
@@ -26,9 +26,9 @@ export isregular, fisplit
 include("klftools.jl")
 include("regtools.jl")
 include("klfapps.jl")
-#include("sklftools.jl")
-#include("sklfapps.jl")
+include("sklftools.jl")
+include("sklfapps.jl")
 #include("dstools.jl")
 include("lputil.jl")
-#include("slputil.jl")
+include("slputil.jl")
 end
