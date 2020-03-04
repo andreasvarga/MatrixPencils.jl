@@ -39,11 +39,11 @@ kinfo  = spkstruct(A, E, B, C, D, atol1 = 1.e-7, atol2 = 1.e-7)
 @test (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], [2], [2, 2], 2)
 
 @time val, iz, kinfo  = spzeros(A, E, B, C, D)
-@test val ≈ [-1, 2, Inf,Inf] && iz == [1, 1] && 
+@test sort(real(val)) ≈ [-1, 2, Inf,Inf] && iz == [1, 1] && 
       (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], [2], [2, 2], 2)
 
 @time val, kinfo  = speigvals(A, E, B, C, D)
-@test val ≈ [-1, 2, Inf, Inf, Inf, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], [2], [2, 2], 2) 
+@test sort(real(val)) ≈ [-1, 2, Inf, Inf, Inf, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], [2], [2, 2], 2) 
 
 @test sprank(A, E, B, C, D, fastrank = true) == 8 && sprank(A, E, B, C, D, fastrank = false) == 8
 

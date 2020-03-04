@@ -43,7 +43,6 @@ The current version of the package includes the following functions:
 | **sklf_left** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
 | **sklf_right** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
 
-
 **Manipulation of regular linear matrix pencils**
 
 | Function | Description |

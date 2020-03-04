@@ -11,21 +11,10 @@ using Base: iszero, has_offset_axes
 
 export larfg!, larfgl!, larf!
 
-function chklapackerror(ret::BlasInt)
-    if ret == 0
-        return
-    elseif ret < 0
-        throw(ArgumentError("invalid argument #$(-ret) to LAPACK call"))
-    else # ret > 0
-        throw(LAPACKException(ret))
-    end
-end
-
 "Check that left/right hand side multiply is correctly specified"
 function chkside(side::AbstractChar)
-    if !(side == 'L' || side == 'R')
+    side == 'L' || side == 'R' ||
         throw(ArgumentError("side argument must be 'L' (left hand multiply) or 'R' (right hand multiply), got $side"))
-    end
     side
 end
 

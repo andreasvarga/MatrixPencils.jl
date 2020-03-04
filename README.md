@@ -24,10 +24,16 @@ The current version of the package includes the following functions:
 * **klf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure.
 * **klf_rlsplit**  Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures.
 
+**Manipulation of structured linear matrix pencils of the form [A-λE B; C D]**
+
+* **sklf**  Computation of the Kronecker-like form exhibiting the full Kronecker structure
+* **sklf_left** Computation of the Kronecker-like form exhibiting the left Kronecker structure
+* **sklf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure
+
 **Manipulation of regular linear matrix pencils**
 
 * **isregular**   Checking the regularity of a pencil.
-* **fisplit**  Finite-infinite eigenvalue splitting 
+* **fisplit**  Finite-infinite eigenvalue splitting
 
 **Some applications of matrix pencil computations**
 
@@ -36,8 +42,15 @@ The current version of the package includes the following functions:
 * **peigvals** Computation of the finite and infinite eigenvalues.
 * **pzeros** Computation of the finite and infinite (Smith) zeros.
 
+**Some applications to structured linear matrix pencils of the form [A-λE B; C D]**
+
+* ***spkstruct**  Determination of the complete Kronecker structure
+* **sprank**  Determination of the normal rank
+* **speigvals**  Computation of the finite and infinite eigenvalues
+* **spzeros**  Computation of the finite and infinite (Smith) zeros
+
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to block-diagonal structures), manipulation of structured linear pencils with application to polynomial and rational matrices, etc.
+The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), manipulation of structured linear pencils arising from the linearization of polynomial and rational matrices (e.g., computation of strong linearizations), etc.
