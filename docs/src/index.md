@@ -39,6 +39,7 @@ The current version of the package includes the following functions:
 
 | Function | Description |
 | :--- | :--- |
+| **sreduceBF** | Reduction to the basic condensed form  [B A-λE; D C] with E upper triangular and nonsingular. |
 | **sklf** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
 | **sklf_left** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
 | **sklf_right** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
@@ -68,13 +69,25 @@ The current version of the package includes the following functions:
 | **speigvals** | Computation of the finite and infinite eigenvalues |
 | **spzeros** | Computation of the finite and infinite (Smith) zeros |
 
+**Manipulation of linearizations of the form [A-λE B; C D] of polynomial or rational matrices**
+
+| Function | Description |
+| :--- | :--- |
+| **lsminreal** | Computation of least order strong liniarizations of rational matrices |
+| **lsminreal2** | Computation of least order strong liniarizations of rational matrices (potentially more efficient)|
+| **lsequal** | Check the equivalence two linearizations |
+
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), manipulation of structured linear pencils arising from the linearization of polynomial and rational matrices (e.g., computation of strong linearizations), etc.
+The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), building linearizations of polynomial matrices, applications of structured linear pencils manipulations to polynomial matrix problems, etc.
 
 ## Release Notes
+
+### Version 0.4.0
+
+This release includes implementations of computational procedures to determine least order linerizations, as those which may arise from the linearization of polynomial and rational matrices. The elimination of simple eigenvalues is based on a new function to compute SVD-like forms of regular matrix pencils. A new function to check the equivalence of two linearizations is also provided.
 
 ### Version 0.3.0
 

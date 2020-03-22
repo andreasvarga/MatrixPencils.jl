@@ -8,6 +8,8 @@ MatrixPencils._preduce2!
 MatrixPencils._preduce4!
 MatrixPencils._sreduceB!
 MatrixPencils._sreduceBA!
+MatrixPencils._sreduceBAE!
 MatrixPencils._sreduceC!
 MatrixPencils._sreduceAC!
+MatrixPencils._sreduceAEC!
 ```

@@ -268,7 +268,7 @@ function spkstruct(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
 end
 
 """
-    sprank(A, E, B, C, D; fastrank = true, atol1::Real=0, atol2::Real=0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ)
+    sprank(A, E, B, C, D; fastrank = true, atol1 = 0, atol2 = 0, rtol = min(atol1,atol2)>0 ? 0 : n*ϵ)
 
 Compute the normal rank of the structured  linear matrix pencil `M - λN`
 

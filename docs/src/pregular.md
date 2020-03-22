@@ -3,6 +3,7 @@
 ```@docs
 isregular
 fisplit
-sklf_right!
-sklf_left!
+MatrixPencils.fisplit!
+MatrixPencils._qrE!
+MatrixPencils._svdlikeAE!
 ```

@@ -26,6 +26,7 @@ The current version of the package includes the following functions:
 
 **Manipulation of structured linear matrix pencils of the form [A-λE B; C D]**
 
+* **sreduceBF** Reduction to the basic condensed form  [B A-λE; D C] with E upper triangular and nonsingular. 
 * **sklf**  Computation of the Kronecker-like form exhibiting the full Kronecker structure
 * **sklf_left** Computation of the Kronecker-like form exhibiting the left Kronecker structure
 * **sklf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure
@@ -44,13 +45,19 @@ The current version of the package includes the following functions:
 
 **Some applications to structured linear matrix pencils of the form [A-λE B; C D]**
 
-* ***spkstruct**  Determination of the complete Kronecker structure
+* **spkstruct**  Determination of the complete Kronecker structure
 * **sprank**  Determination of the normal rank
 * **speigvals**  Computation of the finite and infinite eigenvalues
 * **spzeros**  Computation of the finite and infinite (Smith) zeros
+
+**Manipulation of linearizations of the form [A-λE B; C D] of polynomial or rational matrices**
+
+* **lsminreal** Computation of least order strong liniarizations of rational matrices.
+* **lsminreal2** Computation of least order strong liniarizations of rational matrices (potentially more efficient).
+* **lsequal**  Check the equivalence two linearizations.  
 
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), manipulation of structured linear pencils arising from the linearization of polynomial and rational matrices (e.g., computation of strong linearizations), etc.
+The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), building linearizations of polynomial matrices, applications of structured linear pencils manipulations to polynomial matrix problems, etc.

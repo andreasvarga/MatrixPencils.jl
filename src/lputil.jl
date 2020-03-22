@@ -37,9 +37,9 @@ The rank decision based on the SVD-decomposition is generally more reliable, but
 function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
                      Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing},
                      L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
-                     atol::Real = zero(eltype(M)), rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
-                     fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
-                     withQ = true, withZ = true) where T1 <: BlasFloat
+                     atol::Real = zero(real(T1)), rtol::Real = (min(size(M)...)*eps(real(float(one(T1)))))*iszero(atol), 
+                     fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
+                     withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    # In interest of performance, no dimensional checks are performed                  
    mM, nM = size(M)
    T = eltype(M)
@@ -64,7 +64,7 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
    i12 = 1:roff+npp
    j23 = coff+1:nM
    jN23 = coff+npm+1:nM
-   eltype(M) <: Complex ? tran = 'C' : tran = 'T'
+   T <: Complex ? tran = 'C' : tran = 'T'
    if fast
       # compute in-place the QR-decomposition N22*P2 = Q2*[R2;0] with column pivoting 
       N22 = view(N,i22,j22)
@@ -109,7 +109,7 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
       end
       # R <- R*Z2*Pc2
       ismissing(R) || (LinearAlgebra.LAPACK.ormrz!('R',tran,N22r,tau,view(R,:,j22)); R[:,j22] = R[:,jp]) 
-      N22[:,:] = [ zeros(n,m) triu(N22[i1,i1]); zeros(p,npm) ]
+      N22[:,:] = [ zeros(T,n,m) triu(N22[i1,i1]); zeros(T,p,npm) ]
    else
       # compute the complete orthogonal decomposition of N22 using the SVD-decomposition
       U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',view(N,i22,j22))
@@ -128,9 +128,9 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
       N[i11,j22] = N[i11,jp]
       # N23 <- U'*N23
       N[i22,jN23] = U'*N[i22,jN23]
-      # Q <- Q*SVD.U
+      # Q <- Q*U
       withQ && (Q[:,i22] = Q[:,i22]*U)
-      # Z <- Q*SVD.V
+      # Z <- Q*V
       if withZ
          Z[:,j22] = Z[:,j22]*Vt'
          Z[:,j22] = Z[:,jp] 
@@ -139,7 +139,7 @@ function _preduceBF!(M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
       ismissing(L) || (L[i22,:] = U'*L[i22,:])
       # R <- R*V
       ismissing(R) || (R[:,j22] = R[:,j22]*Vt'; R[:,j22] = R[:,jp] )
-      N[i22,j22] = [ zeros(n,m) Diagonal(S[1:n]) ; zeros(p,npm) ]
+      N[i22,j22] = [ zeros(T,n,m) Diagonal(S[1:n]) ; zeros(T,p,npm) ]
    end
    return n, m, p
 end
@@ -173,9 +173,10 @@ The performed orthogonal or unitary transformations are accumulated in `Q` (i.e.
 The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
 function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1},
-                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol,
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real, 
                     L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
-                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) where T1 <: BlasFloat
+                    fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
+                    withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    #  Steps 1 and 2: QR- or SVD-decomposition based full column compression of [B; D] with the UT-form preservation of E
    #  Reduce the structured pencil  
    #
@@ -281,9 +282,10 @@ The performed orthogonal or unitary transformations are accumulated in `Q` (i.e.
 The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
 function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
-                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol, 
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real,  
                     L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
-                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) where T1 <: BlasFloat
+                    fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
+                    withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    #  Steps 1 and 2: QR- or SVD-decomposition based full column compression of [D C] with the UT-form preservation of E
    #  Reduce the structured pencil  
    #
@@ -403,9 +405,10 @@ The performed orthogonal or unitary transformations are accumulated in `Q` (i.e.
 The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
 function _preduce3!(n::Int, m::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, 
-                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol,
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real, 
                     L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
-                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0,  withQ = true, withZ = true) where T1 <: BlasFloat
+                    fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0,  
+                    withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    #  Step 3: QR- or SVD-decomposition based full row compression of B and UT-form preservation of E
    #  Reduce the structured pencil  
    #
@@ -558,9 +561,10 @@ The performed orthogonal or unitary transformations are accumulated in `Q` (i.e.
 The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
 """
 function _preduce4!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1},N::AbstractMatrix{T1},
-                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol, 
+                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real,  
                     L::Union{AbstractMatrix{T1},Missing} = missing, R::Union{AbstractMatrix{T1},Missing} = missing; 
-                    fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) where T1 <: BlasFloat
+                    fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
+                    withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    #  Step 4: QR- or SVD-decomposition based full column compression of C and UT-form preservation of E
    #  Reduce the structured pencil  
    #
