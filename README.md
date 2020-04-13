@@ -19,15 +19,15 @@ The current version of the package includes the following functions:
 
 **Manipulation of general linear matrix pencils**
 
-* **sreduceBF**  Reduction to the basic condensed form  [B A-λE; D C] with E upper triangular and nonsingular.
+* **sreduceBF**  Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
 * **klf**   Computation of the Kronecker-like form exhibiting the full Kronecker structure.
 * **klf_left**  Computation of the Kronecker-like form exhibiting the left Kronecker structure.
 * **klf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure.
 * **klf_rlsplit**  Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures.
 
-**Manipulation of structured linear matrix pencils of the form [A-λE B; C D]**
+**Manipulation of structured linear matrix pencils of the form `[A-λE B; C D]`**
 
-* **sreduceBF** Reduction to the basic condensed form  [B A-λE; D C] with E upper triangular and nonsingular.
+* **sreduceBF** Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
 * **sklf**  Computation of the Kronecker-like form exhibiting the full Kronecker structure.
 * **sklf_left** Computation of the Kronecker-like form exhibiting the left Kronecker structure.
 * **sklf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure.
@@ -58,27 +58,6 @@ The current version of the package includes the following functions:
 * **lpsminreal**  Computation of strong minimal pencil based liniarizations `[A-λE B-λF; C-λG D-λH]` of rational matrices.
 * **lsequal**  Check the equivalence of two linearizations.
 * **lpsequal**  Check the equivalence of two pencil based liniarizations.  
-
-**Manipulation of polynomial matrices**
-
-* **poldeg**  Determination of the degree of a polynomial matrix.
-* **poleval**  Evaluation of a polynomial matrix for a given value of its argument.
-* **polreverse**  Building the reversal of a polynomial matrix.  
-* **pol2lpCF1**  Building a linearization in the first companion Frobenius form.
-* **pol2lpCF2**  Building a linearization in the second companion Frobenius form.  
-* **pol2lp**  Building a linearization which preserves the finite and the left or right Kronecker structures.  
-* **pol2ls**  Building a structured linearization of a polynomial matrix.
-* **ls2pol**  Computation of the polynomial matrix from its structured linearization.
-
-**Some applications to polynomial matrices**
-
-* **polkstruct1**  Determination of the complete Kronecker structure using its companion form linearization.
-* **polkstruct2**  Determination of the complete Kronecker structure using its structured linearization.
-* **polrank**  Determination of the normal rank.
-* **poleigvals**  Computation of the finite and infinite eigenvalues.
-* **polzeros**  Computation of the finite and infinite zeros.
-* **polroots**  Computation of the roots of the determinant of a regular polynomial matrix.
-* **ispolregular**  Checking the regularity of a polynomial matrix.
 
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
