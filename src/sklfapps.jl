@@ -1,5 +1,5 @@
 """
-    spzeros(A, E, B, C, D; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
+    spzeros(A, E, B, C, D; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
 
 Return the (finite and infinite) Smith zeros of the structured linear pencil `M-λN` 
 
@@ -89,7 +89,7 @@ function spzeros(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifo
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
-    speigvals(A, E, B, C, D; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
+    speigvals(A, E, B, C, D; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
 
 Return the (finite and infinite) eigenvalues of the structured linear pencil `M-λN`  
 
@@ -266,7 +266,6 @@ function spkstruct(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
    end
    return KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
-
 """
     sprank(A, E, B, C, D; fastrank = true, atol1 = 0, atol2 = 0, rtol = min(atol1,atol2)>0 ? 0 : n*ϵ)
 

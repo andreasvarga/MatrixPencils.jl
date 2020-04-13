@@ -335,7 +335,12 @@ for Ty in (Float64, Complex{Float64})
    N = Q*N*Z;
    
    @test isregular(M, N, atol1 = abstol, atol2 = abstol)
-   
+   γ = peigvals(M,N)[1][1]
+   @test !isregular(M-γ*N, 0*N, atol1 = abstol, atol2 = abstol)
+   @test !isregular(N, 0*N, atol1 = abstol, atol2 = abstol)
+   @test !isregular(M, N, γ, atol = abstol)
+   @test !isregular(M, N, Inf, atol = abstol)
+    
 end
     
 end # isregular

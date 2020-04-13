@@ -272,10 +272,11 @@ function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T1},B::AbstractMatrix{T1},C
          end
       end
       ibt = roff+1:roff+mn
-      jt = coff+m+1:coff+m+mn
+      init ? (jt = coff+1:coff+mn) : (jt = coff+m+1:coff+m+mn)
       withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
-      A1[ibt,ja] = SVD.U'*A1[ibt,ja]
-      A1[ia,jt] = A1[ia,jt]*SVD.U
+      A[ibt,ja] = SVD.U'*A[ibt,ja]
+      A[ia,jt] = A[ia,jt]*SVD.U
+      ismissing(C) || (C[:,jt] = C[:,jt]*SVD.U) 
    end
    return ρ 
 end
@@ -400,6 +401,7 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B
       withQ && (Q[:,jcs] = Q[:,jcs]*Q1)
       A1[jcs,1:n+ctrail] = Q1'*A1[jcs,1:n+ctrail]
       A1[ia,jcs] = A1[ia,jcs]*Q1
+      ismissing(B) || (B[jcs,:] = Q1'*B[jcs,:])
    end
    return ρ 
 end

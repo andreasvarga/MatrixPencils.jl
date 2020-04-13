@@ -1,8 +1,8 @@
 # Some applications of matrix pencil computations
 
 ```@docs
-pkstruct
 KRInfo
+pkstruct
 prank
 peigvals
 pzeros

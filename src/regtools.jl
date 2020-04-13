@@ -197,40 +197,65 @@ function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
    return rE, rA22   
 end  
 """
-    isregular(A, E; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
+    isregular(A, E, γ; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
 
-Test whether the linear pencil `A-λE` is regular (i.e., det(A-λE) !== 0). The underlying computational procedure
-reduces the pencil `A-λE` to an appropriate Kronecker-like form (KLF), which provides information on the rank of `M-λN`. 
+Test whether the linear pencil `A-λE` is regular at `λ = γ`(i.e., `A-λE` is square and `det(A-γE) !== 0`). 
+The underlying computational procedure checks the maximal rank of `A-γE` if `γ` is finite and of `E` if 
+`γ` is infinite . 
 
-The keyword arguements `atol1`, `atol2` and `rtol` specify the absolute tolerance for the nonzero
-elements of `A`, the absolute tolerance for the nonzero elements of `E`, and the relative tolerance for the nonzero elements of `M` and `N`, respectively. 
+The keyword arguements `atol` and `rtol` specify the absolute and relative tolerances for the nonzero
+elements of `A-γE`, respectively. 
 The default relative tolerance is `n*ϵ`, where `n` is the size of  `A`, and `ϵ` is the 
 machine epsilon of the element type of `A`. 
 """
-function isregular(A::AbstractMatrix, E::AbstractMatrix; atol1::Real = zero(eltype(A)), atol2::Real = zero(eltype(A)), 
+function isregular(A::AbstractMatrix, E::AbstractMatrix, γ::Number; atol::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
+                   rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(atol))
+   
+   m, n = size(A)
+   (m,n) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
+   m == n || (return false)
+   if isinf(γ) 
+      return rank(E,atol = atol,rtol=rtol) == n
+   else
+      return rank(A-γ*E,atol = atol,rtol=rtol) == n
+   end
+end
+"""
+    isregular(A, E; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
+
+Test whether the linear pencil `A-λE` is regular (i.e., `A-λE` is square and `det(A-λE) !== 0`). 
+The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form (KLF), 
+which provides information on the rank of `A-λE`. 
+
+The keyword arguements `atol1`, `atol2` and `rtol` specify the absolute tolerance for the nonzero
+elements of `A`, the absolute tolerance for the nonzero elements of `E`, and the relative tolerance 
+for the nonzero elements of `A` and `E`, respectively. 
+The default relative tolerance is `n*ϵ`, where `n` is the size of  `A`, and `ϵ` is the 
+machine epsilon of the element type of `A`. 
+"""
+function isregular(A::AbstractMatrix, E::AbstractMatrix; atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
                    rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2)))
    
    mA, nA = size(A)
    (mA,nA) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
    mA == nA || (return false)
-   isa(A,Adjoint) && (A = copy(A))
-   isa(E,Adjoint) && (E = copy(E))
    T = promote_type(eltype(A), eltype(E))
    T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(A) == T || (A = convert(Matrix{T},A))
-   eltype(E) == T || (E = convert(Matrix{T},E)) 
+   A1 = copy_oftype(A,T)
+   E1 = copy_oftype(E,T)
+
    Q = nothing
    Z = nothing
 
    # Step 0: Reduce to the standard form
-   n, m, p = _preduceBF!(A, E, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
+   n, m, p = _preduceBF!(A1, E1, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
 
    mrinf = 0
    nrinf = 0
-   tol1 = max(atol1, rtol*opnorm(A,1))
+   tol1 = max(atol1, rtol*opnorm(A1,1))
    while m > 0
       # Steps 1 & 2: Standard algorithm PREDUCE
-      τ, ρ = _preduce1!(n, m, p, A, E, Q, Z, tol1; fast = false, 
+      τ, ρ = _preduce1!(n, m, p, A1, E1, Q, Z, tol1; fast = false, 
                         roff = mrinf, coff = nrinf, withQ = false, withZ = false)
       ρ+τ == m || (return false)
       mrinf += ρ+τ
@@ -306,29 +331,26 @@ function fisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix,M
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    (!ismissing(B) && n !== size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
    (!ismissing(C) && n !== size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
-   isa(A,Adjoint) && (A = copy(A))
-   isa(E,Adjoint) && (E = copy(E))
-   ismissing(B) || (isa(B,Adjoint) && (B = copy(B)))
-   ismissing(C) || (isa(C,Adjoint) && (C = copy(C)))
    T = promote_type(eltype(A), eltype(E))
    ismissing(B) || (T = promote_type(T,eltype(B)))
    ismissing(C) || (T = promote_type(T,eltype(C)))
    T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(A) == T || (A = convert(Matrix{T},A))
-   eltype(E) == T || (E = convert(Matrix{T},E))
-   ismissing(B) || (eltype(B) == T || (B = convert(Matrix{T},B)))
-   ismissing(C) || (eltype(C) == T || (C = convert(Matrix{T},C)))
+
+   A1 = copy_oftype(A,T)   
+   E1 = copy_oftype(E,T)
+   ismissing(B) ? B1 = missing : B1 = copy_oftype(B,T)
+   ismissing(C) ? C1 = missing : C1 = copy_oftype(C,T)
 
    withQ ? (Q = Matrix{T}(I,n,n)) : (Q = nothing)
    withZ ? (Z = Matrix{T}(I,n,n)) : (Z = nothing)
 
-   ν, nf, ni = fisplit!(A, E, Q, Z, B, C; 
+   ν, nf, ni = fisplit!(A1, E1, Q, Z, B1, C1; 
                         fast  = fast, finite_infinite = finite_infinite, 
                         atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = withQ, withZ = withZ)
 
 
    
-   return A, E, B, C, Q, Z, ν, nf, ni                                             
+   return A1, E1, B1, C1, Q, Z, ν, nf, ni                                             
 end
 """
     fisplit!(A, E, B, C, Q, Z; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (ν, nf, ni)

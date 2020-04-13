@@ -396,6 +396,7 @@ M = copy(M2); N = copy(N2);
 
 
 Ty = Float64
+Ty = Complex{Float64}
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
 for Ty in (Float64, Complex{Float64})
 

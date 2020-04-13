@@ -1,7 +1,53 @@
 """
+    preduceBF(M, N; fast = true, atol = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, n, m, p)
+
+Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'*(M - λN)*Z` using 
+orthogonal or unitary transformation matrices `Q` and `Z` such that the pencil `M - λN` is transformed 
+into the following standard form
+ 
+                   | B  | A-λE | 
+          F - λG = |----|------| ,        
+                   | D  |  C   |
+
+where `E` is an `nxn` non-singular matrix, and `A`, `B`, `C`, `D` are `nxn`-, `nxm`-, `pxn`- and `pxm`-dimensional matrices,
+respectively. The order `n` of `E` is equal to the numerical rank of `N` determined using the absolute tolerance `atol` and 
+relative tolerance `rtol`. `M` and `N` are overwritten by `F` and `G`, respectively. 
+
+The performed orthogonal or unitary transformations are accumulated in `Q`, if `withQ = true`, and 
+`Z`, if `withZ = true`. 
+
+If `fast = true`, `E` is determined upper triangular using a rank revealing QR-decomposition with column pivoting of `N` 
+and `n` is evaluated as the number of nonzero diagonal elements of the `R` factor, whose magnitudes are greater than 
+`tol = max(atol,abs(R[1,1])*rtol)`. 
+If `fast = false`,  `E` is determined diagonal using a rank revealing SVD-decomposition of `N` and 
+`n` is evaluated as the number of singular values greater than `tol = max(atol,smax*rtol)`, where `smax` 
+is the largest singular value. 
+The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
+"""
+function preduceBF(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
+                   atol::Real = zero(real(eltype(M))),  
+                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
+                   withQ::Bool = true, withZ::Bool = true)
+   # In interest of performance, no dimensional checks are performed                  
+   mM, nM = size(M)
+   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
+   T = promote_type(eltype(M), eltype(N))
+   T <: BlasFloat || (T = promote_type(Float64,T))
+   M1 = copy_oftype(M,T)
+   N1 = copy_oftype(N,T)
+
+   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
+   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
+
+   # Step 0: Reduce to the standard form
+   n, m, p = _preduceBF!(M1, N1, Q, Z; atol = atol, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ) 
+
+   return M1, N1, Q, Z, n, m, p
+end
+"""
     klf_rlsplit(M, N; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, n, m, p)
 
-Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
+Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'*(M - λN)*Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `F` and `G` are in one of the
 following Kronecker-like forms:
 
@@ -74,39 +120,28 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
                      rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)), 
                      withQ::Bool = true, withZ::Bool = true)
    
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
-
-   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
-   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
-
    # Step 0: Reduce to the standard form
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast) 
+   M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast) 
    
+   mM, nM = size(M)
    maxmn = max(mM,nM)
    μ = Vector{Int}(undef,maxmn)
    ν = Vector{Int}(undef,maxmn)
         
    # fast returns for null dimensions
    if mM == 0 && nM == 0
-      return M, N, Q, Z, ν, μ, n, m, p
+      return M1, N1, Q, Z, ν, μ, n, m, p
    end
 
 
    if finite_infinite
       if mM == 0
-         return M, N, Q, Z, ν[1:0], μ[1:0], n, m, p
+         return M1, N1, Q, Z, ν[1:0], μ[1:0], n, m, p
       elseif nM == 0
          ν[1] = mM
          μ[1] = 0
          p = 0
-         return M, N, Q, Z, ν[1:1], μ[1:1], n, m, p
+         return M1, N1, Q, Z, ν[1:1], μ[1:1], n, m, p
       end
 
       # Reduce M-λN to a KLF which exhibits the splitting the right-finite and infinite-left structures
@@ -125,7 +160,7 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
       tol1 = max(atol1, rtol*opnorm(M,1))     
       while p > 0
          # Step 1 & 2: Dual algorithm PREDUCE
-         τ, ρ  = _preduce2!(n, m, p, M, N, Q, Z, tol1; fast = fast, 
+         τ, ρ  = _preduce2!(n, m, p, M1, N1, Q, Z, tol1; fast = fast, 
                             roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, 
                             withQ = withQ, withZ = withZ)
          i += 1
@@ -137,15 +172,15 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
          p = ρ
          m -= τ 
       end
-      return M, N, Q, Z, reverse(ν[1:i]), reverse(μ[1:i]), n, m, p                                             
+      return M1, N1, Q, Z, reverse(ν[1:i]), reverse(μ[1:i]), n, m, p                                             
    else
       if mM == 0
          ν[1] = 0
          μ[1] = nM
          m = 0
-         return M, N, Q, Z, ν[1:1], μ[1:1], n, m, p
+         return M1, N1, Q, Z, ν[1:1], μ[1:1], n, m, p
       elseif nM == 0
-         return M, N, Q, Z, ν[1:0], μ[1:0], n, m, p
+         return M1, N1, Q, Z, ν[1:0], μ[1:0], n, m, p
       end
 
       # Reduce M-λN to a KLF which exhibits the splitting the right-infinite and finite-left structures
@@ -162,7 +197,7 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
    
       while m > 0
          # Steps 1 & 2: Standard algorithm PREDUCE
-          τ, ρ = _preduce1!( n, m, p, M, N, Q, Z, tol1; fast = fast, 
+          τ, ρ = _preduce1!( n, m, p, M1, N1, Q, Z, tol1; fast = fast, 
                             roff = mrinf, coff = nrinf, withQ = withQ, withZ = withZ)
          i += 1
          ν[i] = ρ+τ
@@ -173,7 +208,7 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
          m = ρ
          p -= τ 
       end
-      return M, N, Q, Z, ν[1:i], μ[1:i], n, m, p                                             
+      return M1, N1, Q, Z, ν[1:i], μ[1:i], n, m, p                                             
    end
 end
 """
@@ -248,20 +283,10 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
              atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))),
              rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)), withQ::Bool = true, withZ::Bool = true)
    
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
-
-   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
-   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
-
    # Step 0: Reduce to the standard form
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast) 
+   M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast) 
+   mM, nM = size(M)
+
    if finite_infinite
       
       # Reduce M-λN to a KLF exhibiting the right and finite structures
@@ -269,10 +294,10 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       #      M1 - λ N1 = [    0       | Mf -  λ Nf |     *        ]
       #                  [    0       |    0       | Mli -  λ Nli ]
       
-      νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
+      νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M1, N1, Q, Z, atol = atol1, rtol = rtol,  
                                           withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
-          return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ
+          return  M1, N1, Q, Z, νr, μr, ν[1:0], nf, ν, μ
       end
 
       # Reduce Mli-λNli to a KLF exhibiting the infinite and left structures and update M1 - λ N1 to
@@ -284,8 +309,8 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       mr = sum(νr)+nf
       nr = sum(μr)+nf
       jM2 = nr+1:nr+sum(μ)
-      M2 = view(M,:,jM2)
-      N2 = view(N,:,jM2)
+      M2 = view(M1,:,jM2)
+      N2 = view(N1,:,jM2)
       withZ ? (Z2 = view(Z,:,jM2)) : (Z2 = nothing)
       νi, νl, μl = klf_left_refine!(ν, μ, M2, N2, Q, Z2, tol1, roff = mr,    
                                     withQ = withQ, withZ = withZ, fast = fast)
@@ -296,10 +321,10 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       #      M1 - λ N1 = [     0        | Mf -  λ Nf |     *      ]
       #                  [     0        |    0       | Ml -  λ Nl ]
 
-      ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
+      ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M1, N1, Q, Z, atol = atol1, rtol = rtol,  
                                          withQ = withQ, withZ = withZ, fast = fast)
       if mM == 0 || nM == 0
-         return  M, N, Q, Z, ν, μ, ν[1:0], nf, νl, μl
+         return  M1, N1, Q, Z, ν, μ, ν[1:0], nf, νl, μl
       end
 
       # Reduce Mri-λNri to a KLF exhibiting the right and infinite structures and update M1 - λ N1 to
@@ -309,12 +334,12 @@ function klf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, finite_inf
       #                  [    0       |    0       |    0       | Ml -  λ Nl ]
 
       iM11 = 1:sum(ν)
-      M1 = view(M,iM11,:)
-      N1 = view(N,iM11,:)
-      νr, μr, νi = klf_right_refine!(ν, μ, M1, N1, Q, Z, tol1, ctrail = nM-sum(μ),   
+      M11 = view(M1,iM11,:)
+      N11 = view(N1,iM11,:)
+      νr, μr, νi = klf_right_refine!(ν, μ, M11, N11, Q, Z, tol1, ctrail = nM-sum(μ),   
                                      withQ = withQ, withZ = withZ, fast = fast)
    end
-   return  M, N, Q, Z, νr, μr, νi, nf, νl, μl                                             
+   return  M1, N1, Q, Z, νr, μr, νi, nf, νl, μl                                             
 end
 """
     klf_right(M, N; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, nf, ν, μ)
@@ -369,25 +394,13 @@ function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
                    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
                    withQ::Bool = true, withZ::Bool = true)
    
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
-
-   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
-   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
-
    # Step 0: Reduce to the standard form
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast,withQ = withQ, withZ = withZ) 
+   M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast) 
 
-   νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
+   νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M1, N1, Q, Z, atol = atol1, rtol = rtol,  
                                        withQ = withQ, withZ = withZ, fast = fast)
 
-   return M, N, Q, Z, νr, μr, nf, ν, μ
+   return M1, N1, Q, Z, νr, μr, nf, ν, μ
 
 end
 """
@@ -448,25 +461,13 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
                   withQ::Bool = true, withZ::Bool = true)
   
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
-
-   withQ ? (Q = Matrix{T}(I,mM,mM)) : (Q = nothing)
-   withZ ? (Z = Matrix{T}(I,nM,nM)) : (Z = nothing)
-
    # Step 0: Reduce to the standard form
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast,withQ = withQ, withZ = withZ) 
+   M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast) 
 
-   ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
+   ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M1, N1, Q, Z, atol = atol1, rtol = rtol,  
                                       withQ = withQ, withZ = withZ, fast = fast)
 
-   return M, N, Q, Z, ν, μ, nf, νl, μl
+   return M1, N1, Q, Z, ν, μ, nf, νl, μl
 end
 """
     klf_right!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol = 0, rtol, withQ = true, withZ = true) -> (Q, Z, νr, μr, nf, ν, μ, tol)

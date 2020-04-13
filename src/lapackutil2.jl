@@ -11,8 +11,8 @@ using Base: iszero, has_offset_axes
 
 export larfg!, larfgl!, larf!
 
-"Check that left/right hand side multiply is correctly specified"
 function chkside(side::AbstractChar)
+    "Check that left/right hand side multiply is correctly specified"
     side == 'L' || side == 'R' ||
         throw(ArgumentError("side argument must be 'L' (left hand multiply) or 'R' (right hand multiply), got $side"))
     side

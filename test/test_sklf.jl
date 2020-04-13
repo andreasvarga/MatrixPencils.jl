@@ -159,6 +159,15 @@ M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, f
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       νr == [] && μr == [] && νi == [2, 2] && νl == [1, 1, 1] && μl == [0, 1, 1] && nf == 2
 
+M2 = [A' B; C D]; N2 = [E zeros(6,2); zeros(3,8)];  
+
+M = copy(M2); N = copy(N2);
+M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A', E, B, C, D, fast = fast, finite_infinite = false, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [] && μr == [] && νi == [2, 2] && νl == [1, 1, 1] && μl == [0, 1, 1] && nf == 2
+
+
 M = copy(M2); N = copy(N2);
 M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, finite_infinite = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
@@ -356,8 +365,8 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [1, 1, 1] && no == 3 && nfuo == 0 && niuo == 0
 
-Ty = Complex{Float64}; fast = true
-Ty = Float64; fast = true
+# Ty = Complex{Float64}; fast = true
+# Ty = Float64; fast = true
 for fast in (true, false)
 
 for Ty in (Float64, Complex{Float64})
@@ -789,6 +798,155 @@ A = copy(A2); B = copy(B2); C = copy(C2);
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
       νr == [1, 1, 1] && nc == 3 && nu == 4
+end
+end
+
+
+@testset "sklf_right! and sklf_left! - pencil case" begin
+
+fast = true; Ty = Float64; Ty = Complex{Float64}     
+for fast in (true, false)
+
+# ensuring strong observability
+# Example 4: Van Dooren, Dewilde, LAA 1983
+# P = zeros(3,3,3)
+# P[:,:,1] = [1 2 -2; 0 -1 -2; 0 0 0]
+# P[:,:,2] = [1 3 0; 1 4 2; 0 -1 -2]
+# P[:,:,3] = [1 4 2; 0 0 0; 1 4 2]
+
+# use a strongly controllable pencil realization
+
+sys1  = ([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], 
+[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0], 
+[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0], 
+[1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], 
+[1.0 3.0 0.0; 1.0 4.0 2.0; 0.0 -1.0 -2.0], 
+[-1.0 -4.0 -2.0; -0.0 -0.0 -0.0; -1.0 -4.0 -2.0], 
+[1.0 2.0 -2.0; 0.0 -1.0 -2.0; 0.0 0.0 0.0], 
+[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0])
+
+# the initial realization is already strongly controllable
+(A, E, B, F, C, G, D, H) = copy.(sys1)
+Q, Z, nc = sklf_right!(A, E, B, F, C, G, D, H) 
+i1 = 1:nc
+W = Z[1:3,1:3]
+@test Q'*[sys1[3] sys1[1]]*Z ≈ [B A] &&
+      Q'*[sys1[4] sys1[2]]*Z ≈ [F E] &&
+      [sys1[8] sys1[6]]*Z ≈ [H G] &&
+      [sys1[7] sys1[5]]*Z ≈ [D C] && nc == size(A,1) &&
+      lpsequal(A[i1,i1], E[i1,i1], B[i1,:]/W, F[i1,:]/W, C[:,i1], G[:,i1], D/W, H/W, sys1...,atol1=1.e-7,atol2=1.e-7)  
+
+
+# determine a strongly controllable and strongly observable realization
+(A, E, B, F, C, G, D, H) = copy.(sys1)
+Q, Z, no = sklf_left!(A, E, C, G, B, F, D, H, fast = fast) 
+p,n = size(C)
+i1 = n-no+1:n
+V = Q[end-p+1:end,end-p+1:end]'
+@test Q'*[sys1[1]; sys1[5]]*Z ≈ [A;C] &&
+      Q'*[sys1[2]; sys1[6]]*Z ≈ [E; G] &&
+      Q'*[sys1[4]; sys1[8]] ≈ [F; H] &&
+      Q'*[sys1[3]; sys1[7]] ≈ [B; D] &&
+      lpsequal(A[i1,i1], E[i1,i1], B[i1,:], F[i1,:], V\C[:,i1], V\G[:,i1], V\D, V\H, sys1...,atol1=1.e-7,atol2=1.e-7)
+
+# the eigenvalues and Kronecker structure of P(s) are the expected ones
+Mo = [A[i1,i1] B[i1,:]; C[:,i1] D]
+No = [E[i1,i1] F[i1,:]; G[:,i1] H]
+val, info = peigvals(Mo,No)
+@test val ≈ [1, Inf] && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1], 1)
+
+
+# use a strongly observable pencil realizations
+
+sys2  = ([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], 
+[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0], 
+[1.0 3.0 0.0; 1.0 4.0 2.0; 0.0 -1.0 -2.0], 
+[-1.0 -4.0 -2.0; -0.0 -0.0 -0.0; -1.0 -4.0 -2.0], 
+[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0], 
+[1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], 
+[1.0 2.0 -2.0; 0.0 -1.0 -2.0; 0.0 0.0 0.0], 
+[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0])
+
+# the initial realization is already strongly observable 
+n = size(A,1)
+(A, E, B, F, C, G, D, H) = copy.(sys2)
+V, Z, no = sklf_left!(A, E, C, G, B, F, D, H, fast = fast, withQ = false, withZ = false) 
+n = size(A,1)
+i1 = n-no+1:n
+@test n == no && lpsequal(A[i1,i1], E[i1,i1], B[i1,:], F[i1,:], V\C[:,i1], V\G[:,i1], V\D, V\H, sys2...,atol1=1.e-7,atol2=1.e-7)
+
+# compute a strongly controllable realization
+(A, E, B, F, C, G, D, H) = copy.(sys2)
+Q, Z, nc = sklf_right!(A, E, B, F, C, G, D, H, fast = fast) 
+i1 = 1:nc
+W = Z[1:3,1:3]
+@test Q'*[sys2[3] sys2[1]]*Z ≈ [B A] &&
+      Q'*[sys2[4] sys2[2]]*Z ≈ [F E] &&
+      [sys2[8] sys2[6]]*Z ≈ [H G] &&
+      [sys2[7] sys2[5]]*Z ≈ [D C] &&
+      lpsequal(A[i1,i1], E[i1,i1], B[i1,:]/W, F[i1,:]/W, C[:,i1], G[:,i1], D/W, H/W, sys2...,atol1=1.e-7,atol2=1.e-7)
+
+# the eigenvalues and Kronecker structure of P(s) are the expected ones
+Mc = [A[i1,i1] B[i1,:]; C[:,i1] D]
+Nc = [E[i1,i1] F[i1,:]; G[:,i1] H]
+val, info = peigvals(Mc,Nc)
+@test val ≈ [1, Inf] && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1], 1)
+
+# use a minimal descriptor realization (which is however not strongly minimal)
+(A, E, B, C, D) = 
+([0.2413793103448278 -1.2772592536173888 -0.18569533817705197; -0.04561640191490692 0.2413793103448277 -0.9826073688810348; -0.9826073688810347 -0.18569533817705186 0.0], 
+[1.0 -4.5102810375397046e-17 0.0; 0.0 -1.0 0.0; 0.0 0.0 0.0], 
+[0.9191450300180584 1.8382900600361163 -1.838290060036116; -0.17370208344491272 -0.34740416688982534 0.34740416688982545; -1.8708286933869704 -7.483314773547881 -3.741657386773941], 
+[-0.0656532164298613 0.34740416688982556 0.7071067811865471; -0.1313064328597228 0.6948083337796513 4.163336342344337e-17; 0.06565321642986145 -0.3474041668898257 0.7071067811865477], 
+[0.7500000000000001 1.5000000000000004 -1.5; -0.5 -1.9999999999999996 -0.9999999999999996; 0.24999999999999997 0.4999999999999998 -0.5000000000000001])
+F = zeros(size(B)...)
+G = zeros(size(C)...)
+H = zeros(size(D)...)
+sys = (A, E, B, F, C, G, D, H)
+sys2 = copy.(sys)
+
+# this realization is not strongly minimal
+# the computed eigenvalues contains two spurious infinite eigenvalues
+val, info = peigvals([A B;C D],[E F;G H])
+@test val ≈ [1, Inf, Inf, Inf] && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
+
+# compute a strongly controllable pencil realization
+#(A, E, B, F, C, G, D, H) = copy.(sys2)
+Q, Z, nc = sklf_right!(A, E, B, F, C, G, D, H, fast = fast) 
+i1 = 1:nc
+W = Z[1:3,1:3]
+@test Q'*[sys2[3] sys2[1]]*Z ≈ [B A] &&
+      Q'*[sys2[4] sys2[2]]*Z ≈ [F E] &&
+      [sys2[8] sys2[6]]*Z ≈ [H G] &&
+      [sys2[7] sys2[5]]*Z ≈ [D C] &&
+      lpsequal(A[i1,i1], E[i1,i1], B[i1,:]/W, F[i1,:]/W, C[:,i1], G[:,i1], D/W, H/W, sys2...,atol1=1.e-7,atol2=1.e-7)
+
+# there is still a spurious infinite eigenvalue 
+Mc = [A[i1,i1] B[i1,:]; C[:,i1] D]
+Nc = [E[i1,i1] F[i1,:]; G[:,i1] H]
+val, info = peigvals(Mc,Nc)
+@test val ≈ [1, Inf, Inf] && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1, 1], 1)
+
+
+# compute a strongly observable pencil realization
+(A, E, B, F, C, G, D, H) = copy.(sys2)
+Q, Z, no = sklf_left!(A, E, C, G, B, F, D, H, fast = fast) 
+p, n = size(C)
+i1 = n-no+1:n
+V = Q[end-p+1:end,end-p+1:end]'
+@test Q'*[sys2[1]; sys2[5]]*Z ≈ [A;C] &&
+      Q'*[sys2[2]; sys2[6]]*Z ≈ [E; G] &&
+      Q'*[sys2[4]; sys2[8]] ≈ [F; H] &&
+      Q'*[sys2[3]; sys2[7]] ≈ [B; D] &&
+      lpsequal(A[i1,i1], E[i1,i1], B[i1,:], F[i1,:], V\C[:,i1], V\G[:,i1], V\D, V\H, sys2...,atol1=1.e-7,atol2=1.e-7)
+
+# there is still a spurious infinite eigenvalue 
+Mo = [A[i1,i1] B[i1,:]; C[:,i1] D]
+No = [E[i1,i1] F[i1,:]; G[:,i1] H]
+val, info = peigvals(Mo,No)
+@test val ≈ [1, Inf, Inf] && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1, 1], 1)
+
+
 end
 end
 

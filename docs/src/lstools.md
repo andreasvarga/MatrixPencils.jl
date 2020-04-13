@@ -1,11 +1,11 @@
-# Manipulation of linearizations of the form [A-λE B; C D] of polynomial or rational matrices
+# Manipulation of linearizations of the form `[A-λE B; C D]` and `[A-λE B-λF; C-λG D-λH]` of polynomial or rational matrices
 
 ```@docs
 lsequal
+lseval
 lsminreal
 lsminreal2
-sklf_right!
-sklf_left!
-sklf_rightfin!
-sklf_leftfin!
+lpsequal
+lpsminreal
+lpseval
 ```

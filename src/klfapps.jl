@@ -1,7 +1,7 @@
 """
-    pzeros(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, iz, KRInfo)
+    pzeros(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
 
-Return the (finite and infinite) Smith zeros of the linear pencil `M-λN` in `val`, the multiplicities of infinite zeros in `iz` and  the 
+Return the finite and infinite zeros of the linear pencil `M-λN` in `val`, the multiplicities of infinite zeros in `iz` and  the 
 information on the complete Kronecker-structure in the `KRInfo` object. 
 
 The information on the multiplicities of infinite zeros is provided in the vector `iz`, 
@@ -28,43 +28,14 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
 
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
+   # Step 0: Reduce to the standard form
+   M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
 
+   mM, nM = size(M)
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
    lki = Vector{Int}(undef,maxmn)
-
-   
-   # # alternative computation
-   # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-   # withQ = false, withZ = false, fast = false)
-
-   # nzi = 0
-   # nb = length(μ)
-   # if nb > 0
-   #    id = reverse([μ[1:1];μ[2:nb]-ν[1:nb-1]])
-   #    for i = 2:nb
-   #       nzi += id[i]*(i-1)
-   #    end
-   # end
-   # mr = sum(νr)  
-   # nr = sum(μr)
-   # if1 = mr+1:mr+nf
-   # jf1 = nr+1:nr+nf
-   # return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(nzi) ]
-
-   # Step 0: Reduce to the standard form
-   Q = nothing
-   Z = nothing
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
 
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
@@ -75,7 +46,7 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
-      τ, ρ = _preduce1!(n, m, p, view(M,ired,jred), view(N,ired,jred), Q, Z, tol1; 
+      τ, ρ = _preduce1!(n, m, p, view(M1,ired,jred), view(N1,ired,jred), Q, Z, tol1; 
                         fast = fast, withQ = false, withZ = false)
       i += 1
       mui = ρ+τ
@@ -96,7 +67,7 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
-      ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
+      ρ = _preduce4!(n, 0, p, view(M1,ired,jred),view(N1,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
       j += 1
       rtrail += p
       ctrail += ρ
@@ -106,11 +77,11 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),niz) ], minf(id[2:i]), 
+   return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
-    peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (values, KRInfo)
+    peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, KRInfo)
 
 Return the (finite and infinite) eigenvalues of the linear pencil `M-λN` in `val` and the 
 information on the complete Kronecker-structure in the `KRInfo` object. 
@@ -135,39 +106,14 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
 
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
+   # Step 0: Reduce to the standard form
+   M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
 
-   # # alternative computation 
-   # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-   #                                          withQ = false, withZ = false, fast = false)
-   # ni = 0
-   # nb = length(μ)
-   # if nb > 0
-   #    id = reverse([μ[1:1];μ[2:nb]-ν[1:nb-1]])
-   #    for i = 1:nb
-   #       ni += id[i]*i
-   #    end
-   # end
-   # mr = sum(νr)
-   # nr = sum(μr)
-   # if1 = mr+1:mr+nf
-   # jf1 = nr+1:nr+nf
-   # return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ]
+   mM, nM = size(M)
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
    lki = Vector{Int}(undef,maxmn)
-
-   Q = nothing
-   Z = nothing
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
 
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
@@ -178,7 +124,7 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
-      τ, ρ = _preduce1!(n, m, p, view(M,ired,jred), view(N,ired,jred), Q, Z, tol1; 
+      τ, ρ = _preduce1!(n, m, p, view(M1,ired,jred), view(N1,ired,jred), Q, Z, tol1; 
                         fast = fast, withQ = false, withZ = false)
       i += 1
       mui = ρ+τ
@@ -198,7 +144,7 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
       # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
-      ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
+      ρ = _preduce4!(n, 0, p, view(M1,ired,jred),view(N1,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
       rtrail += p
       ctrail += ρ
       j += 1
@@ -208,7 +154,7 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ], 
+   return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),ni) ], 
           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
@@ -219,10 +165,10 @@ Kronecker-structure object definition.
 If `info::KRInfo` is the Kronecker-structure object, then:
 
 `info.rki` is a vector, whose components contains the column dimensions of  
-elementary Kronecker blocks of the form `(k-1) x k`;
+elementary Kronecker blocks of the form `(k-1) x k`, called the right Kronecker indices;
 
 `info.lki` is a vector, whose components contains the row dimensions of  
-elementary Kronecker blocks of the form `k x (k-1)`;
+elementary Kronecker blocks of the form `k x (k-1)`, called the left Kronecker indices;
 
 `info.id` is a vector, whose components contains the orders of the infinite elementary divisors (i.e., the
 multiplicities of infinite eigenvalues). 
@@ -231,7 +177,7 @@ multiplicities of infinite eigenvalues).
 
 Destructuring via iteration produces the components `info.rki`, `info.lki`, `info.id`, and `info.nf`.
 """
-struct KRInfo
+mutable struct KRInfo
    rki::Vector{Int}
    lki::Vector{Int}
    id::Vector{Int}
@@ -283,58 +229,15 @@ machine epsilon of the element type of `M`.
 function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Real = zero(eltype(M)), atol2::Real = zero(eltype(M)), 
    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2))) 
 
-   mM, nM = size(M)
-   (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
+   # Step 0: Reduce to the standard form
+   M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
    
-   # # alternative computation
-   # M, N, Q, Z, νr, μr, nf, ν, μ = klf_right(M, N, atol1 = atol1, atol2 = atol2, rtol = rtol,  
-   #                                          withQ = false, withZ = false, fast = fast)
-   # rki = μr-νr
-   # nb = length(μ)
-   # if nb > 0
-   #    id = [μ[1:1];μ[2:end]-ν[1:end-1]]
-   #    k = 0
-   #    for i = 1:nb
-   #        if id[i] == 0 
-   #           k += 1
-   #        else
-   #           break
-   #        end
-   #    end
-   #    id = reverse(id[k+1:end])
-   # else
-   #    id = μ
-   # end
-   # lki = reverse(ν-μ)
-   # if nb > 0
-   #    k = nb
-   #    for i = nb:-1:1
-   #       if lki[i] == 0 
-   #          k -= 1
-   #       else
-   #          break
-   #       end
-   #    end
-   #    lki = lki[1:k]
-   # end
-   # #return rki, id, nf, lki
-   # return KRInfo(rki, lki, id, nf)
-
+   mM, nM = size(M)
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
    lki = Vector{Int}(undef,maxmn)
-
-   Q = nothing
-   Z = nothing
-   n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
-   
+  
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
    nrinf = 0
@@ -344,7 +247,7 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
       # Steps 1 & 2: Standard algorithm PREDUCE 
       ired = mrinf+1:mM
       jred = nrinf+1:nM
-      τ, ρ = _preduce1!(n, m, p, view(M,ired,jred), view(N,ired,jred), Q, Z, tol1; 
+      τ, ρ = _preduce1!(n, m, p, view(M1,ired,jred), view(N1,ired,jred), Q, Z, tol1; 
                         fast = fast, withQ = false, withZ = false)
       i += 1
       mui = ρ+τ
@@ -363,7 +266,7 @@ function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Rea
       # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
-      ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
+      ρ = _preduce4!(n, 0, p, view(M1,ired,jred),view(N1,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
       j += 1
       rtrail += p
       ctrail += ρ
@@ -378,6 +281,7 @@ function deltrz(ind)
    k === nothing ? (return ind[1:0]) : (return ind[1:k]) 
 end
 function kroni(ind)
+   # Kronecker indices evaluated from the ranks of blocks of the staircase form
    k = findlast(!iszero,ind)
    k === nothing && (return ind[1:0]) 
    ni = sum(ind[1:k])
@@ -393,6 +297,7 @@ function kroni(ind)
    return ki 
 end
 function minf(ind)
+   # multiplicities of infinite eigenvalues evaluated from the blocksizes of the staircase form
    k = findlast(!iszero,ind)
    k === nothing && (return ind[1:0]) 
    ni = sum(ind[1:k])
@@ -407,7 +312,6 @@ function minf(ind)
    end
    return mi 
 end
-
 """
     prank(M::AbstractMatrix, N::AbstractMatrix; fastrank = true, atol1::Real=0, atol2::Real=0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ)
 
@@ -436,29 +340,22 @@ function prank(M::AbstractMatrix, N::AbstractMatrix; fastrank::Bool = true,
 
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
-   isa(M,Adjoint) && (M = copy(M))
-   isa(N,Adjoint) && (N = copy(N))
-   T = promote_type(eltype(M), eltype(N))
-   T <: BlasFloat || (T = promote_type(Float64,T))
-   eltype(M) == T || (M = convert(Matrix{T},M))
-   eltype(N) == T || (N = convert(Matrix{T},N))
 
    if fastrank
-      nrmM = opnorm(M,1)
-      nrmM == zero(nrmM) && (return rank(N, atol = atol2, rtol = rtol))
-      nrmN = opnorm(N,1)
-      nrmN == zero(nrmN) && (return rank(M, atol = atol1, rtol = rtol))
+      T = promote_type(eltype(M), eltype(N))
+      T <: BlasFloat || (T = promote_type(Float64,T))
+      M1 = copy_oftype(M,T)
+      N1 = copy_oftype(N,T)
+      nrmM = opnorm(M1,1)
+      nrmM == zero(nrmM) && (return rank(N1, atol = atol2, rtol = rtol))
+      nrmN = opnorm(N1,1)
+      nrmN == zero(nrmN) && (return rank(M1, atol = atol1, rtol = rtol))
       scale = nrmM/nrmN*rand()
-      return rank(M+scale*N, atol = max(atol1,atol2), rtol = rtol)
+      return rank(M1+scale*N1, atol = max(atol1,atol2), rtol = rtol)
    else
-      # # alternative (less efficient) computation using the KLF exhibiting the spliting of right-left Kronecker structures
-      # M, N, Q, Z, ν, μ, n = klf_rlsplit(M, N; fast = false, finite_infinite = false, atol1 = atol1, atol2 = atol2, 
-      #                                   rtol = rtol, withQ = false, withZ = false)
-      # return sum(ν) + n
-      Q = nothing
-      Z = nothing
-      n, m, p = _preduceBF!(M, N, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
- 
+      # Step 0: Reduce to the standard form
+      M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
+
       n == min(mM,nM) && (return n)
       prnk = 0
       tol1 = max(atol1, rtol*opnorm(M,1))
@@ -468,7 +365,7 @@ function prank(M::AbstractMatrix, N::AbstractMatrix; fastrank::Bool = true,
          # Steps 1 & 2: Standard algorithm PREDUCE 
          ired = mrinf+1:mM
          jred = nrinf+1:nM
-         τ, ρ = _preduce1!(n,m,p,view(M,ired,jred),view(N,ired,jred),Q,Z,tol1; fast = false, withQ = false, withZ = false)
+         τ, ρ = _preduce1!(n,m,p,view(M1,ired,jred),view(N1,ired,jred),Q,Z,tol1; fast = false, withQ = false, withZ = false)
          prnk += ρ+τ
          mrinf += ρ+τ
          nrinf += m
