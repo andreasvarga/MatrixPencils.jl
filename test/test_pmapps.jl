@@ -10,7 +10,6 @@ using Test
 @testset "Polynomial Matrix Applications" begin
 
 
-fast = true
 for fast in (false,true)
 
 P = zeros(0,0,0); 
@@ -430,9 +429,6 @@ P[:,:,1] = M; P[:,:,2] = -N;
       length(filter(y-> y == true,isfinite.(val))) == 3 &&
       (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0, 0, 1, 2], [0, 3], [1, 2], 3)
 
-#for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
-Ty = Float64
-Ty = Complex{Float64}
 for Ty in (Float64, Complex{Float64})
 
 P = rand(Ty,2,3,5);
@@ -471,7 +467,7 @@ val, ip, info = pmpoles(P,CF1=true, fast = fast)
 val, iz, info = pmzeros1(P, fast = fast)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf) == ([8], [], [], 0)
 
-val, ip, info = pmpoles1(P, fast = fast)
+val, ip, info = pmpoles1(P, fast = fast, atol = abstol)
 @test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && (info.rki, info.lki, info.id, info.nf) == ([], [], [1, 5, 5], 0)
 
 val, iz, info = pmzeros2(P, fast = fast)
