@@ -15,7 +15,7 @@ using .LapackUtil2: larfg!, larfgl!, larf!
 export preduceBF, klf, klf_left, klf_right, klf_rlsplit
 export prank, pkstruct, peigvals, pzeros, KRInfo
 export isregular, isunimodular, fisplit, _svdlikeAE!
-export sreduceBF, sklf, sklf_right, sklf_left, _sreduceBAE!, sklf_right!, sklf_left!, sklf_rightfin!, sklf_leftfin! 
+export sreduceBF, sklf, sklf_right, sklf_left, sklf_right!, sklf_left!, sklf_rightfin!, sklf_leftfin! 
 export sprank, spkstruct, speigvals, spzeros
 export lsminreal, lsminreal2, lsequal, lseval
 export lpsminreal, lpsequal, lpseval

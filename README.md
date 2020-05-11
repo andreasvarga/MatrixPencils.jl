@@ -64,8 +64,8 @@ The current version of the package includes the following functions:
 
 **Manipulation of polynomial matrices** 
 
-* **poly2pm**  Conversion of a polynomial matrix from the **Polynomials** package format to a 3D matrix.
-* **pm2poly**  Conversion of a polynomial matrix from a 3D matrix to the **Polynomials** package format.
+* **poly2pm**  Conversion of a polynomial matrix from the **[`Polynomials`](https://github.com/JuliaMath/Polynomials.jl)** package format to a 3D matrix.
+* **pm2poly**  Conversion of a polynomial matrix from a 3D matrix to the **[`Polynomials`](https://github.com/JuliaMath/Polynomials.jl)** package format.
 * **pmdeg**  Determination of the degree of a polynomial matrix.
 * **pmeval**  Evaluation of a polynomial matrix for a given value of its argument.
 * **pmreverse**  Building the reversal of a polynomial matrix.  
