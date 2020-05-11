@@ -3,6 +3,7 @@ module Test_linsystools
 using LinearAlgebra
 using MatrixPencils
 using Test
+using Polynomials
 
 
 @testset "Linear System Tools" begin
@@ -479,8 +480,9 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
 @time A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 7 && nuo == 3 && nse == 0
+      
 
-fast = true; Ty = Float64      
+
 for fast in (true, false)
 
 for Ty in (Float64, Complex{Float64})
@@ -515,6 +517,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
 
 end
 
+end
 end
 
 @testset "lpsminreal" begin
@@ -693,5 +696,4 @@ end
 
 
 end # regular testset
-end # module
 end # module

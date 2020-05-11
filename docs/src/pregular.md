@@ -2,6 +2,7 @@
 
 ```@docs
 isregular
+isunimodular
 fisplit
 MatrixPencils.fisplit!
 MatrixPencils._qrE!

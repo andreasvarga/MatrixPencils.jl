@@ -197,7 +197,7 @@ function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
    return rE, rA22   
 end  
 """
-    isregular(A, E, γ; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
+    isregular(A, E, γ; atol::Real = 0,  rtol::Real = atol1 > 0 ? 0 : n*ϵ) -> Bool
 
 Test whether the linear pencil `A-λE` is regular at `λ = γ`(i.e., `A-λE` is square and `det(A-γE) !== 0`). 
 The underlying computational procedure checks the maximal rank of `A-γE` if `γ` is finite and of `E` if 
@@ -208,12 +208,13 @@ elements of `A-γE`, respectively.
 The default relative tolerance is `n*ϵ`, where `n` is the size of  `A`, and `ϵ` is the 
 machine epsilon of the element type of `A`. 
 """
-function isregular(A::AbstractMatrix, E::AbstractMatrix, γ::Number; atol::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
+function isregular(A::AbstractMatrix, E::Union{AbstractMatrix,Nothing}, γ::Number; atol::Real = zero(real(eltype(A))), 
                    rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(atol))
    
    m, n = size(A)
-   (m,n) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
    m == n || (return false)
+   E === nothing && (return rank(A, atol = atol, rtol = rtol) == n )
+   (m,n) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
    if isinf(γ) 
       return rank(E,atol = atol,rtol=rtol) == n
    else
@@ -233,12 +234,12 @@ for the nonzero elements of `A` and `E`, respectively.
 The default relative tolerance is `n*ϵ`, where `n` is the size of  `A`, and `ϵ` is the 
 machine epsilon of the element type of `A`. 
 """
-function isregular(A::AbstractMatrix, E::AbstractMatrix; atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
+function isregular(A::AbstractMatrix, E::Union{AbstractMatrix,Nothing}; atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
                    rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2)))
-   
    mA, nA = size(A)
-   (mA,nA) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
    mA == nA || (return false)
+   E === nothing && (return rank(A, atol = atol1, rtol = rtol) == mA )
+   (mA,nA) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
    T = promote_type(eltype(A), eltype(E))
    T <: BlasFloat || (T = promote_type(Float64,T))
    A1 = copy_oftype(A,T)
@@ -251,20 +252,62 @@ function isregular(A::AbstractMatrix, E::AbstractMatrix; atol1::Real = zero(real
    n, m, p = _preduceBF!(A1, E1, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
 
    mrinf = 0
-   nrinf = 0
    tol1 = max(atol1, rtol*opnorm(A1,1))
    while m > 0
       # Steps 1 & 2: Standard algorithm PREDUCE
-      τ, ρ = _preduce1!(n, m, p, A1, E1, Q, Z, tol1; fast = false, 
-                        roff = mrinf, coff = nrinf, withQ = false, withZ = false)
+      i1 = mrinf+1:mA
+      τ, ρ = _preduce1!(n, m, m, view(A1,i1,i1), view(E1,i1,i1), Q, Z, tol1; fast = false, withQ = false, withZ = false)
       ρ+τ == m || (return false)
-      mrinf += ρ+τ
-      nrinf += m
+      mrinf += m
       n -= ρ
       m = ρ
-      p -= τ 
    end
    return true                                            
+end
+"""
+    isunimodular(A, E; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
+
+Test whether the linear pencil `A-λE` is unimodular (i.e., `A-λE` is square, regular and `det(A-λE) == constant`). 
+The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form (KLF), 
+which provides information to check the full rank of `A-λE` and the lack of finite eigenvalues. 
+
+The keyword arguements `atol1`, `atol2` and `rtol` specify the absolute tolerance for the nonzero
+elements of `A`, the absolute tolerance for the nonzero elements of `E`, and the relative tolerance 
+for the nonzero elements of `A` and `E`, respectively. 
+The default relative tolerance is `n*ϵ`, where `n` is the size of  `A`, and `ϵ` is the 
+machine epsilon of the element type of `A`. 
+"""
+function isunimodular(A::AbstractMatrix, E::Union{AbstractMatrix,Nothing}; atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
+                      rtol::Real = (size(A,1)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2)))
+   
+   mA, nA = size(A)
+   mA == nA || (return false)
+   E === nothing && (return rank(A, atol = atol1, rtol = rtol) == mA )
+   (mA,nA) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
+   mA == 0 && (return true)
+   T = promote_type(eltype(A), eltype(E))
+   T <: BlasFloat || (T = promote_type(Float64,T))
+   A1 = copy_oftype(A,T)
+   E1 = copy_oftype(E,T)
+
+   Q = nothing
+   Z = nothing
+
+   # Step 0: Reduce to the standard form
+   n, m, p = _preduceBF!(A1, E1, Q, Z; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
+   n == 0 && (return true)
+   mrinf = 0
+   tol1 = max(atol1, rtol*opnorm(A1,1))
+   while m > 0
+      # Steps 1 & 2: Standard algorithm PREDUCE
+      i1 = mrinf+1:mA
+      τ, ρ = _preduce1!(n, m, m, view(A1,i1,i1), view(E1,i1,i1), Q, Z, tol1; fast = false, withQ = false, withZ = false)
+      ρ+τ == m || (return false)
+      mrinf += m
+      n -= ρ
+      m = ρ
+   end
+   return n == 0                                           
 end
 """
     fisplit(A, E, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (At, Et, Bt, Ct, Q, Z, ν, nf, ni)
@@ -457,7 +500,7 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
       return reverse(ν[1:i]), nf, ni                                             
    else
 
-      # Reduce A-λE to the to the Kronecker-like form by splitting the infinite-finite structures
+      # Reduce A-λE to the Kronecker-like form by splitting the infinite-finite structures
       #
       #                  | Ai - λ Ei |    *      |
       #      At - λ Et = |-----------|-----------|

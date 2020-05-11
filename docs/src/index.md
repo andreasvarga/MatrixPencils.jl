@@ -20,8 +20,11 @@ KLFs which reveal the full or partial Kronecker structure of a linear pencil. Th
 
 The implemented basic pencil reduction operations are described in [1] and [2], and form the basis of the implemented **PREDUCE** procedure described in [3].
 
-A set of functions is provided to address pencil manipulation problems for structured linear pencils `M − λN` of the forms 
-`[A - λE B; C D]` or `[A-λE B-λF; C-λG D-λH]`. Linear pencils with these structure frequently arise from the linearization of polynomial or rational matrices.  
+A set of functions is provided to address pencil manipulation problems for structured linear pencils `M − λN` of the forms
+`[A - λE B; C D]` or `[A-λE B-λF; C-λG D-λH]`. Linear pencils with these structure frequently arise from the linearization of polynomial or rational matrices. The computation of least order linearizations is based on algorithms described in [3]-[6].  
+
+A set of functions is available for the manipulation of polynomial matrices specified via their coefficient matrices in a monomial basis. All funtions also support matrix, vector or scalar of elements of the `Polynomial` type
+provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. Several linearization functions are available which allow the extension of pencil manipulation techniques to matrix polynomials. Some straightforward applications are covered such as the computation of finite and infinite eigenvalues, zeros and poles, the determination of the normal rank, the determination of Kronecker indices and finite and infinite eigenvalue structure, checks of regularity and unimodularity. The implementations follow the computational framework and results developed in [7].
 
 The available functions in the `MatrixPencils.jl` package cover both real and complex numerical data.
 The current version of the package includes the following functions:
@@ -30,90 +33,91 @@ The current version of the package includes the following functions:
 
 | Function | Description |
 | :--- | :--- |
-| **preduceBF** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
-| **klf** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
-| **klf_left** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
-| **klf_right** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
-| **klf_rlsplit** | Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures |
+| **[`preduceBF`](@ref)** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
+| **[`klf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
+| **[`klf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
+| **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
+| **[`klf_rlsplit`](@ref)** | Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures |
 
 **Manipulation of structured linear matrix pencils of the form [A-λE B; C D]**
 
 | Function | Description |
 | :--- | :--- |
-| **sreduceBF** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
-| **sklf** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
-| **sklf_left** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
-| **sklf_right** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
+| **[`sreduceBF`](@ref)** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
+| **[`sklf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
+| **[`sklf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
+| **[`sklf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
 
 **Manipulation of regular linear matrix pencils**
 
 | Function | Description |
 | :--- | :--- |
-| **isregular** | Checking the regularity of a pencil |
-| **isunimodular** | Checking the unimodularity of a pencil |  (in preparation)
-| **fisplit** | Finite-infinite eigenvalue splitting |
+| **[`isregular`](@ref)** | Checking the regularity of a pencil |
+| **[`isunimodular`](@ref)** | Checking the unimodularity of a pencil |  
+| **[`fisplit`](@ref)** | Finite-infinite eigenvalue splitting |
 
 **Some applications of matrix pencil computations**
 
 | Function | Description |
 | :--- | :--- |
-| **pkstruct** | Determination of the complete Kronecker structure |
-| **prank** | Determination of the normal rank |
-| **peigvals** | Computation of the finite and infinite eigenvalues |
-| **pzeros** | Computation of the finite and infinite zeros |
+| **[`pkstruct`](@ref)** | Determination of the complete Kronecker structure |
+| **[`prank`](@ref)** | Determination of the normal rank |
+| **[`peigvals`](@ref)** | Computation of the finite and infinite eigenvalues |
+| **[`pzeros`](@ref)** | Computation of the finite and infinite zeros |
 
 **Some applications to structured linear matrix pencils of the form `[A-λE B; C D]`**
 
 | Function | Description |
 | :--- | :--- |
-| **spkstruct** | Determination of the complete Kronecker structure |
-| **sprank** | Determination of the normal rank |
-| **speigvals** | Computation of the finite and infinite eigenvalues |
-| **spzeros** | Computation of the finite and infinite zeros |
+| **[`spkstruct`](@ref)** | Determination of the complete Kronecker structure |
+| **[`sprank`](@ref)** | Determination of the normal rank |
+| **[`speigvals`](@ref)** | Computation of the finite and infinite eigenvalues |
+| **[`spzeros`](@ref)** | Computation of the finite and infinite zeros |
 
 **Manipulation of linearizations of the form `[A-λE B; C D]` and `[A-λE B-λF; C-λG D-λH]` of polynomial or rational matrices**
 
 | Function | Description |
 | :--- | :--- |
-| **lsminreal** | Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices |
-| **lsminreal2** | Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices (potentially more efficient)|
-| **lpsminreal** | Computation of strong minimal pencil based liniarizations `[A-λE B-λF; C-λG D-λH]` of rational matrices |
-| **lsequal** | Check the equivalence of two linearizations |
-| **lpsequal** | Check the equivalence of two pencil based liniarizations |
+| **[`lsminreal`](@ref)** | Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices |
+| **[`lsminreal2`](@ref)** | Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices (potentially more efficient)|
+| **[`lpsminreal`](@ref)** | Computation of strong minimal pencil based liniarizations `[A-λE B-λF; C-λG D-λH]` of rational matrices |
+| **[`lsequal`](@ref)** | Check the equivalence of two linearizations |
+| **[`lpsequal`](@ref)** | Check the equivalence of two pencil based liniarizations |
 
-**Manipulation of polynomial matrices** (in preparation)
-
-| Function | Description |
-| :--- | :--- |
-| **pmdeg** | Determination of the degree of a polynomial matrix |
-| **pmeval** | Evaluation of a polynomial matrix for a given value of its argument.|
-| **pmreverse** | Building the reversal of a polynomial matrix  |
-| **pm2lpCF1** | Building a linearization in the first companion Frobenius form  |
-| **pm2lpCF2** | Building a linearization in the second companion Frobenius form  |
-| **pm2ls** | Building a structured linearization `[A-λE B; C D]` of a polynomial matrix |
-| **pm2lps** | Building a linear pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a polynomial matrix |
-| **spm2ls** | Building a structured linearization `[A-λE B; C D]` of a structured polynomial matrix `[T(λ) U(λ); V(λ) W(λ)]`|
-| **spm2lps** | Building a linear pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a structured polynomial matrix `[T(λ) U(λ); V(λ) W(λ)]`|
-| **ls2pm** | Computation of the polynomial matrix from its structured linearization |
-| **lps2pm** | Computation of the polynomial matrix from its linear pencil based structured linearization |
-
-**Some applications to polynomial matrices** (in preparation)
+**Manipulation of polynomial matrices** 
 
 | Function | Description |
 | :--- | :--- |
-| **pmkstruct** | Determination of the complete Kronecker structure using its linear pencil based structured linearization  |
-| **pmkstruct2** | Determination of the complete Kronecker structure using its structured linearization |
-| **pmkstruct3** | Determination of the complete Kronecker structure using its companion form linearization |
-| **pmrank** | Determination of the normal rank |
-| **pmeigvals** | Computation of the finite and infinite eigenvalues using its linear pencil based structured linearization |
-| **pmeigvals2** | Computation of the finite and infinite eigenvalues using its structured linearization |
-| **pmeigvals3** | Computation of the finite and infinite eigenvalues using its companion form linearization |
-| **pmzeros** | Computation of the finite and infinite zeros using its linear pencil based structured linearization |
-| **pmzeros2** | Computation of the finite and infinite zeros using its structured linearization|
-| **pmzeros3** | Computation of the finite and infinite zeros using its companion form linearization |
-| **pmroots** | Computation of the roots of the determinant of a regular polynomial matrix |
-| **ispmregular** | Checking the regularity of a polynomial matrix |
-| **ispmunimodular** | Checking the unimodularity of a polynomial matrix |
+| **[`poly2pm`](@ref)** | Conversion of a polynomial matrix used in **Polynomials** package to a polynomial matrix represented as a 3-dimensional matrix |
+| **[`pm2poly`](@ref)** | Conversion of a polynomial matrix represented as a 3-dimensional matrix to a polynomial matrix used in **Polynomials** package |
+| **[`pmdeg`](@ref)** | Determination of the degree of a polynomial matrix |
+| **[`pmeval`](@ref)** | Evaluation of a polynomial matrix for a given value of its argument.|
+| **[`pmreverse`](@ref)** | Building the reversal of a polynomial matrix  |
+| **[`pm2lpCF1`](@ref)** | Building a linearization in the first companion Frobenius form  |
+| **[`pm2lpCF2`](@ref)** | Building a linearization in the second companion Frobenius form  |
+| **[`pm2ls`](@ref)** | Building a structured linearization `[A-λE B; C D]` of a polynomial matrix |
+| **[`ls2pm`](@ref)** | Computation of the polynomial matrix from its structured linearization |
+| **[`pm2lps`](@ref)** | Building a linear pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a polynomial matrix |
+| **[`lps2pm`](@ref)** | Computation of the polynomial matrix from its linear pencil based structured linearization |
+| **[`spm2ls`](@ref)** | Building a structured linearization `[A-λE B; C D]` of a structured polynomial matrix `[T(λ) U(λ); V(λ) W(λ)]`|
+| **[`spm2lps`](@ref)** | Building a linear pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a structured polynomial matrix `[T(λ) U(λ); V(λ) W(λ)]`|
+
+**Some applications to polynomial matrices** 
+
+| Function | Description |
+| :--- | :--- |
+| **[`pmkstruct`](@ref)** | Determination of the complete Kronecker structure using companion form based linearizations  |
+| **[`pmeigvals`](@ref)** | Computation of the finite and infinite eigenvalues using companion form based linearizations |
+| **[`pmzeros`](@ref)** | Computation of the finite and infinite zeros using companion form based linearizations |
+| **[`pmzeros1`](@ref)** | Computation of the finite and infinite zeros using linear pencil based structured linearization |
+| **[`pmzeros2`](@ref)** | Computation of the finite and infinite zeros using structured pencil based linearization |
+| **[`pmroots`](@ref)** | Computation of the roots of the determinant of a regular polynomial matrix |
+| **[`pmpoles`](@ref)** | Computation of the (infinite) poles using companion form based linearizations |
+| **[`pmpoles1`](@ref)** | Computation of the (infinite) poles using linear pencil based structured linearization |
+| **[`pmpoles2`](@ref)** | Computation of the (infinite) poles using structured pencil linearization |
+| **[`pmrank`](@ref)** | Determination of the normal rank |
+| **[`ispmregular`](@ref)** | Checking the regularity of a polynomial matrix |
+| **[`ispmunimodular`](@ref)** | Checking the unimodularity of a polynomial matrix |
 
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
@@ -123,9 +127,10 @@ The collection of tools will be extended by adding new functionality, such as to
 
 ## Release Notes
 
-### Version 0.6.0 (in preparation)
+### Version 0.6.0
 
-This release includes implementations of computational procedures to manipulate polynomial matrices specified via their coefficient matrices in a monomial basis.  Several linearization functions are available which allow the extension of pencil manipulation techniques to matrix polynomials. Some straightforward applications are covered such as the computation of finite and infinite eigenvalues and zeros, the determination of the normal rank, the determination of Kronecker indices and finite and infinite eigenvalue structure.
+This release includes implementations of computational procedures to manipulate polynomial matrices specified via their coefficient matrices in a monomial basis. All funtions also support matrix, vector or scalar of elements of the `Polynomial` type
+provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.  Several linearization functions are available which allow the extension of pencil manipulation techniques to matrix polynomials. Some straightforward applications are covered such as the computation of finite and infinite eigenvalues, zeros and poles, the determination of the normal rank, the determination of Kronecker indices and finite and infinite eigenvalue structure, checks of regularity and unimodularity.  A new function is provided to check the unimodularity of a linear pencil.
 
 ### Version 0.5.0
 
@@ -161,3 +166,15 @@ License: MIT (expat)
 
 [3]   A. Varga, Solving Fault Diagnosis Problems – Linear Synthesis Techniques, Vol. 84 of
 Studies in Systems, Decision and Control, Springer International Publishing, 2017.
+
+[4] P. Van Dooreen, The generalized eigenstructure problem in linear system theory, 
+IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
+
+[5] F. Dopico, M. C. Quintana, and P. Van Dooren, Linear system matrices of rational transfer tunctions, (submitted 2020).
+
+[6] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
+Int. J. Control, Vol.31(5) (1980) 1007–1009.
+
+[7] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
+the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
+

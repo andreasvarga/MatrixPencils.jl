@@ -12,6 +12,7 @@ julia:
   - nightly
 
 matrix:
+  fast_finish: true
   allow_failures:
     - julia: 1.0
     - julia: 1.1
@@ -30,6 +31,7 @@ branches:
   only:
     - master
 
+#codecov: true
 
 after_success:
   - julia -e 'using Pkg; cd(Pkg.dir("MatrixPencils")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
@@ -42,3 +44,13 @@ jobs:
       script:
         - julia -e 'using Pkg; Pkg.add(PackageSpec(name="Documenter"))' && julia docs/make.jl
       after_success: skip
+
+# jobs:
+#   include:
+#     - stage: "Documentation"
+#       julia: 1.2
+#       os: linux
+#       script:
+#         - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+#         - julia --project=docs/ docs/make.jl
+#       after_success: skip

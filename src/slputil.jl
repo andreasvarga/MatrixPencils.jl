@@ -408,7 +408,7 @@ end
 """
     _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},B::AbstractMatrix{T1},C::Union{AbstractMatrix{T1},Missing},
                  Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
-                 fast = true, init = true, roff = 0, coff = 0, withQ = true)
+                 fast = true, init = true, roff = 0, coff = 0, withQ = true, withZ = true)
 
 Reduce for `init = true`, the pair `(A-λE,B)`, with E upper-triangular, using an orthogonal or unitary 
 similarity transformations on the matrices `A`, `E` and `B` of the form `At =  Q1'*A*Z1`, `Et =  Q1'*E*Z1`, 
@@ -430,8 +430,8 @@ Reduce for `init = false`, the matrices `A` and `E` of the form
         [ 0   B1 A1 ] n            [ 0   0  E1 ] n
          coff m  n                  coff m  n 
 
-with 'E1' upper triangular, using an orthogonal or unitary similarity transformations on the submatrices 
-'A1', 'E1' and 'B1' of the form 'At1 =  Q1'*A1*Z1', 'Et1 =  Q1'*E1*Z1', 'Bt1 = Q1'*B1', to the form
+with `E1` upper triangular, using an orthogonal or unitary similarity transformations on the submatrices 
+`A1`, `E1` and `B1` of the form `At1 =  Q1'*A1*Z1`, `Et1 =  Q1'*E1*Z1`, `Bt1 = Q1'*B1`, to the form
     
                                       [ *   *    *   *   ] roff
      At = diag(I,Q1')*A*diag(I,Z1) =  [ 0   B11  A11 A12 ] ρ
@@ -599,8 +599,8 @@ Reduce for `init = false`, the matrices `A` and `E` of the form
         [ 0   *   ] rtrail          [ 0   *   ] rtrail
           n ctrail 
 
-with 'E1' upper triangular, using an orthogonal or unitary similarity transformations on the submatrices 
-'A1', 'E1' and 'C1' of the form 'At1 =  Q1'*A1*Z1', 'Et1 =  Q1'*E1*Z1', 'Ct1 = C1*Z1', to the form
+with `E1` upper triangular, using an orthogonal or unitary similarity transformations on the submatrices 
+`A1`, `E1` and `C1` of the form `At1 =  Q1'*A1*Z1`, `Et1 =  Q1'*E1*Z1`, `Ct1 = C1*Z1`, to the form
 
 
                                       [ A11 A12  *   ] n-ρ

@@ -9,6 +9,8 @@ using Test, MatrixPencils
     include("test_sklf.jl")
     include("test_sklfapps.jl")
     include("test_lstools.jl")
+    include("test_pmtools.jl")
+    include("test_pmapps.jl")
 end
 
 end

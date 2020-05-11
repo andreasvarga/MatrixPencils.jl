@@ -14,7 +14,9 @@ makedocs(
         "klfapps.md",
         "sklfapps.md",
         "pregular.md",
-        "lstools.md"
+        "lstools.md",
+        "pmtools.md",
+        "pmapps.md"
      ],
      "Internal" => [
         "klftools_int.md"

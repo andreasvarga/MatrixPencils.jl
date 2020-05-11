@@ -24,14 +24,19 @@ elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 
 """
-function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
+function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool = true, 
    atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
+
+   mM, nM = size(M)
+   if N === nothing
+      r = rank(M,atol = atol1, rtol = rtol)
+      return eltype(M)[], Int[], KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0)
+   end
 
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
 
-   mM, nM = size(M)
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
@@ -77,7 +82,7 @@ function pzeros(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
+   return [eigvals(M1[if1,jf1],N1[if1,jf1],sortby=nothing); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
@@ -102,14 +107,19 @@ elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 
 """
-function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
-   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
-   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
+function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool = true, 
+                  atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
+                  rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
+
+   mM, nM = size(M)
+   if N === nothing
+      r = rank(M,atol = atol1, rtol = rtol)
+      return eltype(M)[], KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0)
+   end
 
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
 
-   mM, nM = size(M)
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
@@ -154,7 +164,7 @@ function peigvals(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),ni) ], 
+   return [eigvals(M1[if1,jf1],N1[if1,jf1],sortby=nothing); Inf*ones(real(eltype(M1)),ni) ], 
           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """
@@ -226,13 +236,17 @@ elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 
 """
-function pkstruct(M::AbstractMatrix, N::AbstractMatrix; fast = false, atol1::Real = zero(eltype(M)), atol2::Real = zero(eltype(M)), 
+function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = false, atol1::Real = zero(eltype(M)), atol2::Real = zero(eltype(M)), 
    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2))) 
 
+   mM, nM = size(M)
+   if N === nothing
+      r = rank(M,atol = atol1, rtol = rtol)
+      return KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0)
+   end
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
    
-   mM, nM = size(M)
    maxmn = max(mM,nM)
    rki = Vector{Int}(undef,maxmn)
    id = Vector{Int}(undef,maxmn)
@@ -334,11 +348,15 @@ using rank decisions based on rank revealing SVD-decompositions.
     The use of `atol` and `rtol` keyword arguments in rank determinations requires at least Julia 1.1. 
     To enforce compatibility with Julia 1.0, the newer function rank in Julia 1.1 has been explicitly included. 
 """
-function prank(M::AbstractMatrix, N::AbstractMatrix; fastrank::Bool = true, 
+function prank(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fastrank::Bool = true, 
    atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
 
    mM, nM = size(M)
+   if N === nothing
+      return rank(M, atol = atol1, rtol = rtol)
+   end
+
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
 
    if fastrank
