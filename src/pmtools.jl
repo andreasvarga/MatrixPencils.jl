@@ -720,11 +720,11 @@ function spm2ls(T::Union{AbstractArray{T1,3},AbstractArray{T1,2}},U::Union{Abstr
    TT = promote_type(T1, T2, T3, T4)
    if nd == 1
       if minimal
-         Ar,Er,Br,Cr,Dr = lsminreal(-T[:,:,1], zeros(TT,n,n), U[:,:,1], V[:,:,1], W[:,:,1], 
+         Ar,Er,Br,Cr,Dr = lsminreal(T[:,:,1], zeros(TT,n,n), U[:,:,1], V[:,:,1], W[:,:,1], 
                                     contr = false, obs = false, atol1 = atol, atol2 = atol, rtol = rtol)
          return Ar,Er,Br,Cr,Dr
       else
-        return -T[:,:,1], zeros(TT,n,n), U[:,:,1], V[:,:,1], W[:,:,1]
+        return T[:,:,1], zeros(TT,n,n), U[:,:,1], V[:,:,1], W[:,:,1]
       end
    end
 
@@ -846,11 +846,13 @@ function spm2lps(T::Union{AbstractArray{T1,3},AbstractArray{T1,2}},U::Union{Abst
    TT = promote_type(T1, T2, T3, T4)
    if nd == 1
       if minimal
-         Ar,Er,Br,Cr,Dr = lsminreal(-T[:,:,1], zeros(TT,n,n), U[:,:,1], V[:,:,1], W[:,:,1], 
+         Ar,Er,Br,Cr,Dr = lsminreal(T[:,:,1], zeros(TT,n,n), U[:,:,1], V[:,:,1], W[:,:,1], 
                                     contr = false, obs = false, atol1 = atol, atol2 = atol, rtol = rtol)
-         return Ar,Er,Br,zeros(TT,n,m),Cr,zeros(TT,p,n),Dr,zeros(TT,p,m)
+         nr = size(Ar,1)
+         TW = eltype(Ar)
+         return Ar,Er,Br,zeros(TW,nr,m),Cr,zeros(TW,p,nr),Dr,zeros(TW,p,m)
       else
-        return -T[:,:,1], zeros(TT,n,n), U[:,:,1], zeros(TT,n,m), V[:,:,1], zeros(TT,p,n), W[:,:,1], zeros(TT,p,m)
+        return T[:,:,1], zeros(TT,n,n), U[:,:,1], zeros(TT,n,m), V[:,:,1], zeros(TT,p,n), W[:,:,1], zeros(TT,p,m)
       end
    end
 

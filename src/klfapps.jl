@@ -82,9 +82,11 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool 
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M1[if1,jf1],N1[if1,jf1],sortby=nothing); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
+   return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
+eigsortby(λ::Real) = λ
+eigsortby(λ::Complex) = (real(λ),imag(λ))
 """
     peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, KRInfo)
 
@@ -164,7 +166,7 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M1[if1,jf1],N1[if1,jf1],sortby=nothing); Inf*ones(real(eltype(M1)),ni) ], 
+   return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),ni) ], 
           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
 """

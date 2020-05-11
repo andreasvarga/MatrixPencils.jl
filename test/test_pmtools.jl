@@ -17,6 +17,10 @@ s = Polynomial([0, 1],:s)
 v = [1+2*s;1+2*s+3*s^2]
 @test v == pm2poly(poly2pm(v),:s)[:]
 
+@test 2 == pmdeg(v)
+
+@test [1;1] == pmeval(v,0)[:]
+
 M = diagm(v).*one(s)   # without this trick the test fails
 @test M == pm2poly(poly2pm(M),:s)
 
@@ -24,7 +28,13 @@ s = Polynomial([0, 1],:s);
 p = 1+2*s+3*s^2
 @test p == pm2poly(poly2pm(p),:s)[1,1]
 
+@test ([-2 -1; 1 0], [3 0; 0 1]) == pm2lpCF1(p)
+@test ([-2 1; -1 0], [3 0; 0 1]) == pm2lpCF2(p)
+
+@test reverse(p.coeffs) == pmreverse(p)[:]
+
 @test 3im == pm2poly(poly2pm(3im))[1,1]
+
 
 a = rand(2,3); 
 @test a == reshape(poly2pm(a),2,3)
@@ -69,7 +79,13 @@ P = rand(0,0,4);
 @test P[:,:,1:pmdeg(P)+1] ≈ lps2pm(pm2lps(P)[1:8]...)
 
 P = rand(2,3,4);
-@test P ≈ ls2pm(pm2ls(P)[1:5]...)
+@test P ≈ ls2pm(pm2ls(P,contr = true)[1:5]...)
+
+P = rand(2,3,4);
+@test P ≈ ls2pm(pm2ls(P,obs = true)[1:5]...)
+
+P = rand(2,3,4);
+@test P ≈ ls2pm(pm2ls(P,minimal = true)[1:5]...)
 
 P = rand(2,3,4);
 @test P ≈ lps2pm(pm2lps(P)[1:8]...)
@@ -91,17 +107,33 @@ end # Basic manipulations
 
 @testset "Structured polynomial matrix linearization tools" begin
 
+A,E,B,C,D = spm2ls(1,1,1,1,atol = 1.e-7, minimal=true)  
+@test iszero(D)
+
+A,E,B,C,D = spm2ls(1,1,1,1)  
+@test iszero(-C*inv(A)*B+D) && iszero(E)
+
+A,E,B,F,C,G,D,H = spm2lps(1,1,1,1,atol = 1.e-7, minimal=true)  
+@test iszero(D) && iszero(H)
+
+A,E,B,F,C,G,D,H = spm2lps(1,1,1,1)  
+@test iszero(-C*inv(A)*B+D) && iszero(E) && iszero(F) && iszero(G) && iszero(H)
+
+
 #  simple test
 D = rand(3,3);
 W = zeros(3,3);   
 A2,E2,B2,C2,D2 = spm2ls(D,D,D,W,atol = 1.e-7, minimal=true)  
-@test D2 ≈ D  
+@test D2 ≈ -D  
+
+A2,E2,B2,C2,D2 = spm2ls(D,D,D,W,atol = 1.e-7)  
+@test -C2*inv(A2)*B2+D2 ≈ -D && iszero(E2)
 
 #  simple test
 D = rand(3,3);
 W = zeros(3,3);   
 sys = spm2lps(D,D,D,W,atol = 1.e-7, minimal=true)  
-@test sys[7] ≈ D  && sys[8] ≈ 0*D
+@test sys[7] ≈ -D  && sys[8] ≈ 0*D
 
 # 
 D = rand(3,3,2); V = zeros(3,3,1); V[:,:,1] = Matrix{eltype(V)}(I,3,3); W = zeros(3,3);

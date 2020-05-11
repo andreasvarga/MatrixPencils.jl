@@ -158,6 +158,9 @@ val, info = pmeigvals([λ 1;1 0],grade=3, fast = fast)
 val, iz, info = pmzeros(λ, fast = fast)
 @test val ≈ [0.] && iz == [] && (info.rki, info.lki,info.id, info.nf) == ([], [], [], 1)
 
+val = pmroots(λ, fast = fast)
+@test val ≈ [0.] 
+
 val, ip, info = pmpoles(λ, fast = fast)
 @test val == [Inf] && ip == [1] && (info.rki, info.lki,info.id, info.nf) == ([], [], [2], 0)
 
@@ -432,6 +435,7 @@ P[:,:,1] = M; P[:,:,2] = -N;
 for Ty in (Float64, Complex{Float64})
 
 P = rand(Ty,2,3,5);
+P1 = rand(Ty,3,2,5);
 abstol = sqrt(eps(one(real(Ty))))
 
 info = pmkstruct(P,CF1=false, fast = fast)
@@ -467,7 +471,13 @@ val, ip, info = pmpoles(P,CF1=true, fast = fast)
 val, iz, info = pmzeros1(P, fast = fast)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf) == ([8], [], [], 0)
 
+val, iz, info = pmzeros1(P1, fast = fast)
+@test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf) == ([], [8], [], 0)
+
 val, ip, info = pmpoles1(P, fast = fast, atol = abstol)
+@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && (info.rki, info.lki, info.id, info.nf) == ([], [], [1, 5, 5], 0)
+
+val, ip, info = pmpoles1(P1, fast = fast, atol = abstol)
 @test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && (info.rki, info.lki, info.id, info.nf) == ([], [], [1, 5, 5], 0)
 
 val, iz, info = pmzeros2(P, fast = fast)
