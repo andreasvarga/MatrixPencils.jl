@@ -21,10 +21,10 @@ KLFs which reveal the full or partial Kronecker structure of a linear pencil. Th
 The implemented basic pencil reduction operations are described in [1] and [2], and form the basis of the implemented **PREDUCE** procedure described in [3].
 
 A set of functions is provided to address pencil manipulation problems for structured linear pencils `M − λN` of the forms
-`[A - λE B; C D]` or `[A-λE B-λF; C-λG D-λH]`. Linear pencils with these structure frequently arise from the linearization of polynomial or rational matrices. The computation of least order linearizations is based on algorithms described in [3]-[6].  
+`[A - λE B; C D]` or `[A-λE B-λF; C-λG D-λH]`. Linear pencils with these structure frequently arise from the linearization of polynomial or rational matrices. The computation of least order linearizations is based on algorithms described in [3]-[9].  
 
 A set of functions is available for the manipulation of polynomial matrices specified via their coefficient matrices in a monomial basis. All funtions also support matrix, vector or scalar of elements of the `Polynomial` type
-provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. Several linearization functions are available which allow the extension of pencil manipulation techniques to matrix polynomials. Some straightforward applications are covered such as the computation of finite and infinite eigenvalues, zeros and poles, the determination of the normal rank, the determination of Kronecker indices and finite and infinite eigenvalue structure, checks of regularity and unimodularity. The implementations follow the computational framework and results developed in [7].
+provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. Several linearization functions are available which allow the extension of pencil manipulation techniques to matrix polynomials. Some straightforward applications are covered such as the computation of finite and infinite eigenvalues, zeros and poles, the determination of the normal rank, the determination of Kronecker indices and finite and infinite eigenvalue structure, checks of regularity and unimodularity. The implementations follow the computational framework and results developed in [10].
 
 The available functions in the `MatrixPencils.jl` package cover both real and complex numerical data.
 The current version of the package includes the following functions:
@@ -170,11 +170,19 @@ Studies in Systems, Decision and Control, Springer International Publishing, 201
 [4] P. Van Dooreen, The generalized eigenstructure problem in linear system theory, 
 IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
 
-[5] F. Dopico, M. C. Quintana, and P. Van Dooren, Linear system matrices of rational transfer tunctions, (submitted 2020).
+[5] P. Van Dooren and P. Dewilde, The eigenstructure of an arbitrary polynomial matrix: computational
+aspects, Linear Algebra Appl., 50 (1983), pp. 545–579.
 
-[6] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
+[6] F. Dopico, M. C. Quintana, and P. Van Dooren, Linear system matrices of rational transfer tunctions, (submitted 2020).
+
+[7] G. Verghese, B. Lévy, and T. Kailath, A generalized state-space for singular systems, IEEE Trans.
+Automat. Control, 26 (1981), pp. 811–831. 
+
+[8] G. Verghese, P. Van Dooren, and T. Kailath, Properties of the system matrix of a generalized state-
+space system, Int. J. Control, 30 (1979), pp. 235–243, 
+
+[9] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.
 
-[7] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
+[10] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
 the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
-

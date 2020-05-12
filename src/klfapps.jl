@@ -85,8 +85,6 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool 
    return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
 end
-eigsortby(λ::Real) = λ
-eigsortby(λ::Complex) = (real(λ),imag(λ))
 """
     peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, KRInfo)
 
@@ -291,10 +289,6 @@ function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = fa
       p = ρ
    end
    return KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
-end
-function deltrz(ind)
-   k = findlast(!iszero,ind)
-   k === nothing ? (return ind[1:0]) : (return ind[1:k]) 
 end
 function kroni(ind)
    # Kronecker indices evaluated from the ranks of blocks of the staircase form

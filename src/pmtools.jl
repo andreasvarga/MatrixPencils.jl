@@ -354,65 +354,91 @@ function pm2ls(P::AbstractArray{T,3}; minimal::Bool = false, contr::Bool = false
    nd == 0 && (return zeros(T,0,0), zeros(T,0,0), zeros(T,0,m), zeros(T,p,0), zeros(T,p,m))
    D = P[:,:,1]
    nd == 1 && (return zeros(T,0,0), zeros(T,0,0), zeros(T,0,m), zeros(T,p,0), D)
-   if obs || (!contr && p <= m)
-      # build an observable linearization
-      n = p*nd
-      E = [zeros(T,n,p) [I; zeros(T,p,p*(nd-1))]]
-      B = zeros(T,n,m)
-      k = p
-      for i = 2:nd
-          B[k+1:k+p,:] = P[:,:,i]
-          k += p
-      end
-      C = [ -I  zeros(T,p,p*(nd-1))  ]
-      if contr
-         # remove uncontrollable part
-         T <: BlasFloat ? T1 = T : T1 = promote_type(Float64,T)        
-         Er = copy_oftype(E,T1)
-         Br = copy_oftype(B,T1)
-         Cr = copy_oftype(C,T1)
-         _, _, nr, nuc = sklf_right!(Er, Br, Cr; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false) 
-         if nuc > 0
-            ir = 1:nr
-            # save intermediary results
-            E = Er[ir,ir]
-            B = Br[ir,:]
-            C = Cr[:,ir]
+   if xor(contr,obs)
+      if obs
+         # build an observable linearization
+         n = p*nd
+         E = [zeros(T,n,p) [I; zeros(T,p,p*(nd-1))]]
+         B = zeros(T,n,m)
+         k = p
+         for i = 2:nd
+             B[k+1:k+p,:] = P[:,:,i]
+             k += p
          end
-         A = Matrix{T1}(I,nr,nr)
+         C = [ -I  zeros(T,p,p*(nd-1))  ]
       else
-         A = Matrix{T}(I,n,n)
+         # build a controllable linearization
+         n = m*nd
+         E = [zeros(T,n,m) [I; zeros(T,m,m*(nd-1))]]
+         B = [zeros(T,m*(nd-1),m); -I ]
+         C = zeros(T,p,n)
+         k = 0
+         for i = 1:nd-1
+             C[:,k+1:k+m] = P[:,:,nd-i+1]
+             k += m
+         end
       end
+      A = Matrix{T}(I,n,n)
    else
-     # build a controllable linearization
-     n = m*nd
-     E = [zeros(T,n,m) [I; zeros(T,m,m*(nd-1))]]
-     B = [zeros(T,m*(nd-1),m); -I ]
-     C = zeros(T,p,n)
-     k = 0
-     for i = 1:nd-1
-         C[:,k+1:k+m] = P[:,:,nd-i+1]
-         k += m
-     end
-     if obs
-        # remove unobservable part
-        T <: BlasFloat ? T1 = T : T1 = promote_type(Float64,T)        
-        Er = copy_oftype(E,T1)
-        Br = copy_oftype(B,T1)
-        Cr = copy_oftype(C,T1)
-        _, _, nr, nuo = sklf_left!(Er, Cr, Br; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false) 
-        if nuo > 0
-           ir = n-nr+1:n
-           # save intermediary results
-           E = Er[ir,ir]
-           B = Br[ir,:]
-           C = Cr[:,ir]
-        end
-        A = Matrix{T1}(I,nr,nr)
-     else
-        A = Matrix{T}(I,n,n)
-     end
-   end
+      if p <= m
+         n = p*nd
+         E = [zeros(T,n,p) [I; zeros(T,p,p*(nd-1))]]
+         B = zeros(T,n,m)
+         k = p
+         for i = 2:nd
+             B[k+1:k+p,:] = P[:,:,i]
+             k += p
+         end
+         C = [ -I  zeros(T,p,p*(nd-1))  ]
+         if contr
+            # remove uncontrollable part
+            T <: BlasFloat ? T1 = T : T1 = promote_type(Float64,T)        
+            Er = copy_oftype(E,T1)
+            Br = copy_oftype(B,T1)
+            Cr = copy_oftype(C,T1)
+            _, _, nr, nuc = sklf_right!(Er, Br, Cr; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false) 
+            if nuc > 0
+               ir = 1:nr
+               # save intermediary results
+               E = Er[ir,ir]
+               B = Br[ir,:]
+               C = Cr[:,ir]
+            end
+            A = Matrix{T1}(I,nr,nr)
+         else
+            A = Matrix{T}(I,n,n)
+         end
+      else
+         # build a controllable linearization
+         n = m*nd
+         E = [zeros(T,n,m) [I; zeros(T,m,m*(nd-1))]]
+         B = [zeros(T,m*(nd-1),m); -I ]
+         C = zeros(T,p,n)
+         k = 0
+         for i = 1:nd-1
+             C[:,k+1:k+m] = P[:,:,nd-i+1]
+             k += m
+         end
+         if obs
+            # remove unobservable part
+            T <: BlasFloat ? T1 = T : T1 = promote_type(Float64,T)        
+            Er = copy_oftype(E,T1)
+            Br = copy_oftype(B,T1)
+            Cr = copy_oftype(C,T1)
+            _, _, nr, nuo = sklf_left!(Er, Cr, Br; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false) 
+            if nuo > 0
+               ir = n-nr+1:n
+               # save intermediary results
+               E = Er[ir,ir]
+               B = Br[ir,:]
+               C = Cr[:,ir]
+            end
+            A = Matrix{T1}(I,nr,nr)
+         else
+            A = Matrix{T}(I,n,n)
+         end
+      end
+   end        
    if noseig
       A, E, B, C, D  = lsminreal(A,E,B,C,D,contr = false, obs = false, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
    end

@@ -295,9 +295,9 @@ using rank decisions based on rank revealing SVD-decompositions.
 """
 function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
    B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
-   fastrank::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
-   atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
-   rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
+   fastrank::Bool = true, atol1::Real = ismissing(A) ? (ismissing(D) ? zero(1.) : zero(real(eltype(D)))) : zero(real(eltype(A))), 
+   atol2::Real = ismissing(A) ? (ismissing(D) ? zero(1.) : zero(real(eltype(D)))) : zero(real(eltype(A))), 
+   rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? (ismissing(D) ? one(1.) : one(real(eltype(D)))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
 
    if fastrank
       xor(ismissing(A),ismissing(E)) && error("A and E must be both either present or missing")               

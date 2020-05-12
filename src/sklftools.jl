@@ -1,5 +1,5 @@
 """
-    sreduceBF(A, E, B, C, D; fast = true, atol = 0, rtol, withQ = true, withZ = true) -> F, G, N, Q, Z, n, m, p
+    sreduceBF(A, E, B, C, D; fast = true, atol = 0, rtol, withQ = true, withZ = true) -> F, G, Q, Z, n, m, p
 
 Reduce the partitioned linear pencil `M - λN` 
 
@@ -33,8 +33,8 @@ The rank decision based on the SVD-decomposition is generally more reliable, but
 """
 function sreduceBF(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
                    B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
-                   atol::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
-                   rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(atol), 
+                   atol::Real = ismissing(A) ? (ismissing(D) ? zero(1.) : zero(real(eltype(D)))) : zero(real(eltype(A))), 
+                   rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? (ismissing(D) ? zero(1.) : one(real(eltype(D)))) : one(real(eltype(A))))))*iszero(atol), 
                    fast::Bool = true, withQ::Bool = true, withZ::Bool = true) 
    xor(ismissing(A),ismissing(E)) && error("A and E must be both either present or missing")               
    ismissing(A) && !ismissing(B) && error("B can not be present if A is missing")  
@@ -215,10 +215,8 @@ function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformS
       
       νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                           withQ = withQ, withZ = withZ, fast = fast)
-      if mM == 0 || nM == 0
-          return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ
-      end
-
+      (mM == 0 || nM == 0) && (return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ)
+    
       # Reduce Mli-λNli to a KLF exhibiting the infinite and left structures and update M1 - λ N1 to
       #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
       #     M2 -  λ N2 = [    0       | Mf -  λ Nf |     *      |    *       ]
@@ -242,10 +240,8 @@ function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformS
 
       ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                          withQ = withQ, withZ = withZ, fast = fast)
-      if mM == 0 || nM == 0
-         return  M, N, Q, Z, ν, μ, ν[1:0], nf, νl, μl
-      end
-
+      (mM == 0 || nM == 0) && (return  M, N, Q, Z, ν, μ, ν[1:0], nf, νl, μl)
+   
       # Reduce Mri-λNri to a KLF exhibiting the right and infinite structures and update M1 - λ N1 to
       #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
       #     M2 -  λ N2 = [    0       | Mi -  λ Ni |     *      |    *       ]
@@ -477,12 +473,7 @@ function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMa
       (p,m) == size(H) || throw(DimensionMismatch("D and H must have the same dimensions"))
    end
    mn = m+n
-   if m == 0 || n == 0 
-      # fast returns for null dimensions
-      withQ ? (Q = Matrix{T1}(I,n,n)) : (Q = nothing)
-      withZ ? (Z = Matrix{T1}(I,mn,mn)) : (Z = Matrix{T1}(I,m,m))
-      return Q, Z, 0
-   end
+   (m == 0 || n == 0) && (return withQ ? Matrix{T1}(I,n,n) : nothing,  withZ ? Matrix{T1}(I,mn,mn) : Matrix{T1}(I,m,m), 0)
 
    BAt, FEt, Q, Z, νr, μr, nf, ν, μ = klf_right([B A], [F E]; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = withQ, withZ = true) 
    ν == μ || error("The pencil [B-λF A-λE] has no full row rank")
@@ -597,12 +588,7 @@ function sklf_left!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMat
       (p,m) == size(H) || throw(DimensionMismatch("D and H must have the same dimensions"))
    end
    np = n+p
-   if p == 0 || n == 0 
-      # fast returns for null dimensions
-      withQ ? (Q = Matrix{T1}(I,n,n)) : (Q = nothing)
-      withZ ? (Z = Matrix{T1}(I,np,np)) : (Z = Matrix{T1}(I,p,p))
-      return Q, Z, 0
-   end
+   (p == 0 || n == 0) && (return withQ ? Matrix{T1}(I,n,n) : nothing, withZ ? Matrix{T1}(I,np,np) : Matrix{T1}(I,p,p), 0)
 
    ACt, EGt, Q, Z, ν, μ, nf, νl, μl  = klf_left([A; C], [E; G]; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = withZ) 
    ν == μ || error("The pencil [A-λE; C-λG ] has no full column rank")
@@ -821,12 +807,8 @@ function sklf_rightfin!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::Abstrac
    withZ ? Z = Matrix{eltype(A)}(I,n,n) : Z = nothing
 
    # fast returns for null dimensions
-   if m == 0 && n == 0
-      return Q, Z, νr[1:0], 0, 0
-   elseif n == 0
-      νr[1] = 0
-      return Q, Z, νr[1:1], 0, 0
-   end
+   m == 0 && n == 0 && (return Q, Z, νr[1:0], 0, 0)
+   n == 0 && (return Q, Z, [0], 0, 0)
 
    # Reduce E to upper triangular form if necessary
    istriu(E) || _qrE!(A, E, Q, B; withQ = withQ) 
@@ -1047,13 +1029,9 @@ function sklf_leftfin!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::Abstract
    withZ ? Z = Matrix{eltype(A)}(I,n,n) : Z = nothing
 
    # fast returns for null dimensions
-   if p == 0 && n == 0
-      return Q, Z, μl[1:0], 0, 0
-   elseif n == 0
-      μl[1] = 0
-      return Q, Z, μl[1:1], 0, 0
-   end
-
+   p == 0 && n == 0 && (return Q, Z, μl[1:0], 0, 0)
+   n == 0 && (return Q, Z, [0], 0, 0)
+ 
    # Reduce E to upper triangular form if necessary
    istriu(E) || _qrE!(A, E, Q, B; withQ = withQ) 
    p == 0 && (return Q, Z, μl[1:0], 0, n)

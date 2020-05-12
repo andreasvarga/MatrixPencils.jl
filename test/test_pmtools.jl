@@ -21,8 +21,7 @@ v = [1+2*s;1+2*s+3*s^2]
 
 @test [1;1] == pmeval(v,0)[:]
 
-M = diagm(v).*one(s)   # without this trick the test fails
-@test M == pm2poly(poly2pm(M),:s)
+@test v == pm2poly(poly2pm(v),:s)[:]
 
 s = Polynomial([0, 1],:s);
 p = 1+2*s+3*s^2
@@ -39,14 +38,27 @@ p = 1+2*s+3*s^2
 a = rand(2,3); 
 @test a == reshape(poly2pm(a),2,3)
 
+a = rand(2,3); 
+@test [a zeros(size(a)...)] == reshape(poly2pm(a,grade=1),2,6)
+
 a = rand(3); 
 @test a == reshape(poly2pm(a),3)
+
+a = rand(3); 
+@test [a zeros(size(a)...)] == reshape(poly2pm(a,grade=1),3,2)
 
 a = transpose(rand(3)); 
 @test a == reshape(poly2pm(a),1,3)
 
+a = transpose(rand(3)); 
+@test [a zeros(size(a)...)] == reshape(poly2pm(a,grade=1),1,6)
+
 a = rand(Complex{Float64},3);
 @test a' == reshape(poly2pm(a'),1,3)
+
+a = rand(Complex{Float64},3);
+@test [a' zeros(size(a')...)] == reshape(poly2pm(a',grade=1),1,6)
+
 
 
 end # conversions

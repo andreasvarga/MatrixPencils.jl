@@ -139,7 +139,9 @@ kinfo  = spkstruct(A, E, missing, missing, missing, atol1 = 1.e-7, atol2 = 1.e-7
 @test sprank(A, E, missing, missing, missing, fastrank = true) == 9 && 
       sprank(A, E, missing, missing, missing, fastrank = false) == 9
 
-
+@test sprank(missing, missing, missing, missing, missing, fastrank = true) == 0 && 
+      sprank(missing, missing, missing, missing, missing, fastrank = false) == 0
+      
 # output decoupling zeros 
 
 kinfo  = spkstruct(A, E, missing, C, missing, atol1 = 1.e-7, atol2 = 1.e-7)

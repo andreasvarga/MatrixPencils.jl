@@ -8,13 +8,16 @@ using Test
 @testset "Regular Matrix Pencils Utilities" begin
 
 @testset "_svdlikeAE" begin
+
+for fast in (true, false)
+
 A2 = zeros(0,0); E2 = zeros(0,0); C2 = zeros(0,0); B2 = missing;
 A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
 Q = nothing
 Z = nothing
 
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C)
+@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = fast)
 @test rE == 0 && rA22 == 0
 
 A2 = zeros(0,0); E2 = zeros(0,0); B2 = zeros(0,2); C2 = missing;
@@ -24,7 +27,7 @@ Q = nothing
 Z = nothing
 
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C)
+@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = fast)
 @test rE == 0 && rA22 == 0
 
 
@@ -69,7 +72,7 @@ T = Float64;
 Q = Matrix{T}(I,n,n)
 Z = Matrix{T}(I,n,n)
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C)
+@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -119,7 +122,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 Q = Matrix{T}(I,n,n)
 Z = Matrix{T}(I,n,n)
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C)
+@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -153,7 +156,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 Q = Matrix{T}(I,n,n)
 Z = Matrix{T}(I,n,n)
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C)
+@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -165,7 +168,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 Q = Matrix{T}(I,n,n)
 Z = Matrix{T}(I,n,n)
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = false)
+@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -214,18 +217,15 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 Q = Matrix{T}(I,n,n)
 Z = Matrix{T}(I,n,n)
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = false)
+@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       (ismissing(C) || norm(C2*Z-C)  < sqrt(eps(1.))) && 
       rE == 2 && rA22 == 1
 
-fast = true; Ty = Float64      
-for fast in (true, false)
 
 for Ty in (Float64, Complex{Float64})
-
 
 n = 10; m = 3; p = 2;
 rE = 5;

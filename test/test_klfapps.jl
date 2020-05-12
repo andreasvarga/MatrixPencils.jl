@@ -36,6 +36,10 @@ M = ones(1,1); N = zeros(1,1);
 @time info = pkstruct(M, N, fast = fast)
 @test info.rki == [] && info.lki == [] && info.id == [1] && info.nf == 0
 
+M = ones(1,1); N = nothing; 
+@time info = pkstruct(M, N, fast = fast)
+@test info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0
+
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 @time info = pkstruct(M, N)
 @test info.rki == [] && info.lki == [] && info.id == [2] && info.nf == 0
@@ -52,7 +56,8 @@ N = [   13  26  25  17  24
         16  25  27  14  23 
         24  35  18  21  22  ];
 
-@time rki, lki, id, nf = pkstruct(M, N)
+@time info = pkstruct(M, N)
+rki, lki, id, nf = info
 @test rki == [0] && lki == [0] && id == [1] && nf == 3
 
 # Test Suite 2 (Example 2.2.1, Beelen)
@@ -138,6 +143,10 @@ M = zeros(1,1); N = ones(1,1);
 N = zeros(1,1); M = ones(1,1);
 @time val, kinfo = peigvals(M, N, fast = fast)
 @test val == [Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], [1], 0)
+
+M = ones(1,1); N = nothing; 
+@time val, info = peigvals(M, N, fast = fast)
+@test val == Float64[] && info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0
 
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 
@@ -249,6 +258,10 @@ N = zeros(1,1); M = ones(1,1);
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
 @test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], [1], 0)
 
+M = ones(1,1); N = nothing; 
+@time val, iz, info = pzeros(M, N, fast = fast)
+@test val == Float64[] && iz == [] && info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0
+
 fast = true
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
@@ -357,6 +370,9 @@ M = zeros(1,1); N = ones(1,1);
 @test prank(M, N, fastrank = fast) == 1
 
 @test prank(N, M, fastrank = fast) == 1
+
+M = ones(1,1); N = nothing; 
+@test prank(M, N, fastrank = fast) == 1
 
 
 M = [  22  34  31   31  17

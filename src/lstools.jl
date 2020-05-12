@@ -77,7 +77,8 @@ function lsequal(A1::AbstractMatrix, E1::Union{AbstractMatrix,UniformScaling{Boo
               zeros(T,n2,n1) E2]
       end
       return (sprank(A,E,B,C,D,atol1 = atol1, atol2 = atol2, rtol = rtol, fastrank = fastrank) == n1+n2)
-   catch
+   catch err
+      println("$err")
       return false
    end
 end

@@ -60,6 +60,10 @@ N2 = [E zeros(Ty,n2,m2); zeros(Ty,p2,n2+m2)]
 @test norm(Q'*M2*Z-M) < sqrt(eps(1.)) &&
       norm(Q'*N2*Z-N) < sqrt(eps(1.)) &&
       n == rank(E) && m == n2-n+m2 && p == n2-n+p2 
+
+@time M, N, Q, Z, n, m, p = sreduceBF(missing,missing,missing,missing,missing,fast = fast)
+@test n == 0 && m == 0 && p == 0 
+
     
 n2 = 3; m2 = 0; p2 = 4; 
 A2 = rand(Ty,n2,n2); E2 = triu(rand(Ty,n2,n2),1); B2 = rand(Ty,n2,m2); C2 = rand(Ty,p2,n2); D2 = rand(Ty,p2,m2);
