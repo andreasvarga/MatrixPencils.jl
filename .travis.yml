@@ -33,18 +33,6 @@ branches:
 
 codecov: true
 
-# after_success:
-#   - julia -e 'using Pkg; cd(Pkg.dir("MatrixPencils")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
- 
-# jobs:
-#   include:
-#     - stage: "Documentation"
-#       julia: 1.3
-#       os: windows
-#       script:
-#         - julia -e 'using Pkg; Pkg.add(PackageSpec(name="Documenter"))' && julia docs/make.jl
-#       after_success: skip
-
 jobs:
   include:
     - stage: "Documentation"

@@ -71,9 +71,12 @@ The current version of the package includes the following functions:
 * **pmreverse**  Building the reversal of a polynomial matrix.  
 * **pm2lpCF1**  Building a linearization in the first companion Frobenius form.
 * **pm2lpCF2**  Building a linearization in the second companion Frobenius form.  
-* **pm2lp**  Building a linearization which preserves the finite and the left or right Kronecker structures.  
 * **pm2ls**  Building a structured linearization of a polynomial matrix.
 * **ls2pm**  Computation of the polynomial matrix from its structured linearization.
+* **pm2lps**  Building a linear pencil based structured linearization of a polynomial matrix.
+* **lps2pm**  Computation of the polynomial matrix from its linear pencil based structured linearization.
+* **spm2ls** Building a structured linearization `[A-λE B; C D]` of a structured polynomial matrix `[T(λ) U(λ); V(λ) W(λ)]`.
+* **spm2lps** Building a linear pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a structured polynomial matrix `[T(λ) U(λ); V(λ) W(λ)]`.
 
 **Some applications to polynomial matrices** 
 
