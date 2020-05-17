@@ -95,7 +95,7 @@ function _sreduceC!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},C::AbstractMatri
       c = view(C,1,:)
       n == 1 && (abs(c[1]) > tol ? (return 1) : (c[1] = ZERO; return 0))
       τ, β = larfgl!(c)
-      if abs(β) < tol
+      if abs(β) <= tol
          c[:] = zeros(T,n)
          return 0
       else
@@ -207,7 +207,7 @@ function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T1},B::AbstractMatrix{T1},C
       b = view(B1,:,1)
       n == 1 && (abs(b[1]) > tol ? (return 1) : (b[1] = ZERO; return 0))
       τ, β = larfg!(b)
-      if abs(β) < tol
+      if abs(β) <= tol
          b[:] = zeros(T,n)
          return 0
       else
@@ -316,7 +316,7 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B
       c = view(C1,1,ia)
       n == 1 && (abs(c[1]) > tol ? (return 1) : (c[1] = ZERO; return 0))
       τ, β = larfgl!(c)
-      if abs(β) < tol
+      if abs(β) <= tol
          c[:] = zeros(T,n)
          return 0
       else

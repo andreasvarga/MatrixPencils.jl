@@ -97,6 +97,24 @@ P = rand(2,3,4);
 @test P ≈ ls2pm(pm2ls(P,obs = true)[1:5]...)
 
 P = rand(2,3,4);
+@test P ≈ ls2pm(pm2ls(P,contr = true, obs = true)[1:5]...)
+
+P = rand(2,3,4);
+@test P ≈ ls2pm(pm2ls(P)[1:5]...)
+
+P = rand(3,2,4);
+@test P ≈ ls2pm(pm2ls(P,contr = true)[1:5]...)
+
+P = rand(3,2,4);
+@test P ≈ ls2pm(pm2ls(P,obs = true)[1:5]...)
+
+P = rand(3,2,4);
+@test P ≈ ls2pm(pm2ls(P,contr = true, obs = true)[1:5]...)
+
+P = rand(3,2,4);
+@test P ≈ ls2pm(pm2ls(P)[1:5]...)
+
+P = rand(2,3,4);
 @test P ≈ ls2pm(pm2ls(P,minimal = true)[1:5]...)
 
 P = rand(2,3,4);

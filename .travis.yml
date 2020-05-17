@@ -11,13 +11,6 @@ julia:
   - 1.4
   - nightly
 
-matrix:
-  fast_finish: true
-  allow_failures:
-    - julia: 1.0
-    - julia: 1.1
-    - julia: nightly
-
 
 notifications:
   email: false
@@ -29,6 +22,10 @@ branches:
 codecov: true
 
 jobs:
+  allow_failures:
+    - julia: 1.0
+    - julia: 1.1
+    - julia: nightly
   include:
     - stage: "Documentation"
       julia: 1.2
