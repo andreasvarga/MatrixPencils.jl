@@ -1177,7 +1177,7 @@ W = Z[1:3,1:3]
 Mc = [A[i1,i1] B[i1,:]; C[:,i1] D]
 Nc = [E[i1,i1] F[i1,:]; G[:,i1] H]
 val, info = peigvals(Mc,Nc)
-@test val ≈ [1, Inf] && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1], 1)
+@test val[1] ≈ 1 && val[2] == Inf && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1], 1)
 
 # use a minimal descriptor realization (which is however not strongly minimal)
 (A, E, B, C, D) = 
