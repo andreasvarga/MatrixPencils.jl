@@ -306,10 +306,13 @@ end
 end
 
 @testset "sklf_left! - generalized case" begin
+
+for fast in (true, false)
+
 A2 = zeros(0,0); E2 = zeros(0,0); C2 = zeros(0,0); B2 = missing;
 A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
 
-@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B)
+@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(C2*Z-C) < sqrt(eps(1.)) &&
@@ -320,7 +323,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
 A2 = zeros(0,0); E2 = zeros(0,0); C2 = zeros(3,0); B2 = missing;
 A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
 
-@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B)
+@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(C2*Z-C) < sqrt(eps(1.)) &&
@@ -330,48 +333,35 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
 A2 = rand(3,3); E2 = zeros(3,3); C2 = zeros(0,3); B2 = rand(3,2);
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 
-@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B)
+@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(C2*Z-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [] && no == 0 && nfuo == 0 && niuo == 3
 
-E2 = rand(3,3); A2 = zeros(3,3); C2 = zeros(0,3); B2 = rand(3,2); #B2 = Matrix{Float64}(I,3,3);
+A2 = rand(1,1); E2 = rand(1,1); C2 = rand(1,1); B2 = rand(1,2);
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 
-@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B,fast=true)
+@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(C2*Z-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
-      μl == [] && no == 0 && nfuo == 3 && niuo == 0
+      μl == [1] && no == 1 && nfuo == 0 && niuo == 0
 
-
-A2 = rand(3,3); E2 = rand(3,3); C2 = rand(1,3); B2 = rand(3,2);
+A2 = rand(1,1); E2 = rand(1,1); C2 = zeros(1,1); B2 = rand(1,2);
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 
-@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B,fast=true)
+@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B, fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(C2*Z-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
-      μl == [1, 1, 1] && no == 3 && nfuo == 0 && niuo == 0
-
-
-E2 = rand(3,3); A2 = rand(3,3); C2 = rand(1,3); B2 = rand(3,2);
-A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
-
-@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B,fast=true)
-@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
-      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
-      norm(C2*Z-C) < sqrt(eps(1.)) &&
-      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
-      μl == [1, 1, 1] && no == 3 && nfuo == 0 && niuo == 0
+      μl == [] && no == 0 && nfuo == 1 && niuo == 0
 
 # Ty = Complex{Float64}; fast = true
 # Ty = Float64; fast = true
-for fast in (true, false)
 
 for Ty in (Float64, Complex{Float64})
 
@@ -405,6 +395,16 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
       norm(C2*Z-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [3] && no == 3 && nfuo == 0 && niuo == 0
+
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); C2 = [rand(Ty,4,2) zeros(Ty,4,1)]; B2 = rand(Ty,3,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [1, 2] && no == 3 && nfuo == 0 && niuo == 0
 
 
 A2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
@@ -449,10 +449,12 @@ end
 
 @testset "sklf_right! - generalized case" begin
 
+for fast in (true, false)
+
 A2 = zeros(0,0); E2 = zeros(0,0); B2 = zeros(0,0); C2 = missing;
 A = copy(A2); E = copy(E2); B = copy(B2); C = missing;
 
-@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C)
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast=fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
@@ -462,18 +464,17 @@ A = copy(A2); E = copy(E2); B = copy(B2); C = missing;
 A2 = zeros(0,0); E2 = zeros(0,0); B2 = zeros(0,3); C2 = missing;
 A = copy(A2); E = copy(E2); B = copy(B2); C = missing;
 
-@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C)
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast=fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
       νr == [0] && nc == 0 && nfu == 0 && niu == 0
 
-
 A2 = zeros(3,3); E2 = rand(3,3); B2 = zeros(3,0); C2 = rand(2,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 
-@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C)
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast=fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
@@ -483,18 +484,17 @@ A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 A2 = rand(3,3); E2 = zeros(3,3); B2 = zeros(3,0); C2 = rand(2,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 
-@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C)
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast=fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
       νr == [] && nc == 0 && nfu == 0 && niu == 3
 
-
 A2 = rand(3,3); E2 = rand(3,3); B2 = zeros(3,1); C2 = rand(2,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 
-@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C)
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast=fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
@@ -504,21 +504,40 @@ A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 A2 = rand(3,3); E2 = rand(3,3); B2 = rand(3,1); C2 = rand(2,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 
-@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C)
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast=fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
       νr == [1, 1, 1] && nc == 3 && nfu == 0 && niu == 0
 
-Ty = Complex{Float64}
-Ty = Float64
-for fast in (true, false)
+# Ty = Complex{Float64}
+# fast = true; Ty = Float64
 
 for Ty in (Float64, Complex{Float64})
 
+A2 = rand(Ty,1,1); E2 = triu(rand(Ty,1,1),1); B2 = rand(Ty,1,1); C2 = rand(Ty,2,1);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [1] && nc == 1 && nfu == 0 && niu == 0
+
+A2 = rand(Ty,1,1); E2 = triu(rand(Ty,1,1),1); B2 = zeros(Ty,1,1); C2 = rand(Ty,2,1);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [] && nc == 0 && nfu == 0 && niu == 1
+
 A2 = rand(Ty,3,3); E2 = triu(rand(Ty,3,3),1); B2 = rand(Ty,3,1); C2 = rand(Ty,2,3);
-A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
 
 @time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
@@ -547,12 +566,21 @@ A = copy(A2); E = copy(E2);  B = copy(B2); C = copy(C2);
       (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
       νr == [3] && nc == 3 && nfu == 0 && niu == 0
 
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); B2 = [zeros(Ty,1,4); rand(Ty,2,4)]; C2 = rand(Ty,2,3);
+A = copy(A2); E = copy(E2);  B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [2, 1]  && nc == 3 && nfu == 0 && niu == 0
+
 Ty = Float64; fast = true;
 A2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
 E2 = [rand(Ty,3,7) ; zeros(Ty,4,3) triu(rand(Ty,4,4),1) ]; 
 B2 = [rand(Ty,3,4); zeros(Ty,4,4)]; C2 = rand(Ty,2,7);
 A = copy(A2); E = copy(E2);  B = copy(B2); C = copy(C2);
-
 
 @time Q, Z, νr, nc, nfu, niu  = sklf_right!(A,E,B,C,atol1=1.e-7,atol2=1.e-7,fast = fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
@@ -589,12 +617,315 @@ end
 end
 end
 
+@testset "sklf_rightfin! - generalized case" begin
+
+for fast in (true, false)
+
+A2 = zeros(0,0); E2 = zeros(0,0); B2 = zeros(0,0); C2 = missing;
+A = copy(A2); E = copy(E2); B = copy(B2); C = missing;
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [] && nc == 0 && nuc == 0 
+
+A2 = zeros(0,0); E2 = zeros(0,0); B2 = zeros(0,3); C2 = missing;
+A = copy(A2); E = copy(E2); B = copy(B2); C = missing;
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [0] && nc == 0 && nuc == 0 
+
+A2 = zeros(3,3); E2 = rand(3,3); B2 = zeros(3,0); C2 = rand(2,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [] && nc == 0 && nuc == 3 
+
+A2 = rand(3,3); E2 = zeros(3,3); B2 = zeros(3,0); C2 = rand(2,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [] && nc == 0 && nuc == 3 
+
+A2 = rand(3,3); E2 = rand(3,3); B2 = zeros(3,1); C2 = rand(2,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [] && nc == 0 && nuc == 3 
+
+A2 = rand(3,3); E2 = rand(3,3); B2 = rand(3,1); C2 = rand(2,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [1, 1, 1] && nc == 3 && nuc == 0 
+
+# Ty = Complex{Float64}
+# fast = true; Ty = Float64
+
+for Ty in (Float64, Complex{Float64})
+
+A2 = rand(Ty,1,1); E2 = triu(rand(Ty,1,1),1); B2 = rand(Ty,1,1); C2 = rand(Ty,2,1);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [1] && nc == 1 && nuc == 0
+
+A2 = rand(Ty,1,1); E2 = triu(rand(Ty,1,1),1); B2 = zeros(Ty,1,1); C2 = rand(Ty,2,1);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [] && nc == 0 && nuc == 1
+
+A2 = rand(Ty,3,3); E2 = triu(rand(Ty,3,3),1); B2 = rand(Ty,3,1); C2 = rand(Ty,2,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [1, 1, 1] && nc == 3 && nuc == 0
+
+A2 = rand(Ty,3,3); E2 = triu(rand(Ty,3,3),1); B2 = rand(Ty,3,2); C2 = rand(Ty,2,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [2, 1] && nc == 3 && nuc == 0
+
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); B2 = rand(Ty,3,4); C2 = rand(Ty,2,3);
+A = copy(A2); E = copy(E2);  B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [3] && nc == 3 && nuc == 0
+
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); B2 = [zeros(Ty,1,4); rand(Ty,2,4)]; C2 = rand(Ty,2,3);
+A = copy(A2); E = copy(E2);  B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [2, 1]  && nc == 3 && nuc == 0
+
+A2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
+E2 = [rand(Ty,3,7) ; zeros(Ty,4,3) triu(rand(Ty,4,4),1) ]; 
+B2 = [rand(Ty,3,4); zeros(Ty,4,4)]; C2 = rand(Ty,2,7);
+A = copy(A2); E = copy(E2);  B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,atol1=1.e-7,atol2=1.e-7,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [3] && nc == 3 && nuc == 4 
+
+A2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
+E2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
+B2 = [rand(Ty,3,4); zeros(Ty,4,4)]; C2 = rand(Ty,2,7);
+A = copy(A2); E = copy(E2);  B = copy(B2); C = copy(C2);
+
+@time Q, Z, νr, nc, nuc  = sklf_rightfin!(A,E,B,C,atol1=1.e-7,atol2=1.e-7,fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(Q'*B2-B) < sqrt(eps(1.)) &&
+      (ismissing(C) || norm(C2*Z-C) < sqrt(eps(1.))) && 
+      νr == [3] && nc == 3 && nuc == 4 
+
+end
+end
+end
+
+@testset "sklf_leftfin! - generalized case" begin
+
+for fast in (true, false)
+
+Ty = Float64; fast = false
+A2 = zeros(0,0); E2 = zeros(0,0); C2 = zeros(0,0); B2 = missing;
+A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B, fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [] && no == 0 && nuo == 0
+
+
+A2 = zeros(0,0); E2 = zeros(0,0); C2 = zeros(3,0); B2 = missing;
+A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B, fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [0] && no == 0 && nuo  == 0
+
+A2 = rand(3,3); E2 = zeros(3,3); C2 = zeros(0,3); B2 = rand(3,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B, fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [] && no == 0 && nuo == 3
+
+A2 = rand(1,1); E2 = rand(1,1); C2 = rand(1,1); B2 = rand(1,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B, fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [1] && no == 1 && nuo  == 0
+
+A2 = rand(1,1); E2 = rand(1,1); C2 = zeros(1,1); B2 = rand(1,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B, fast = fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [] && no == 0 && nuo == 1
+
+# Ty = Complex{Float64}; fast = true
+# Ty = Float64; fast = true
+
+for Ty in (Float64, Complex{Float64})
+
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); C2 = rand(Ty,1,3); B2 = rand(Ty,3,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [1, 1, 1] && no == 3 && nuo  == 0
+
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); C2 = rand(Ty,2,3); B2 = rand(Ty,3,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [1, 2] && no == 3 && nuo  == 0
+
+
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); C2 = rand(Ty,4,3); B2 = rand(Ty,3,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [3] && no == 3 && nuo  == 0
+
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); C2 = [rand(Ty,4,2) zeros(Ty,4,1)]; B2 = rand(Ty,3,2);
+A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B,fast=fast)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [1, 2] && no == 3 && nuo  == 0
+
+
+A2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
+E2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
+B2 = rand(Ty,7,4); C2 = [ zeros(Ty,2,3) rand(Ty,2,4)];
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B,fast=fast,atol1=1.e-7,atol2=1.e-7)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [2, 2] && no == 4 && nuo == 3 
+
+A2 = [rand(Ty,3,3) zeros(Ty,3,4) ; zeros(Ty,4,3) rand(Ty,4,4) ]; 
+E2 = [rand(Ty,3,3) zeros(Ty,3,4); rand(Ty,4,3) triu(rand(Ty,4,4),1) ]; 
+B2 = rand(Ty,7,4); C2 = [ rand(Ty,2,3) zeros(Ty,2,4)];
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(A,E,C,B,fast=fast,atol1=1.e-7,atol2=1.e-7)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [2, 2] && no == 4 && nuo == 3 
+
+A2 = [rand(Ty,3,3) zeros(Ty,3,4) ; zeros(Ty,4,3) triu(rand(Ty,4,4)) ]; 
+E2 = [rand(Ty,3,3) zeros(Ty,3,4); rand(Ty,4,3) triu(rand(Ty,4,4),1) ]; 
+B2 = rand(Ty,7,4); C2 = [ rand(Ty,2,3) zeros(Ty,2,4)];
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
+
+@time Q, Z, μl, no, nuo  = sklf_leftfin!(E,A,C,B,fast=fast,atol1=1.e-7,atol2=1.e-7)
+@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+      norm(C2*Z-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [1, 2] && no == 3 && nuo == 4
+
+end
+end
+end
+
 
 @testset "sklf_left! - standard case" begin
+
+for fast in (true, false)
+
 A2 = zeros(0,0); C2 = zeros(0,0); B2 = missing;
 A = copy(A2); C = copy(C2); B = missing;
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(C2*Q-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -604,7 +935,7 @@ A = copy(A2); C = copy(C2); B = missing;
 A2 = zeros(0,0); C2 = zeros(3,0); B2 = missing;
 A = copy(A2); C = copy(C2); B = missing;
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(C2*Q-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -613,20 +944,12 @@ A = copy(A2); C = copy(C2); B = missing;
 A2 = zeros(3,3); C2 = zeros(0,3); B2 = rand(3,2);
 A = copy(A2); C = copy(C2); B = copy(B2);
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(C2*Q-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [] && no == 0 && nu == 3
 
-A2 = rand(3,3); C2 = rand(1,3); B2 = rand(3,2);
-A = copy(A2); C = copy(C2); B = copy(B2);
-
-@time Q, μl, no, nu  = sklf_left!(A,C,B)
-@test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
-      norm(C2*Q-C) < sqrt(eps(1.)) &&
-      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
-      μl == [1, 1, 1] && no == 3 && nu == 0
 
 Ty = Complex{Float64}
 for Ty in (Float64, Complex{Float64})
@@ -634,7 +957,7 @@ for Ty in (Float64, Complex{Float64})
 A2 = rand(Ty,3,3); C2 = rand(Ty,1,3); B2 = rand(Ty,3,2);
 A = copy(A2); C = copy(C2); B = copy(B2);
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = false)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(C2*Q-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -643,17 +966,7 @@ A = copy(A2); C = copy(C2); B = copy(B2);
 A2 = rand(Ty,3,3); C2 = rand(Ty,2,3); B2 = rand(Ty,3,2);
 A = copy(A2); C = copy(C2); B = copy(B2);
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B)
-@test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
-      norm(C2*Q-C) < sqrt(eps(1.)) &&
-      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
-      μl == [1, 2] && no == 3 && nu == 0
-
-
-A2 = rand(Ty,3,3); C2 = rand(Ty,2,3); B2 = rand(Ty,3,2);
-A = copy(A2); C = copy(C2); B = copy(B2);
-
-@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = false)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(C2*Q-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
@@ -662,47 +975,43 @@ A = copy(A2); C = copy(C2); B = copy(B2);
 A2 = rand(Ty,3,3); C2 = rand(Ty,4,3); B2 = rand(Ty,3,2);
 A = copy(A2); C = copy(C2); B = copy(B2);
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(C2*Q-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [3] && no == 3 && nu == 0
 
-A2 = rand(Ty,3,3); C2 = rand(Ty,4,3); B2 = rand(Ty,3,2);
+A2 = rand(Ty,3,3); C2 = [rand(Ty,4,2) zeros(Ty,4,1)]; B2 = rand(Ty,3,2);
 A = copy(A2); C = copy(C2); B = copy(B2);
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = false)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(C2*Q-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
-      μl == [3] && no == 3 && nu == 0
+      μl == [1, 2] && no == 3 && nu == 0
+
 
 A2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; B2 = rand(Ty,7,4); C2 = [ zeros(Ty,2,3) rand(Ty,2,4)];
 A = copy(A2); B = copy(B2); C = copy(C2);
 
-@time Q, μl, no, nu  = sklf_left!(A,C,B)
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
       μl == [2, 2] && no == 4 && nu == 3
 
-A2 = [rand(Ty,3,7) ; zeros(Ty,4,3) rand(Ty,4,4) ]; B2 = rand(Ty,7,4); C2 = [ zeros(Ty,2,3) rand(Ty,2,4)];
-A = copy(A2); B = copy(B2); C = copy(C2);
-
-@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = false)
-@test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
-      norm(Q'*B2-B) < sqrt(eps(1.)) &&
-      (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
-      μl == [2, 2] && no == 4 && nu == 3
+end
 end
 end
 
 @testset "sklf_right! - standard case" begin
 
+for fast in (true, false)
+
 A2 = zeros(0,0); B2 = zeros(0,0); C2 = missing;
 A = copy(A2); B = copy(B2); C = missing;
 
-@time Q, νr, nc, nu  = sklf_right!(A,B,C)
+@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
@@ -711,7 +1020,7 @@ A = copy(A2); B = copy(B2); C = missing;
 A2 = zeros(0,0); B2 = zeros(0,3);C2 = missing;
 A = copy(A2); B = copy(B2); C = missing;
 
-@time Q, νr, nc, nu  = sklf_right!(A,B,missing)
+@time Q, νr, nc, nu  = sklf_right!(A,B,missing,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
@@ -720,7 +1029,7 @@ A = copy(A2); B = copy(B2); C = missing;
 A2 = zeros(3,3); B2 = zeros(3,0); C2 = rand(2,3);
 A = copy(A2); B = copy(B2); C = copy(C2);
 
-@time Q, νr, nc, nu  = sklf_right!(A,B,C)
+@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
@@ -732,16 +1041,7 @@ for Ty in (Float64, Complex{Float64})
 A2 = rand(Ty,3,3); B2 = rand(Ty,3,1); C2 = rand(Ty,2,3);
 A = copy(A2); B = copy(B2); C = copy(C2);
 
-@time Q, νr, nc, nu  = sklf_right!(A,B,C)
-@test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
-      norm(Q'*B2-B) < sqrt(eps(1.)) &&
-      (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
-      νr == [1, 1, 1] && nc == 3 && nu == 0
-
-A2 = rand(Ty,3,3); B2 = rand(Ty,3,1); C2 = rand(Ty,2,3);
-A = copy(A2); B = copy(B2); C = copy(C2);
-
-@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = false)
+@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
@@ -750,35 +1050,16 @@ A = copy(A2); B = copy(B2); C = copy(C2);
 A2 = rand(Ty,3,3); B2 = rand(Ty,3,2); C2 = rand(Ty,2,3);
 A = copy(A2); B = copy(B2); C = copy(C2);
 
-@time Q, νr, nc, nu  = sklf_right!(A,B,C)
+@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
       νr == [2, 1] && nc == 3 && nu == 0
-
-A2 = rand(Ty,3,3); B2 = rand(Ty,3,2); C2 = rand(Ty,2,3);
-A = copy(A2); B = copy(B2); C = copy(C2);
-
-@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = false)
-@test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
-      norm(Q'*B2-B) < sqrt(eps(1.)) &&
-      (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
-      νr == [2, 1] && nc == 3 && nu == 0
-
 
 A2 = rand(Ty,3,3); B2 = rand(Ty,3,4); C2 = rand(Ty,2,3);
 A = copy(A2); B = copy(B2); C = copy(C2);
 
-@time Q, νr, nc, nu  = sklf_right!(A,B,C)
-@test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
-      norm(Q'*B2-B) < sqrt(eps(1.)) &&
-      (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
-      νr == [3] && nc == 3 && nu == 0
-
-A2 = rand(3,3); B2 = rand(3,4); C2 = rand(2,3);
-A = copy(A2); B = copy(B2); C = copy(C2);
-
-@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = false)
+@time Q, νr, nc, nu  = sklf_right!(A,B,C,fast = fast)
 @test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
       norm(Q'*B2-B) < sqrt(eps(1.)) &&
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
@@ -803,6 +1084,8 @@ A = copy(A2); B = copy(B2); C = copy(C2);
       (ismissing(C) || norm(C2*Q-C) < sqrt(eps(1.))) && 
       νr == [1, 1, 1] && nc == 3 && nu == 4
 end
+end
+
 end
 
 
@@ -831,7 +1114,7 @@ sys1  = ([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
 
 # the initial realization is already strongly controllable
 (A, E, B, F, C, G, D, H) = copy.(sys1)
-Q, Z, nc = sklf_right!(A, E, B, F, C, G, D, H) 
+Q, Z, nc = sklf_right!(A, E, B, F, C, G, D, H, fast = fast) 
 i1 = 1:nc
 W = Z[1:3,1:3]
 @test Q'*[sys1[3] sys1[1]]*Z ≈ [B A] &&

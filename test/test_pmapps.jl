@@ -1,4 +1,4 @@
-module Test_klfapps
+module Test_pmapps
 
 using Random
 using LinearAlgebra
@@ -13,63 +13,63 @@ using Test
 for fast in (false,true)
 
 P = zeros(0,0,0); 
-@time val, kinfo  = pmeigvals(P, fast = fast)
+val, kinfo  = pmeigvals(P, fast = fast)
 @test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 0)
 
 P = zeros(0,0,3); 
-@time val, kinfo  = pmeigvals(P, fast = fast)
+val, kinfo  = pmeigvals(P, fast = fast)
 @test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 0)
 
 P = zeros(3,0,3); 
-@time val, kinfo  = pmeigvals(P, fast = fast)
+val, kinfo  = pmeigvals(P, fast = fast)
 @test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], [0, 0, 0], Int64[], 0)
 
 P = zeros(0,3,3); 
-@time val, kinfo  = pmeigvals(P, fast = fast)
+val, kinfo  = pmeigvals(P, fast = fast)
 @test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0, 0, 0], Int64[], Int64[], 0)
 
 
 P = zeros(1,1,5)
-@time val, kinfo  = pmeigvals(P, grade = pmdeg(P), fast = fast)
+val, kinfo  = pmeigvals(P, grade = pmdeg(P), fast = fast)
 @test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[0], Int64[0], Int64[], 0)
 
 P = zeros(1,1,5)
-@time val, kinfo  = pmeigvals(P, grade = pmdeg(P)+4, fast = fast)
+val, kinfo  = pmeigvals(P, grade = pmdeg(P)+4, fast = fast)
 @test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[0], Int64[0], Int64[], 0)
 
 P = zeros(1,1,5)
-@time val, kinfo  = pmeigvals(P, CF1 = false, grade = pmdeg(P)+3, fast = fast)
+val, kinfo  = pmeigvals(P, CF1 = false, grade = pmdeg(P)+3, fast = fast)
 @test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[0], Int64[0], Int64[], 0)
 
 P = zeros(1,1,5)
 P[1,1,1] = 1. 
 
-@time val, kinfo  = pmeigvals(P, fast = fast)
+val, kinfo  = pmeigvals(P, fast = fast)
 @test val == Float64[] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 0)
 
-@time val, kinfo  = pmeigvals(P, grade = 1, fast = fast)
+val, kinfo  = pmeigvals(P, grade = 1, fast = fast)
 @test val == [Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[1], 0)
 
 
-@time val, kinfo  = pmeigvals(P, grade = pmdeg(P)+4, fast = fast)
+val, kinfo  = pmeigvals(P, grade = pmdeg(P)+4, fast = fast)
 @test val == [Inf, Inf, Inf, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[4], 0)
 
-@time val, kinfo  = pmeigvals(P, CF1 = false, grade = pmdeg(P)+3, fast = fast)
+val, kinfo  = pmeigvals(P, CF1 = false, grade = pmdeg(P)+3, fast = fast)
 @test val == [Inf, Inf, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[3], 0)
 
 P = zeros(1,1,5)
 P[1,1,3] = 1. 
 P[1,1,2] = -3. 
 P[1,1,1] = 2. 
-@time val, kinfo  = pmeigvals(P, grade = pmdeg(P), fast = fast)
+val, kinfo  = pmeigvals(P, grade = pmdeg(P), fast = fast)
 @test (val ≈ [2, 1] || val ≈ [1, 2]) && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 2) &&
 kinfo.nf+sum(kinfo.id)+sum(kinfo.rki)+sum(kinfo.lki) == pmdeg(P)
 
-@time val, kinfo  = pmeigvals(P, grade = 4, fast = fast)
+val, kinfo  = pmeigvals(P, grade = 4, fast = fast)
 @test sort(val) ≈ [1, 2, Inf, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[2], 2) &&
       kinfo.nf+sum(kinfo.id)+sum(kinfo.rki)+sum(kinfo.lki) == 4
 
-@time val, kinfo  = pmeigvals(P, CF1 = false, grade = 3, fast = fast)
+val, kinfo  = pmeigvals(P, CF1 = false, grade = 3, fast = fast)
 @test sort(val) ≈ [1, 2, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[1], 2) &&
 kinfo.nf+sum(kinfo.id)+sum(kinfo.rki)+sum(kinfo.lki) == 3
 
@@ -361,27 +361,27 @@ V = [3*s + 1 3*s^3 + s^2 - 3*s - 4  6
 P = zeros(2,2,2)
 P[:,:,1] = [1 0;0 1]; P[:,:,2] = [0. 0; 1 0];
 @test ispmunimodular(P)
-@time val, kinfo  = pmeigvals(P, CF1 = true, fast = fast)
+val, kinfo  = pmeigvals(P, CF1 = true, fast = fast)
 @test val == [Inf, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[2], 0)
-@time val, kinfo  = pmeigvals(P, CF1 = false, fast = fast)
+val, kinfo  = pmeigvals(P, CF1 = false, fast = fast)
 @test val == [Inf, Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[2], 0)
-@time val, iz, kinfo  = pmzeros(P, CF1 = true, fast = fast)
+val, iz, kinfo  = pmzeros(P, CF1 = true, fast = fast)
 @test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[2], 0)
-@time val, iz, kinfo  = pmzeros(P, CF1 = false, fast = fast)
+val, iz, kinfo  = pmzeros(P, CF1 = false, fast = fast)
 @test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[2], 0)
-@time val, iz, kinfo  = pmzeros2(P, fast = fast)
+val, iz, kinfo  = pmzeros2(P, fast = fast)
 @test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[1, 1, 2], 0)
 
 N = zeros(1,1); M = ones(1,1);
 P = zeros(1,1,3)
 P[:,:,1] = M; P[:,:,2] = -N;
-@time val, iz, kinfo  = pmzeros2(P, fast = fast)
+val, iz, kinfo  = pmzeros2(P, fast = fast)
 @test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[1], 0)
 
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 P = zeros(2,2,3)
 P[:,:,1] = M; P[:,:,2] = -N;
-@time val, kinfo = pmeigvals(P, fast = fast)
+val, kinfo = pmeigvals(P, fast = fast)
 @test val == [Inf;Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], [2], 0)
 
 
@@ -399,7 +399,7 @@ N = [   13  26  25  17  24
 
 P = zeros(5,5,3)
 P[:,:,1] = M; P[:,:,2] = -N;
-@time val, kinfo = pmeigvals(P, fast = fast)
+val, kinfo = pmeigvals(P, fast = fast)
 @test (isapprox(val,[2,0,0,Inf],atol = 1.e-7) || isapprox(val,[0,0,2,Inf],atol = 1.e-7)) &&
       (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0], [0], [1], 3)
 
@@ -426,7 +426,7 @@ M = copy(M2); N = copy(N2);
 P = zeros(size(M)...,3)
 P[:,:,1] = M; P[:,:,2] = -N;
 
-@time val, kinfo = pmeigvals(P, fast = fast, atol = 1.e-7)
+val, kinfo = pmeigvals(P, fast = fast, atol = 1.e-7)
 @test length(val) == 6 &&
       length(filter(y-> y == true,isinf.(val))) == 3 &&
       length(filter(y-> y == true,isfinite.(val))) == 3 &&

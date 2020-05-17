@@ -24,22 +24,19 @@ function _sreduceB!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},B::AbstractMatri
    ZERO = zero(T)
    if m == 1 
       b = view(B,:,1)
-      if n == 1
-         abs(b[1]) > tol ? (return 1) : (b[1] = ZERO; return 0)
+      n == 1 && (abs(b[1]) > tol ? (return 1) : (b[1] = ZERO; return 0))
+      τ, β = larfg!(b)
+      if abs(β) <= tol
+         b[:] = zeros(T,n)
+         return 0
       else
-         τ, β = larfg!(b)
-         if abs(β) <= tol
-            b[:] = zeros(T,n)
-            return 0
-         else
-            larf!('L', b, conj(τ), A)  
-            larf!('L', b, conj(τ), E)  
-            withQ && larf!('R', b, τ, Q) 
-            b[:] = [ β; zeros(T,n-1)] 
-            return 1
-         end
+         larf!('L', b, conj(τ), A)  
+         larf!('L', b, conj(τ), E)  
+         withQ && larf!('R', b, τ, Q) 
+         b[:] = [ β; zeros(T,n-1)] 
+         return 1
       end
-   end
+end
    if fast
       _, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(B)
       ρ = count(x -> x > tol, abs.(diag(B))) 
@@ -62,14 +59,9 @@ function _sreduceB!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},B::AbstractMatri
       jcs = 1:m
       SVD = svd(B[ics,jcs], full = true)
       ρ = count(x -> x > tol, SVD.S) 
-      if ρ == mn
-         return ρ
-      else
-         B[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
-         if ρ == 0
-            return ρ
-         end
-      end
+      ρ == mn && (return ρ)
+      B[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
+      ρ == 0 && (return ρ)
       withQ && (Q[:,ics] = Q[:,ics]*SVD.U)
       A[ics,:] = SVD.U'*A[ics,:]
       E[ics,:] = SVD.U'*E[ics,:]
@@ -101,24 +93,21 @@ function _sreduceC!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},C::AbstractMatri
    ia = 1:n
    if p == 1 
       c = view(C,1,:)
-      if n == 1
-         abs(c[1]) > tol ? (return 1) : (c[1] = ZERO; return 0)
+      n == 1 && (abs(c[1]) > tol ? (return 1) : (c[1] = ZERO; return 0))
+      τ, β = larfgl!(c)
+      if abs(β) < tol
+         c[:] = zeros(T,n)
+         return 0
       else
-         τ, β = larfgl!(c)
-         if abs(β) < tol
-            c[:] = zeros(T,n)
-            return 0
-         else
-            T <: Complex && (c[:] = conj(c))
-            τ = conj(τ)
-            larf!('R', c, τ, A)  
-            larf!('R', c, τ, E)  
-            withZ && larf!('R', c, τ, Z) 
-            c[:] = [zeros(T,n-1); β]; 
-            return 1
-         end
+         T <: Complex && (c[:] = conj(c))
+         τ = conj(τ)
+         larf!('R', c, τ, A)  
+         larf!('R', c, τ, E)  
+         withZ && larf!('R', c, τ, Z) 
+         c[:] = [zeros(T,n-1); β]; 
+         return 1
       end
-   end
+end
    if fast
       # compute the RQ decomposition with row pivoting 
       temp = reverse(copy(transpose(C)),dims=1)
@@ -149,14 +138,9 @@ function _sreduceC!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},C::AbstractMatri
       jcs = n-pn+1:n
       SVD = svd(C[ics,jcs], full = true)
       ρ = count(x -> x > tol, SVD.S) 
-      if ρ == pn
-         return ρ
-      else
-         C[ics,jcs] = [ zeros(T,p,pn-ρ) reverse(SVD.U,dims=2)[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ]
-         if ρ == 0
-            return ρ
-         end
-      end
+      ρ == pn && (return ρ)
+      C[ics,jcs] = [ zeros(T,p,pn-ρ) reverse(SVD.U,dims=2)[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ]
+      ρ == 0 && (return ρ)
       Z1 = reverse(SVD.V,dims=2)
       withZ && (Z[:,jcs] = Z[:,jcs]*Z1)
       A[:,jcs] = A[:,jcs]*Z1
@@ -221,22 +205,19 @@ function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T1},B::AbstractMatrix{T1},C
    end
    if m == 1 
       b = view(B1,:,1)
-      if n == 1
-         abs(b[1]) > tol ? (return 1) : (b[1] = ZERO; return 0)
+      n == 1 && (abs(b[1]) > tol ? (return 1) : (b[1] = ZERO; return 0))
+      τ, β = larfg!(b)
+      if abs(β) < tol
+         b[:] = zeros(T,n)
+         return 0
       else
-         τ, β = larfg!(b)
-         if abs(β) < tol
-            b[:] = zeros(T,n)
-            return 0
-         else
-            #T <: Complex && (b[:] = conj(b))
-            larf!('L', b, conj(τ), A1)  
-            larf!('R', b, τ, view(A, ia, ja))  
-            ismissing(C) || larf!('R', b, τ, view(C,:,ja))  
-            withQ && larf!('R', b, τ, view(Q,:,ib)) 
-            b[:] = [ β; zeros(T,n-1)] 
-            return 1
-         end
+         #T <: Complex && (b[:] = conj(b))
+         larf!('L', b, conj(τ), A1)  
+         larf!('R', b, τ, view(A, ia, ja))  
+         ismissing(C) || larf!('R', b, τ, view(C,:,ja))  
+         withQ && larf!('R', b, τ, view(Q,:,ib)) 
+         b[:] = [ β; zeros(T,n-1)] 
+         return 1
       end
    end
    if fast
@@ -263,14 +244,9 @@ function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T1},B::AbstractMatrix{T1},C
       jcs = 1:m
       SVD = svd(B1[ics,jcs], full = true)
       ρ = count(x -> x > tol, SVD.S) 
-      if ρ == mn
-         return ρ
-      else
-         B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
-         if ρ == 0
-            return ρ
-         end
-      end
+      ρ == mn && (return ρ)
+      B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
+      ρ == 0 && (return ρ)
       ibt = roff+1:roff+mn
       init ? (jt = coff+1:coff+mn) : (jt = coff+m+1:coff+m+mn)
       withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
@@ -338,23 +314,20 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B
    end
    if p == 1 
       c = view(C1,1,ia)
-      if n == 1
-         abs(c[1]) > tol ? (return 1) : (c[1] = ZERO; return 0)
+      n == 1 && (abs(c[1]) > tol ? (return 1) : (c[1] = ZERO; return 0))
+      τ, β = larfgl!(c)
+      if abs(β) < tol
+         c[:] = zeros(T,n)
+         return 0
       else
-         τ, β = larfgl!(c)
-         if abs(β) < tol
-            c[:] = zeros(T,n)
-            return 0
-         else
-            T <: Complex && (c[:] = conj(c))
-            larf!('L', c, τ, view(A, ia, :))  
-            ismissing(B) || larf!('L', c, τ, view(B, ia, :)) 
-            τ = conj(τ)
-            larf!('R', c, τ, A1)  
-            withQ && larf!('R', c, τ, view(Q,:,ia)) 
-            c[:] = [zeros(T,n-1); β]; 
-            return 1
-         end
+         T <: Complex && (c[:] = conj(c))
+         larf!('L', c, τ, view(A, ia, :))  
+         ismissing(B) || larf!('L', c, τ, view(B, ia, :)) 
+         τ = conj(τ)
+         larf!('R', c, τ, A1)  
+         withQ && larf!('R', c, τ, view(Q,:,ia)) 
+         c[:] = [zeros(T,n-1); β]; 
+         return 1
       end
    end
    if fast
@@ -389,14 +362,9 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B
       jcs = n-pn+1:n
       SVD = svd(C1[ics,jcs], full = true)
       ρ = count(x -> x > tol, SVD.S) 
-      if ρ == pn
-         return ρ
-      else
-         C1[ics,jcs] = [ zeros(T,p,pn-ρ) reverse(SVD.U,dims=2)[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ]
-         if ρ == 0
-            return ρ
-         end
-      end
+      ρ == pn && (return ρ)
+      C1[ics,jcs] = [ zeros(T,p,pn-ρ) reverse(SVD.U,dims=2)[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ]
+      ρ == 0 && (return ρ)
       Q1 = reverse(SVD.V,dims=2)
       withQ && (Q[:,jcs] = Q[:,jcs]*Q1)
       A1[jcs,1:n+ctrail] = Q1'*A1[jcs,1:n+ctrail]
@@ -485,7 +453,7 @@ function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
          end
          nrmax, ind = findmax(nrm[j:m]) 
          ind += j-1
-         if nrmax < tol
+         if nrmax <= tol
             break
          else
             ρ += 1
@@ -539,37 +507,28 @@ function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
          end
       end
       mn = min(n,m)
-      if mn > 0
-         ics = 1:mn
-         jcs = 1:m
-         SVD = svd(B1[ics,jcs], full = true)
-         ρ = count(x -> x > tol, SVD.S) 
-         if ρ == mn
-            return ρ
-         else
-            B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
-            if ρ == 0
-               return ρ
-            end
-         end
-         ibt = roff+1:roff+mn
-         jt = coff+m+1:nA
-         withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
-         E[ibt,jt] = SVD.U'*E[ibt,jt]
-         A[ibt,jt] = SVD.U'*A[ibt,jt]
-         tau = similar(E,mn)
-         jt1 = coff+m+1:coff+m+mn
-         E11 = view(E,ibt,jt1)
-         LinearAlgebra.LAPACK.gerqf!(E11,tau)
-         eltype(A) <: Complex ? tran = 'C' : tran = 'T'
-         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
-         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
-         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
-         ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
-         triu!(E11)
-      else
-         ρ = 0
-      end
+      mn == 0 && (return 0)
+      ics = 1:mn
+      jcs = 1:m
+      SVD = svd(B1[ics,jcs], full = true)
+      ρ = count(x -> x > tol, SVD.S) 
+      ρ == mn && (return ρ)
+      B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
+      ρ == 0 && (return ρ)
+      ibt = roff+1:roff+mn
+      withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
+      E[ibt,ja] = SVD.U'*E[ibt,ja]
+      A[ibt,ja] = SVD.U'*A[ibt,ja]
+      tau = similar(E,mn)
+      init ? (jt1 = 1:mn) : (jt1 = coff+m+1:coff+m+mn)
+      E11 = view(E,ibt,jt1)
+      LinearAlgebra.LAPACK.gerqf!(E11,tau)
+      eltype(A) <: Complex ? tran = 'C' : tran = 'T'
+      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
+      withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
+      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
+      ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
+      triu!(E11)
    end
    return ρ 
 end
@@ -652,7 +611,7 @@ function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
             nrm[l] = norm(C1[l,1:n-i+1])
          end
          nrmax, ind = findmax(nrm[1:ii]) 
-         if nrmax < tol
+         if nrmax <= tol
             break
          else
             ρ += 1
@@ -706,38 +665,30 @@ function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
          end
       end
       pn = min(n,p)
-      if pn > 0
-         ics = 1:p
-         jcs = n-pn+1:n
-         SVD = svd(C1[ics,jcs], full = true)
-         ρ = count(x -> x > tol, SVD.S) 
-         if ρ == pn
-            return ρ
-         else
-            Q1 = reverse(SVD.U,dims=2)
-            C1[ics,jcs] = [ zeros(T,p,pn-ρ) Q1[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ] 
-            if ρ == 0
-               return ρ
-            end
-         end
-         Z1 = reverse(SVD.V,dims=2)
-         jt = n-pn+1:n
-         withZ && (Z[:,jt] = Z[:,jt]*Z1) 
-         A[ia,jt] = A[ia,jt]*Z1
-         E[ia,jt] = E[ia,jt]*Z1    # more efficient computation possible
-         jt1 = n+1:nA
-         tau = similar(E,pn)
-         E22 = view(E,jt,jt)
-         LinearAlgebra.LAPACK.geqrf!(E22,tau)
-         eltype(A) <: Complex ? tran = 'C' : tran = 'T'
-         LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(A,jt,ja))
-         withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E22,tau,view(Q,:,jt)) 
-         LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(E,jt,jt1))
-         ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(B,jt,:))
-         triu!(E22)
-      else
-         ρ = 0
-      end
+      pn == 0 && (return 0)
+      ics = 1:p
+      jcs = n-pn+1:n
+      SVD = svd(C1[ics,jcs], full = true)
+      ρ = count(x -> x > tol, SVD.S) 
+      ρ == pn && (return ρ)
+      Q1 = reverse(SVD.U,dims=2)
+      C1[ics,jcs] = [ zeros(T,p,pn-ρ) Q1[:,p-ρ+1:end]*Diagonal(reverse(SVD.S[1:ρ])) ] 
+      ρ == 0 && (return ρ)
+      Z1 = reverse(SVD.V,dims=2)
+      jt = n-pn+1:n
+      withZ && (Z[:,jt] = Z[:,jt]*Z1) 
+      A[ia,jt] = A[ia,jt]*Z1
+      E[ia,jt] = E[ia,jt]*Z1    # more efficient computation possible
+      jt1 = n+1:nA
+      tau = similar(E,pn)
+      E22 = view(E,jt,jt)
+      LinearAlgebra.LAPACK.geqrf!(E22,tau)
+      eltype(A) <: Complex ? tran = 'C' : tran = 'T'
+      LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(A,jt,ja))
+      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E22,tau,view(Q,:,jt)) 
+      LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(E,jt,jt1))
+      ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(B,jt,:))
+      triu!(E22)
    end
    return ρ 
 end

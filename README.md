@@ -7,6 +7,16 @@
 
 **Matrix pencil manipulation using [Julia](http://julialang.org)**
 
+## Compatibility
+
+Julia 1.0 and higher.
+
+## How to Install
+
+````JULIA
+pkg> add MatrixPencils
+pkg> test MatrixPencils
+````
 ## About
 
 The Kronecker-canonical form of a linear pencil `M − λN` basically characterizes the right and left singular structure and the eigenvalue structure of the pencil. The computation of the Kronecker-canonical form may involve the use of ill-conditioned similarity transformations and, therefore, is potentially numerically unstable. Fortunately, alternative staircase forms, called `Kronecker-like forms` (KLFs), can be determined by employing exclusively orthogonal or unitary similarity transformations and allow to obtain basically the same (or only a part of) structural information on the pencil `M − λN`. Various KLFs can serve to address, in a numerically reliable way, the main applications of the Kronecker form,
@@ -15,7 +25,7 @@ such as the computation of minimal left or right nullspace bases, the computatio
 This collection of Julia functions is an attemp to implement high performance numerical software to compute a range of
 KLFs which reveal the full or partial Kronecker structure of a linear pencil. The KLFs are computed by performing several pencil reduction operations on a reduced basic form of the initial pencil. These operations efficiently compress the rows or columns of certain submatrices to full rank matrices and simultaneously maintain the reduced basic form. The rank decisions involve the use of rank revealing QR-decompositions with colum pivoting or, the more reliable, SVD-decompositions. The overall computational complexity of all reduction algorithms is ``O(n^3)``, where ``n`` is the largest dimension of the pencil.
 
-Many of the implemented pencil manipulation algorithms are extensions of computational procedures proposed by Professor Paul Van Dooren (Université catholique de Louvain, Belgium) in several seminal contributions in the field of linear algebra and its applications in control systems theory. The author expresses his gratitude to Paul Van Dooren for his friendly support during the implementation of functions for manipulation of polynomial matrices. Therefore, the release v0.6 of the **MatrixPencils** package is dedicated in his honor on the occasion of his 70th birthday in 2020.
+Many of the implemented pencil manipulation algorithms are extensions of computational procedures proposed by Professor Paul Van Dooren (Université catholique de Louvain, Belgium) in several seminal contributions in the field of linear algebra and its applications in control systems theory. The author expresses his gratitude to Paul Van Dooren for his friendly support during the implementation of functions for manipulation of polynomial matrices. Therefore, the release v1.0 of the **MatrixPencils** package is dedicated in his honor on the occasion of his 70th birthday in 2020.
 
 The current version of the package includes the following functions:
 
