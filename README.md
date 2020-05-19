@@ -1,6 +1,5 @@
 # MatrixPencils.jl
 
-#[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3556377.svg)](https://doi.org/10.5281/zenodo.3556867)
 [![Travis](https://travis-ci.com/andreasvarga/MatrixPencils.jl.svg?branch=master)](https://travis-ci.com/andreasvarga/MatrixPencils.jl)
 [![codecov.io](https://codecov.io/gh/andreasvarga/MatrixPencils.jl/coverage.svg?branch=master)](https://codecov.io/gh/andreasvarga/MatrixPencils.jl?branch=master)
 [![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://andreasvarga.github.io/MatrixPencils.jl/dev/)
@@ -32,7 +31,7 @@ The current version of the package includes the following functions:
 
 **Manipulation of general linear matrix pencils**
 
-* **sreduceBF**  Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
+* **preduceBF**  Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
 * **klf**   Computation of the Kronecker-like form exhibiting the full Kronecker structure.
 * **klf_left**  Computation of the Kronecker-like form exhibiting the left Kronecker structure.
 * **klf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure.
