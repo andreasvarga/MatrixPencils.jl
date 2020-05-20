@@ -22,7 +22,6 @@ export lpsminreal, lpsequal, lpseval
 export poly2pm, pm2poly, pmdeg, pmreverse, pmeval
 export pm2lpCF1, pm2lpCF2, pm2lps, pm2ls, spm2ls, spm2lps, ls2pm, lps2pm
 export pmkstruct, pmeigvals, pmzeros, pmzeros1, pmzeros2, pmroots, pmpoles, pmpoles1, pmpoles2, pmrank, ispmregular, ispmunimodular 
-#export poladd, poladd1, polmul, polmul1
 #export polbascoeffs, polbasparams, polbas2mon, polmon2bas
 #export dss, ss, gnrank, gzero, gpole
 #export LTISystem, AbstractDescriptorStateSpace
@@ -31,7 +30,6 @@ export pmkstruct, pmeigvals, pmzeros, pmzeros1, pmzeros2, pmroots, pmpoles, pmpo
 #import Base: +, -, *
 import LinearAlgebra: copy_oftype 
 
-#include("fixpolops.jl")
 include("klftools.jl")
 include("regtools.jl")
 include("klfapps.jl")

@@ -10,7 +10,7 @@ provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) packa
 the coefficient matrices `P_l`, `l = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
 where `P[:,:,l]` contains the `l`-th coefficient matrix `P_l` (multiplying `λ**(l-1)`). 
 If `grade = missing`, then `k` is chosen the largest degree of the elements of `PM`.
-The coefficients of the degree `d` element `(i,j)` of `PM(λ)` result in P[i,j,1:d+1].
+The coefficients of the degree `d` element `(i,j)` of `PM(λ)` result in `P[i,j,1:d+1]`.
 """
 function poly2pm(PM::Matrix{Polynomial{T}}; grade::Union{Int,Missing} = missing) where T
    p, m = size(PM)
@@ -104,9 +104,9 @@ Build the polynomial matrix `PM(λ)` from its matrix polynomial representation `
 the coefficient matrices `P_l`, `l = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
 where `P[:,:,l]` contains the `l`-th coefficient matrix `P_l` (multiplying `λ**(l-1)`). 
 
-`PM(λ)` is a matrix, vector or scalar of elements of the `Polynomial` type 
+`PM(λ)` is a matrix of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
-The element `(i,j)` of `PM(λ)` is built from the coefficients contained in P[i,j,1:k+1].
+The element `(i,j)` of `PM(λ)` is built from the coefficients contained in `P[i,j,1:k+1]`.
 The symbol to be used for the indeterminate `λ` can be specified in the optional input variable `var`. 
 """
 function pm2poly(PM::AbstractArray{T,3},var::Union{Char, AbstractString, Symbol}='x') where T
@@ -172,9 +172,10 @@ end
 pmeval(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number},val::Number) where T =
       pmeval(poly2pm(P),val::Number)
 """
-    pmreverse(P,j) -> Q
+    pmreverse(P[,j]) -> Q
 
-Build `Q(λ) = λ^j*P(1/λ)`, the j-reversal of a polynomial matrix `P(λ)` for j ≥ deg(P(λ)). 
+Build `Q(λ) = λ^j*P(1/λ)`, the `j`-reversal of a polynomial matrix `P(λ)` for `j ≥ deg(P(λ))`. 
+If `j` is not specified, the default value `j = deg(P(λ))` is used. 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -183,7 +184,7 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-If `d = deg(P(λ))`, then `Q(λ)` is a grade `j` polynomial matrix of the form 
+If deg(P(λ)), then `Q(λ)` is a grade `j` polynomial matrix of the form 
 `Q(λ) = Q_1 + λ Q_2 + ... + λ**j Q_(j+1)`, for which 
 the coefficient matrices `Q_i`, `i = 1, ..., j+1`, are stored in the 3-dimensional matrix `Q`, 
 where `Q[:,:,i]` contains the `i`-th coefficient matrix `Q_i` (multiplying `λ**(i-1)`). 
@@ -202,31 +203,32 @@ pmreverse(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs
 """
      pm2lpCF1(P; grade = l) -> (M, N)
 
-Build a linearization `M - λ N` of a polynomial matrix `P(λ)` in the first companion Frobenius form. 
+Build a strong linearization `M - λN` of a polynomial matrix `P(λ)` in the first companion Frobenius form. 
 
 `P(λ)` is a grade `k` polynomial matrix assumed of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, with 
 the coefficient matrices `P_i`, `i = 1, ..., k+1` stored in the 3-dimensional matrix `P`, 
 where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 The effective grade `l` to be used for linearization can be specified via the keyword argument `grade` as 
 `grade = l`, where `l` must be chosen equal to or greater than the degree of `P(λ)`.
+The default value used for `l` is `l = deg(P(λ))`.
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-If `P(λ)` is a `m x n` polynomial matrix of effective grade `l`, then the resulting linear pencil 
-`M - λ N` satisfies the following conditions [1]:
+If `P(λ)` is a `m x n` polynomial matrix of effective grade `l` and degree `d`, 
+then the resulting linear pencil `M - λN` satisfies the following conditions [1]:
 
-(1) `M - λ N` has dimension `(m+n*(l-1)) x n*l`;
+(1) `M - λN` has dimension `(m+n*(l-1)) x n*l` and `M - λN` is regular if `P(λ)` is regular;
 
-(2) `M - λ N` and `P(λ)` have the same finite eigenvalues;
+(2) `M - λN` and `P(λ)` have the same finite eigenvalues;
 
-(3) If `P(λ)` is regular then `M - λ N` is regular and `P(λ)` and `M - λ N` 
-have the same infinite elementary divisors and the linearization is called a strong linearization;
+(3) the partial multiplicities of infinite eigenvalues of `M - λN` are in excess with `l-d` to the
+partial multiplicities of the infinite eigenvalues of `P(λ)`;
 
-(4) `M - λ N` and `P(λ)` have the same number of right Kronecker indices and the right
-Kronecker indices of `M - λ N` are in excess with `l-1` to the right Kronecker indices of `P(λ)`.
+(4) `M - λN` and `P(λ)` have the same number of right Kronecker indices and the right
+Kronecker indices of `M - λN` are in excess with `l-1` to the right Kronecker indices of `P(λ)`;
 
-(5) `M - λ N` and `P(λ)` have the same left Kronecker structure (i.e., left Kronecker indices).
+(5) `M - λN` and `P(λ)` have the same left Kronecker structure (i.e., the same left Kronecker indices).
 
 [1] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
 the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
@@ -258,30 +260,32 @@ pm2lpCF1(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs.
 """
     pm2lpCF2(P; grade = l) -> (M, N)
 
-Build a strong linearization `M - λ N` of a polynomial matrix `P(λ)` in the second companion Frobenius form. 
+Build a strong linearization `M - λN` of a polynomial matrix `P(λ)` in the second companion Frobenius form. 
+
 `P(λ)` is a grade `k` polynomial matrix assumed of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, with 
 the coefficient matrices `P_i`, `i = 1, ..., k+1` stored in the 3-dimensional matrix `P`, 
 where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`).
 The effective grade `l` to be used for linearization can be specified via the keyword argument `grade` as 
-`grade = l`, where `l` must be chosen equal to or greater than the degree of `P(λ)`.
+`grade = l`, where `l` must be chosen equal to or greater than the degree of `P(λ)`. 
+The default value used for `l` is `l = deg(P(λ))`.
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-If `P(λ)` is a `m x n` polynomial matrix of effective grade `l`, then the resulting linear pencil 
-`M - λ N` satisfies the following conditions [1]:
+If `P(λ)` is a `m x n` polynomial matrix of effective grade `l` and degree `d`, then the resulting linear pencil 
+`M - λN` satisfies the following conditions [1]:
 
-(1) `M - λ N` has dimension `l*m x (n+(l-1)*m)`;
+(1) `M - λN` has dimension `l*m x (n+(l-1)*m)` and `M - λN` is regular if `P(λ)` is regular;
 
-(2) `M - λ N` and `P(λ)` have the same finite eigenvalues;
+(2) `M - λN` and `P(λ)` have the same finite eigenvalues;
 
-(3) If `P(λ)` is regular then `M - λ N` is regular and `P(λ)` and `M - λ N` 
-have the same infinite elementary divisors and the linearization is called a strong linearization;
+(3) the partial multiplicities of infinite eigenvalues of `M - λN` are in excess with `l-d` to the
+partial multiplicities of the infinite eigenvalues of `P(λ)`;
 
-(4) `M - λ N` and `P(λ)` have the same right Kronecker structure (i.e., right Kronecker indices);
+(4) `M - λN` and `P(λ)` have the same right Kronecker structure (i.e., the same right Kronecker indices);
 
-(5) `M - λ N` and `P(λ)` have the same number of left Kronecker indices and the left
-Kronecker indices of `M - λ N` are in excess with `l-1` to the left Kronecker indices of `P(λ)`.
+(5) `M - λN` and `P(λ)` have the same number of left Kronecker indices and the left
+Kronecker indices of `M - λN` are in excess with `l-1` to the left Kronecker indices of `P(λ)`.
 
 [1] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
 the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
@@ -320,7 +324,7 @@ Build a structured linearization
      M - λN = |------|---|
               |  C   | D |  
       
-of a polynomial matrix `P(λ)` which preserves a part or the complete Kronecker structure of `P(λ)`. 
+of a polynomial matrix `P(λ)` which preserves a part of the Kronecker structure of `P(λ)`. 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -344,6 +348,19 @@ the finite and left Kronecker structures are preserved;
 If conditions (1)-(4) are satisfied, the linearization is called `minimal` and the resulting order `n`
 is the least achievable order. If conditions (1)-(3) are satisfied, the linearization is called `irreducible` 
 and the resulting order `n` is the least achievable order using orthogonal similarity transformations.
+
+The underlying pencil manipulation algorithms [1] and [2] to compute reduced order linearizations 
+employ rank determinations based on either the use of 
+rank revealing QR-decomposition with column pivoting, if `fast = true`, or the SVD-decomposition, if `fast = false`.
+The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
+
+The keyword arguments `atol` and `rtol`, specify the absolute and relative tolerances for the 
+nonzero coefficients of `P(λ)`, respectively.
+
+[1] P. Van Dooreen, The generalized eigenstructure problem in linear system theory, 
+IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
+
+[2] A. Varga, Solving Fault Diagnosis Problems - Linear Synthesis Techniques, Springer Verlag, 2017. 
 """
 function pm2ls(P::AbstractArray{T,3}; minimal::Bool = false, contr::Bool = false, obs::Bool = false, noseig::Bool = false, 
                fast::Bool = true, atol::Real = zero(real(T)), 
@@ -455,7 +472,7 @@ Build a structured linearization
      M - λN = |------|------|
               | C-λG | D-λH |  
       
-of a polynomial matrix `P(λ)`. 
+of a polynomial matrix `P(λ)` which preserves a part of the Kronecker structure of `P(λ)`. 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -464,7 +481,7 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-If `d` is the degree of the `p x m` polynomial matrix `P(λ), then the computed linearization satisfies:
+If `d` is the degree of the `p x m` polynomial matrix `P(λ)`, then the computed linearization satisfies:
 
 (1) `A-λE` is a `n x n` regular pencil, where `n = p(d-1)` if `contr = false` and `p <= m`
 and `n = m(d-1)` otherwise; 
@@ -674,9 +691,9 @@ such that `V(λ)*inv(T(λ))*U(λ)+W(λ) = C*inv(λE-A)*B+D`. The resulting linea
 if `minimal = false`, or the complete Kronecker structure, if `minimal = true`, of `P(λ)`. In the latter case, 
 the order `n` of `A-λE` is the least possible one and `M - λN` is a strong linearization of `P(λ)`.
 
-`T(λ)`, `U(λ)`, `V(λ)`, and `W(λ)` can be specified as polynomial matrices of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
-for `P = T`, `U`, `V`, and `W`, for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in 
-the 3-dimensional matrices `P`, where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+`T(λ)`, `U(λ)`, `V(λ)`, and `W(λ)` can be specified as polynomial matrices of the form `X(λ) = X_1 + λ X_2 + ... + λ**k X_(k+1)`, 
+for `X = T`, `U`, `V`, and `W`, for which the coefficient matrices `X_i`, `i = 1, ..., k+1`, are stored in 
+the 3-dimensional matrices `X`, where `X[:,:,i]` contains the `i`-th coefficient matrix `X_i` (multiplying `λ**(i-1)`). 
 
 `T(λ)`, `U(λ)`, `V(λ)`, and `W(λ)` can also be specified as matrices, vectors or scalars of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -691,7 +708,7 @@ the finite and right Kronecker structures are preserved;
 (3) `rank[A-λE; C] = n` (observability)  if `minimal = true` or `obs = true`, in which case 
 the finite and left Kronecker structures are preserved;
 
-(4) `M-λN` has no simple eigenvalues if `minimal = true`, in which case the complete Kronecker structure is preserved. 
+(4) `M-λN` has no simple infinite eigenvalues if `minimal = true`, in which case the complete Kronecker structure is preserved. 
 
 The keyword arguments `atol` and `rtol`, specify, respectively, the absolute and relative tolerance for the 
 nonzero coefficients of the matrices `T(λ)`, `U(λ)`, `V(λ)` and `W(λ)`. The default relative tolerance is `nt*ϵ`, 
@@ -802,9 +819,9 @@ such that `V(λ)*inv(T(λ))*U(λ)+W(λ) = (C-λG))*inv(λE-A)*(B-λF)+D-λH`. Th
 if `minimal = false`, or the complete Kronecker structure, if `minimal = true`, of `P(λ)`. In the latter case, 
 the order `n` of `A-λE` is the least possible one and `M - λN` is a strong linearization of `P(λ)`.
 
-`T(λ)`, `U(λ)`, `V(λ)`, and `W(λ)` can be specified as polynomial matrices of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
-for `P = T`, `U`, `V`, and `W`, for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in 
-the 3-dimensional matrices `P`, where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+`T(λ)`, `U(λ)`, `V(λ)`, and `W(λ)` can be specified as polynomial matrices of the form `X(λ) = X_1 + λ X_2 + ... + λ**k X_(k+1)`, 
+for `X = T`, `U`, `V`, and `W`, for which the coefficient matrices `X_i`, `i = 1, ..., k+1`, are stored in 
+the 3-dimensional matrices `X`, where `X[:,:,i]` contains the `i`-th coefficient matrix `X_i` (multiplying `λ**(i-1)`). 
 
 `T(λ)`, `U(λ)`, `V(λ)`, and `W(λ)` can also be specified as matrices, vectors or scalars of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   

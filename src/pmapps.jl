@@ -5,11 +5,12 @@ Determine the Kronecker-structure information of the polynomial matrix `P(λ)` a
 The computation of the Kronecker-structure employs strong linearizations of `P(λ)`in either 
 the first companion form, if `CF1 = true`, or the second companion form, if `CF1 = false`. 
 The effective grade `l` to be used for linearization can be specified via the keyword argument `grade` as 
-`grade = l`, where `l` must be chosen equal to or greater than the degree of `P(λ)`.
+`grade = l`, where `l` must be chosen equal to or greater than the degree of `P(λ)`. 
+The default value used for `l` is `l = deg(P(λ))`.
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -19,7 +20,7 @@ number of finite eigenvalues `nf` can be obtained from `KRInfo` as `KRInfo.rki`,
 and `KRInfo.nf`, respectively.  
 The determination of the Kronecker-structure information is performed by building a companion 
 form linearization `M-λN` of `P(λ)` and reducing the pencil `M-λN` to an 
-appropriate Kronecker-like form (KLF) exhibiting all structural elements of the pencil `M-λN`.
+appropriate Kronecker-like form exhibiting all structural elements of the pencil `M-λN`.
 The Kronecker-structure information on `P(λ)` are recovered from the Kronecker-structure information
 on `M-λN` using the results of [1].
 
@@ -77,7 +78,7 @@ The effective grade `l` to be used for linearization can be specified via the ke
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -93,7 +94,7 @@ exhibiting its full Kronecker structure (i.e., number of finite eigenvalues, mul
 left and right Kronecker indices). 
 The left and right Kronecker indices of `P(λ)` are returned in `KRInfo.rki` and `KRInfo.rki`, respectively, and 
 their values are recovered from the left and right Kronecker indices of `M-λN` using the results of [1].
-The multiplicities of the infinite eigenvalues of `P(λ)` is returned in `KRInfo.id`. 
+The multiplicities of the infinite eigenvalues of `P(λ)` of effective grade `l` is returned in `KRInfo.id`. 
 The number of finite eigenvalues in `val` is equal to the number of finite eigenvalues of `M-λN` (returned in `KRInfo.nf`), 
 while the number of infinite eigenvalues in `val` is the sum of multiplicites returned in `KRInfo.id`. 
 
@@ -136,7 +137,7 @@ the first companion form, if `CF1 = true`, or the second companion form, if `CF1
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -203,7 +204,7 @@ the first companion form, if `CF1 = true`, or the second companion form, if `CF1
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -262,7 +263,7 @@ and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref).
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -293,7 +294,8 @@ coefficients of `P(λ)`,  respectively.
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `P(λ)`, and `ϵ` is the 
 machine epsilon of the element type of coefficients of `P(λ)`. 
 
-[1] F. Dopico, M. C. Quintana, and P. Van Dooren, Linear system matrices of rational transfer tunctions, (submitted 2020).
+[1] F.M. Dopico, M.C. Quintana and P. Van Dooren, Linear system matrices of rational transfer functions, to appear in "Realization and Model Reduction of Dynamical Systems", 
+A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [arXiv: 1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
 
 [2] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.
@@ -325,7 +327,7 @@ and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref).
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -357,7 +359,8 @@ coefficients of `P(λ)`,  respectively.
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `P(λ)`, and `ϵ` is the 
 machine epsilon of the element type of coefficients of `P(λ)`. 
 
-[1] F. Dopico, M. C. Quintana, and P. Van Dooren, Linear system matrices of rational transfer tunctions, (submitted 2020).
+[1] F.M. Dopico, M.C. Quintana and P. Van Dooren, Linear system matrices of rational transfer functions, to appear in "Realization and Model Reduction of Dynamical Systems", 
+A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [arXiv: 1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
 
 [2] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.
@@ -394,7 +397,7 @@ and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref).
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -452,7 +455,7 @@ and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref).
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -504,7 +507,7 @@ Compute the roots of the determinant of the regular polynomial matrix `P(λ)` in
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -536,7 +539,7 @@ Determine the normal rank of a polynomial matrix `P(λ)`.
    
 `P(λ)` is a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, for which 
 the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). The normal rank of `P(λ)`
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). The normal rank of `P(λ)`
 is the number of linearly independent rows or columns. 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
@@ -571,16 +574,16 @@ function pmrank(P::AbstractArray{T,3}; fastrank::Bool = true, atol::Real = zero(
    end
 end
 pmrank(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
-       pmrank(poly2pm(P); kwargs...)
+       pmrank(poly2pm(P); kwargs...) 
 """
     ispmregular(P; fastrank = true, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> Bool
 
-Test whether the polynomial matrix `P(λ)` is regular (i.e., `P(λ)` is square and `det(P(λ)) !== 0`). 
+Test whether the polynomial matrix `P(λ)` is regular (i.e., `P(λ)` is square and ``{\\small\\det(P(λ)) \\not\\equiv 0}``). 
 The underlying computational procedure checks that the normal rank of the square `P(λ)` is equal to its order.
 
 `P(λ)` is a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, for which 
 the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
@@ -618,7 +621,7 @@ is regular and has no finite eigenvalues.
 
 `P(λ)` is a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, for which 
 the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
-where `P[:,:,i] contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
+where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**(i-1)`). 
 
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   

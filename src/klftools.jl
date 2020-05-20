@@ -13,9 +13,6 @@ where `E` is an `nxn` non-singular matrix, and `A`, `B`, `C`, `D` are `nxn`-, `n
 respectively. The order `n` of `E` is equal to the numerical rank of `N` determined using the absolute tolerance `atol` and 
 relative tolerance `rtol`. `M` and `N` are overwritten by `F` and `G`, respectively. 
 
-The performed orthogonal or unitary transformations are accumulated in `Q`, if `withQ = true`, and 
-`Z`, if `withZ = true`. 
-
 If `fast = true`, `E` is determined upper triangular using a rank revealing QR-decomposition with column pivoting of `N` 
 and `n` is evaluated as the number of nonzero diagonal elements of the `R` factor, whose magnitudes are greater than 
 `tol = max(atol,abs(R[1,1])*rtol)`. 
@@ -23,6 +20,11 @@ If `fast = false`,  `E` is determined diagonal using a rank revealing SVD-decomp
 `n` is evaluated as the number of singular values greater than `tol = max(atol,smax*rtol)`, where `smax` 
 is the largest singular value. 
 The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
+
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
+Otherwise, `Q` is set to `nothing`.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
+Otherwise, `Z` is set to `nothing`.  
 """
 function preduceBF(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
                    atol::Real = zero(real(eltype(M))),  
@@ -274,6 +276,7 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,
 for the nonzero elements of `M` and `N`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
@@ -380,12 +383,13 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,
 for the nonzero elements of `M` and `N`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 The performed right orthogonal or unitary or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.   
 
-Note: If the pencil `M - λN` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
+`Note:` If the pencil `M - λN` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
 square upper triangular diagonal blocks (i.e.,`μ[j] = ν[j]`), and the difference `ν[nb-j+1]-ν[nb-j]` for 
 `j = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `j` (with `ν[0] = 0`).
 """
@@ -447,12 +451,13 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,
 for the nonzero elements of `M` and `N`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.  
 
-Note: If the pencil `M - λN` has full column rank, then the regular pencil `Mri-λNri` is in a staircase form with
+`Note:` If the pencil `M - λN` has full column rank, then the regular pencil `Mri-λNri` is in a staircase form with
 square upper triangular diagonal blocks (i.e.,`μ[i] = ν[i]`), and the difference `ν[i+1]-ν[i]` for `i = 1, 2, ..., nb` 
 is the number of infinite elementary divisors of degree `i` (with `ν[nb+1] = 0`).
 """
@@ -519,12 +524,13 @@ nonzero elements of `M`, respectively. The internally employed absolute toleranc
 nonzero elements of `M` is returned in `tol`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` (i.e., `Q <- Q*Q1`) 
 if `withQ = true`. Otherwise, `Q` is not modified.   
 The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` (i.e., `Z <- Z*Z1`) 
 if `withZ = true`. Otherwise, `Z` is not modified.   
  
-Note: If the subpencil `M22 - λN22` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
+`Note:` If the subpencil `M22 - λN22` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
 square upper triangular diagonal blocks (i.e.,`μ[i] = ν[i]`), and the difference `ν[nb-i+1]-ν[nb-i]` for 
 `i = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` (with `ν[0] = 0`).
 """
@@ -777,12 +783,13 @@ nonzero elements of `M`, respectively. The internally employed absolute toleranc
 nonzero elements of `M` is returned in `tol`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+   
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` (i.e., `Q <- Q*Q1`) 
 if `withQ = true`. Otherwise, `Q` is not modified.   
 The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` (i.e., `Z <- Z*Z1`) 
 if `withZ = true`. Otherwise, `Z` is not modified.   
 
-Note: If the pencil `M22 - λN22` has full column rank, then the regular pencil `Mri-λNri` is in a staircase form with
+`Note:` If the pencil `M22 - λN22` has full column rank, then the regular pencil `Mri-λNri` is in a staircase form with
 square diagonal blocks (i.e.,`μ[i] = ν[i]`), and the difference `ν[i]-ν[i+1]` for `i = 1, 2, ..., nb` 
 is the number of infinite elementary divisors of degree `i` (with `ν[nb+1] = 0`).
 """

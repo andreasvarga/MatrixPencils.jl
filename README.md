@@ -66,11 +66,11 @@ The current version of the package includes the following functions:
 
 **Manipulation of linearizations of the form `[A-λE B; C D]` and `[A-λE B-λF; C-λG D-λH]` of polynomial or rational matrices**
 
-* **lsminreal** Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices.
-* **lsminreal2** Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices (potentially more efficient).
-* **lpsminreal**  Computation of strong minimal pencil based liniarizations `[A-λE B-λF; C-λG D-λH]` of rational matrices.
+* **lsminreal** Computation of minimal order linearizations `[A-λE B; C D]` of rational matrices.
+* **lsminreal2** Computation of minimal order linearizations `[A-λE B; C D]` of rational matrices (potentially more efficient).
+* **lpsminreal**  Computation of strong minimal pencil based linearizations `[A-λE B-λF; C-λG D-λH]` of rational matrices.
 * **lsequal**  Check the equivalence of two linearizations.
-* **lpsequal**  Check the equivalence of two pencil based liniarizations.  
+* **lpsequal**  Check the equivalence of two pencil based linearizations.  
 
 **Manipulation of polynomial matrices** 
 

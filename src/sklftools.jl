@@ -20,9 +20,6 @@ where `E1` is an `nxn` non-singular matrix, and `A1`, `B1`, `C1`, `D1` are `nxn`
 respectively. The order `n` of `E1` is equal to the numerical rank of `E` determined using the absolute tolerance `atol` and 
 relative tolerance `rtol`. The dimensions `m` and `p` are computed as `m = nu + (nx-n)` and `p = ny + (ndx-n)`. 
 
-The performed orthogonal or unitary transformations are accumulated in `Q`, if `withQ = true`, and 
-`Z`, if `withZ = true`. 
-
 If `fast = true`, `E1` is determined upper triangular using a rank revealing QR-decomposition with column pivoting of `E` 
 and `n` is evaluated as the number of nonzero diagonal elements of the R factor, whose magnitudes are greater than 
 `tol = max(atol,abs(R[1,1])*rtol)`. 
@@ -30,6 +27,11 @@ If `fast = false`,  `E1` is determined diagonal using a rank revealing SVD-decom
 `n` is evaluated as the number of singular values greater than `tol = max(atol,smax*rtol)`, where `smax` 
 is the largest singular value. 
 The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
+
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
+Otherwise, `Q` is set to `nothing`.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
+Otherwise, `Z` is set to `nothing`.  
 """
 function sreduceBF(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
                    B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
@@ -189,6 +191,7 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,
 for the nonzero elements of `M` and `N`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
@@ -301,12 +304,13 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,
 for the nonzero elements of `M` and `N`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 The performed right orthogonal or unitary or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.   
 
-Note: If the pencil `M - λN` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
+`Note:` If the pencil `M - λN` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
 square upper triangular diagonal blocks (i.e.,`μ[j] = ν[j]`), and the difference `ν[nb-j+1]-ν[nb-j]` for 
 `j = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `j` (with `ν[0] = 0`).
 """
@@ -376,12 +380,13 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,
 for the nonzero elements of `M` and `N`. 
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.  
 
-Note: If the pencil `M - λN` has full column rank, then the regular pencil `Mri-λNri` is in a staircase form with
+`Note:` If the pencil `M - λN` has full column rank, then the regular pencil `Mri-λNri` is in a staircase form with
 square upper triangular diagonal blocks (i.e.,`μ[i] = ν[i]`), and the difference `ν[i+1]-ν[i]` for `i = 1, 2, ..., nb` 
 is the number of infinite elementary divisors of degree `i` (with `ν[nb+1] = 0`).
 """
@@ -449,6 +454,7 @@ nonzero elements of `A` and `B`, the absolute tolerance for the nonzero elements
 and the relative tolerance for the nonzero elements of `A`, `B`, `E` and `F`.  
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed orthogonal or unitary left transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
@@ -564,6 +570,7 @@ nonzero elements of `A` and `C`, the absolute tolerance for the nonzero elements
 and the relative tolerance for the nonzero elements of `A`, `C`, `E` and `G`.  
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed orthogonal or unitary left transformations are accumulated in the matrix `Q` if `withQ = true`. 
 If `withQ = false`, `Q` contains the upper triangular matrix `Q22`.   
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
@@ -659,10 +666,11 @@ nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`,
 and the relative tolerance for the nonzero elements of `A`, `E` and `B`.  
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed orthogonal or unitary left transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
-The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true` or 
-`C` is provided. Otherwise, `Z` is set to `nothing`.   
+The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
+Otherwise, `Z` is set to `nothing`.   
 """
 function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMatrix{T1}, C::Union{AbstractMatrix{T1},Missing}; fast::Bool = true, 
    atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(E))), atol3::Real = zero(real(eltype(B))), 
@@ -789,7 +797,7 @@ Otherwise, `Q` is set to `nothing`.
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.   
 
-Note: This function, called with reversed input parameters `E` and `A` (i.e., instead `A` and `E`), performs the 
+`Note:` This function, called with reversed input parameters `E` and `A` (i.e., instead `A` and `E`), performs the 
 separation all infinite and nonzero finite eigenvalues of the pencil `M - λN`.
 """
 function sklf_rightfin!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMatrix{T1}, C::Union{AbstractMatrix{T1},Missing}; 
@@ -1010,7 +1018,7 @@ Otherwise, `Q` is set to `nothing`.
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.   
 
-Note: This function, called with reversed input parameters `E` and `A` (i.e., instead `A` and `E`), performs the 
+`Note:` This function, called with reversed input parameters `E` and `A` (i.e., instead `A` and `E`), performs the 
 separation all infinite and nonzero finite eigenvalues of the pencil `M - λN`.
 """
 function sklf_leftfin!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMatrix{T1}, B::Union{AbstractMatrix{T1},Missing}; 
@@ -1096,6 +1104,7 @@ nonzero elements of `A`, the absolute tolerance for the nonzero elements of `B`,
 for the nonzero elements of `A` and `B`.  
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
 if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
 The performed orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 """

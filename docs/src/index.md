@@ -78,11 +78,11 @@ The current version of the package includes the following functions:
 
 | Function | Description |
 | :--- | :--- |
-| **[`lsminreal`](@ref)** | Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices |
-| **[`lsminreal2`](@ref)** | Computation of minimal order liniarizations `[A-λE B; C D]` of rational matrices (potentially more efficient)|
-| **[`lpsminreal`](@ref)** | Computation of strong minimal pencil based liniarizations `[A-λE B-λF; C-λG D-λH]` of rational matrices |
+| **[`lsminreal`](@ref)** | Computation of minimal order linearizations `[A-λE B; C D]` of rational matrices |
+| **[`lsminreal2`](@ref)** | Computation of minimal order linearizations `[A-λE B; C D]` of rational matrices (potentially more efficient)|
+| **[`lpsminreal`](@ref)** | Computation of strong minimal pencil based linearizations `[A-λE B-λF; C-λG D-λH]` of rational matrices |
 | **[`lsequal`](@ref)** | Check the equivalence of two linearizations |
-| **[`lpsequal`](@ref)** | Check the equivalence of two pencil based liniarizations |
+| **[`lpsequal`](@ref)** | Check the equivalence of two pencil based linearizations |
 
 **Manipulation of polynomial matrices** 
 
@@ -167,19 +167,19 @@ License: MIT (expat)
 [3]   A. Varga, Solving Fault Diagnosis Problems – Linear Synthesis Techniques, Vol. 84 of
 Studies in Systems, Decision and Control, Springer International Publishing, 2017.
 
-[4] P. Van Dooreen, The generalized eigenstructure problem in linear system theory, 
+[4] P. Van Dooreen, The generalized eigenstructure problem in linear system theory,
 IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
 
 [5] P. Van Dooren and P. Dewilde, The eigenstructure of an arbitrary polynomial matrix: computational
 aspects, Linear Algebra Appl., 50 (1983), pp. 545–579.
 
-[6] F. Dopico, M. C. Quintana, and P. Van Dooren, Linear system matrices of rational transfer tunctions, (submitted 2020).
+[6] F.M. Dopico, M.C. Quintana and P. Van Dooren, Linear system matrices of rational transfer functions, to appear in "Realization and Model Reduction of Dynamical Systems", A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [arXiv: 1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
 
 [7] G. Verghese, B. Lévy, and T. Kailath, A generalized state-space for singular systems, IEEE Trans.
-Automat. Control, 26 (1981), pp. 811–831. 
+Automat. Control, 26 (1981), pp. 811–831.
 
 [8] G. Verghese, P. Van Dooren, and T. Kailath, Properties of the system matrix of a generalized state-
-space system, Int. J. Control, 30 (1979), pp. 235–243, 
+space system, Int. J. Control, 30 (1979), pp. 235–243.
 
 [9] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.

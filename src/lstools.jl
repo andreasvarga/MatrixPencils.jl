@@ -39,8 +39,8 @@ If `fastrank = true`, the rank is evaluated by counting how many singular values
 greater than `max(max(atol1,atol2), rtol*σ₁)`, where `σ₁` is the largest singular value of `M - γ N` and 
 `γ` is a randomly generated value [1]. 
 If `fastrank = false`, the rank is evaluated as `nr + ni + nf + nl`, where `nr` and `nl` are the sums 
-of right and left Kronecker indices, respectively, while `ni` and `nf` are the number of finite and 
-infinite eigenvalues, respectively. The sums `nr+ni` and  `nf+nl`, are determined from an 
+of right and left Kronecker indices, respectively, while `ni` and `nf` are the number of infinite and 
+finite eigenvalues, respectively. The sums `nr+ni` and  `nf+nl`, are determined from an 
 appropriate Kronecker-like form (KLF) exhibiting the spliting of the right and left structures 
 of the pencil `M - λN`. For efficiency purpose, the reduction to the relevant KLF is only partially performed 
 using rank decisions based on rank revealing SVD-decompositions. 
@@ -106,8 +106,8 @@ If `fastrank = true`, the rank is evaluated by counting how many singular values
 greater than `max(max(atol1,atol2), rtol*σ₁)`, where `σ₁` is the largest singular value of `M - γ N` and 
 `γ` is a randomly generated value [1]. 
 If `fastrank = false`, the rank is evaluated as `nr + ni + nf + nl`, where `nr` and `nl` are the sums 
-of right and left Kronecker indices, respectively, while `ni` and `nf` are the number of finite and 
-infinite eigenvalues, respectively. The sums `nr+ni` and  `nf+nl`, are determined from an 
+of right and left Kronecker indices, respectively, while `ni` and `nf` are the number of infinite and 
+finite eigenvalues, respectively. The sums `nr+ni` and  `nf+nl`, are determined from an 
 appropriate Kronecker-like form (KLF) exhibiting the spliting of the right and left structures 
 of the pencil `M - λN`. For efficiency purpose, the reduction to the relevant KLF is only partially performed 
 using rank decisions based on rank revealing SVD-decompositions. 
@@ -156,7 +156,7 @@ function lpsequal(A1::AbstractMatrix, E1::Union{AbstractMatrix,UniformScaling{Bo
 end
 """
     lsminreal2(A, E, B, C, D; fast = true, atol1 = 0, atol2 = 0, rtol, finite = true, infinite = true, contr = true, obs = true, noseig = true) 
-               -> Ar, Er, Br, Cr, Dr, nuc, nuo, nse
+               -> (Ar, Er, Br, Cr, Dr, nuc, nuo, nse)
 
 Reduce the linearization `(A-λE,B,C,D)` of a rational matrix to a reduced form `(Ar-λEr,Br,Cr,Dr)` such that
 
@@ -164,7 +164,7 @@ Reduce the linearization `(A-λE,B,C,D)` of a rational matrix to a reduced form 
      C*(A-λE)  *B + D = Cr*(Ar-λEr)  *Br + Dr
      
 with the least possible order `nr` of `Ar-λEr` if `finite = true`, `infinite = true`, 
-`contr = true`, `obs = true` and `nseig = false`. Such a realization is called `minimal` and satisfies:
+`contr = true`, `obs = true` and `nseig = true`. Such a realization is called `minimal` and satisfies:
 
      (1) rank[Br Ar-λEr] = nr for all finite λ (finite controllability);
 
@@ -402,14 +402,15 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
      end
 end
 """
-    lsminreal(A, E, B, C, D; fast = true, atol1 = 0, atol2, rtol, contr = true, obs = true, noseig = true) -> Ar, Er, Br, Cr, Dr, nuc, nuo, nse
+    lsminreal(A, E, B, C, D; fast = true, atol1 = 0, atol2, rtol, contr = true, obs = true, noseig = true) 
+              -> (Ar, Er, Br, Cr, Dr, nuc, nuo, nse)
 
 Reduce the linearization `(A-λE,B,C,D)` of a rational matrix to a reduced form `(Ar-λEr,Br,Cr,Dr)` such that
 
              -1                    -1
      C*(A-λE)  *B + D = Cr*(Ar-λEr)  *Br + Dr
      
-with the least possible order `nr` of `Ar-λEr` if `contr = true`, `obs = true` and `nseig = false`. 
+with the least possible order `nr` of `Ar-λEr` if `contr = true`, `obs = true` and `nseig = true`. 
 Such a realization is called `minimal` and satisfies:
 
      (1) rank[Br Ar-λEr] = nr for all finite λ (finite controllability)
@@ -420,7 +421,7 @@ Such a realization is called `minimal` and satisfies:
 
      (4) rank[Er; Cr] = nr (infinite observability)
 
-     (5) Ar-λEr has no simple eigenvalues
+     (5) Ar-λEr has no simple infinite eigenvalues
 
 A realization satisfying only conditions (1)-(4) is called `irreducible`. 
 
@@ -434,7 +435,7 @@ If `contr = false`, then the controllability conditions (1) and (2) are not enfo
 
 If `obs = false`, then observability condition (3) and (4) are not enforced.
 
-If `nseig = false`, then condition (5) on the lack of simple eigenvalues is not enforced. 
+If `nseig = false`, then condition (5) on the lack of simple infinite eigenvalues is not enforced. 
 
 To enforce conditions (1)-(4), orthogonal similarity transformations are performed on 
 the matrices of the original linearization `(A-λE,B,C,D)` to obtain an irreducible linearization using
@@ -592,24 +593,25 @@ function lsminreal(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Boo
      end
 end
 """
-    lpsminreal(A, E, B, F, C, G, D, H; fast = true, atol1 = 0, atol2, rtol, contr = true, obs = true) -> 
-               Ar, Er, Br, Fr, Cr, Gr, Dr, Hr, V, W, nuc, nuo
+    lpsminreal(A, E, B, F, C, G, D, H; fast = true, atol1 = 0, atol2, rtol, contr = true, obs = true)  
+               -> (Ar, Er, Br, Fr, Cr, Gr, Dr, Hr, V, W, nuc, nuo)
 
-Reduce the linearization `(A-λE,B-λF,C-λG,D-λH)` of a rational matrix to a reduced form `(Ar-λEr,Br-λFr,Cr-λGr,Dr-λHr)` such that
+Reduce the linearization `(A-λE,B-λF,C-λG,D-λH)` of a rational matrix to a reduced form 
+`(Ar-λEr,Br-λFr,Cr-λGr,Dr-λHr)` such that, for appropriate 
+invertible upper triangular matrices `V` and `W`, 
 
                       -1                                     -1
      V'*((C-λG)*(A-λE)  *(B-λF) + D-λH)*W = (Cr-λGr)*(Ar-λEr)  *(Br-λFr) + Dr-λHr
      
-with the least possible order `nr` of `Ar-λEr` if `contr = true` and `obs = true`, and with
-V and W invertible upper triangular matrices.
+with the least possible order `nr` of `Ar-λEr` if `contr = true` and `obs = true`.
 Such a realization is called `strongly minimal` and satisfies:
 
      (1) rank[Br-λFr Ar-λEr] = nr for all finite and infinite λ (strong controllability)
 
      (2) rank[Ar-λEr; Cr-λGr] = nr for all finite and infinite λ (strong observability)
 
-The achieved dimensional reductions to fulfill conditions (1) and (2) are returned in `nuc` and `nuo`, respectively. 
-
+The achieved dimensional reductions to fulfill conditions (1) and (2) are 
+returned in `nuc` and `nuo`, respectively. 
 
 If `contr = true`, then the strong controllability condition (1) is enforced and `W` is an invertible upper triangular matrix or 
 `W = I` if `nuc = 0`.
@@ -620,19 +622,21 @@ If `obs = true`, then the strong observability condition (2) is enforced and `V`
 If `obs = false`, then the strong observability condition (2) is not enforced and `V = I`.
 
 To enforce conditions (1) and (2), orthogonal similarity transformations are performed on 
-the matrices of the original linearization `(A-λE,B-λF,C-λG,D-λH) to obtain a strongly minimal linearization 
+the matrices of the original linearization `(A-λE,B-λF,C-λG,D-λH)` to obtain a strongly minimal linearization 
 using structured pencil reduction algorithms [1]. The resulting realization `(Ar-λEr,Br-λFr,Cr-λGr,Dr-λHr)`
 fulfills the strong controllability and strong observability conditions established in [2]. 
 
 The underlying pencil manipulation algorithms employ rank determinations based on either the use of 
-rank revealing QR-decomposition with column pivoting, if `fast = true`, or in the SVD-decomposition.
+rank revealing QR-decomposition with column pivoting, if `fast = true`, or the SVD-decomposition, if `fast = false`.
 The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
 
 The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of matrices `A`, `B`, `C`, `D`, the absolute tolerance for the nonzero elements of `E`, `F`, `G`, `H`  
 and the relative tolerance for the nonzero elements of `A`, `B`, `C`, `D` and `E`, `F`, `G`, `H`. 
 
-[1] F. Dopico, M. C. Quintana, and P. Van Dooren, Linear system matrices of rational transfer tunctions, (submitted 2020).
+[1] F.M. Dopico, M.C. Quintana and P. Van Dooren, Linear system matrices of rational transfer functions, 
+to appear in "Realization and Model Reduction of Dynamical Systems", A Festschrift to honor the 70th birthday of Thanos Antoulas", 
+Springer-Verlag. [arXiv: 1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
 
 [2] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.

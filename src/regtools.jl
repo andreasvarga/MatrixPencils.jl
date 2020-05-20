@@ -197,9 +197,9 @@ function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
    return rE, rA22   
 end  
 """
-    isregular(A, E, γ; atol::Real = 0,  rtol::Real = atol1 > 0 ? 0 : n*ϵ) -> Bool
+    isregular(A, E, γ; atol::Real = 0,  rtol::Real = atol > 0 ? 0 : n*ϵ) -> Bool
 
-Test whether the linear pencil `A-λE` is regular at `λ = γ`(i.e., `A-λE` is square and `det(A-γE) !== 0`). 
+Test whether the linear pencil `A-λE` is regular at `λ = γ` (i.e., `A-λE` is square and ``{\\small\\det(A-λE) \\neq 0}``). 
 The underlying computational procedure checks the maximal rank of `A-γE` if `γ` is finite and of `E` if 
 `γ` is infinite . 
 
@@ -224,8 +224,8 @@ end
 """
     isregular(A, E; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
 
-Test whether the linear pencil `A-λE` is regular (i.e., `A-λE` is square and `det(A-λE) !== 0`). 
-The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form (KLF), 
+Test whether the linear pencil `A-λE` is regular (i.e., `A-λE` is square and ``{\\small\\det(A-λE) \\not\\equiv 0}``). 
+The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form, 
 which provides information on the rank of `A-λE`. 
 
 The keyword arguements `atol1`, `atol2` and `rtol` specify the absolute tolerance for the nonzero
@@ -268,7 +268,7 @@ end
     isunimodular(A, E; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
 
 Test whether the linear pencil `A-λE` is unimodular (i.e., `A-λE` is square, regular and `det(A-λE) == constant`). 
-The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form (KLF), 
+The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form, 
 which provides information to check the full rank of `A-λE` and the lack of finite eigenvalues. 
 
 The keyword arguements `atol1`, `atol2` and `rtol` specify the absolute tolerance for the nonzero

@@ -1,4 +1,4 @@
-# Manipulation of linearizations of the form `[A-λE B; C D]` and `[A-λE B-λF; C-λG D-λH]` of polynomial or rational matrices
+# Manipulation of linearizations of polynomial or rational matrices
 
 ```@docs
 lsequal
