@@ -103,46 +103,43 @@ function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
       # C <- C*Z1
       ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,C); 
       E1[:,:] = [ triu(E[i1,i1]) zeros(T,rE,n2)  ] 
-      if n2 > 0
-         # assume 
-         #    A = [A11 A12]
-         #        [A21 A22]
-         # compute in-place the QR-decomposition A22*P2 = Q2*[R2;0] with column pivoting 
-         i22 = rE+1:n
-         A22 = view(A,i22,i22)
-         _, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(A22)
-         tolA = max(atol2, rtol*opnorm(A,1))
-         rA22 = count(x -> x > tolA, abs.(diag(A22))) 
-         n3 = n2-rA22
-         i2 = rE+1:rE+rA22
-         i3 = rE+rA22+1:n
-         # A21 <- Q2'*A21
-         LinearAlgebra.LAPACK.ormqr!('L',tran,A22,τ,view(A,i22,i1))
-         # A12 <- A12*P1
-         A[i1,i22] = A[i1,i22[jpvt]]      
-         # Q <- Q*Q2
-         withQ && LinearAlgebra.LAPACK.ormqr!('R','N',A22,τ,view(Q,:,i22))
-         # Z <- Z*P2
-         withZ && (Z[:,i22] = Z[:,i22[jpvt]])
-         # B <- Q2'*B
-         ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,A22,τ,view(B,i22,:))
-         # A22 = [R2;0] 
-         A22[:,:] = [ triu(A[i2,i22]); zeros(T,n3,n2) ]
-         # R <- R*P1
-         ismissing(C) || (C[:,i22] = C[:,i22[jpvt]])
-      
-         # compute in-place the complete orthogonal decomposition R2*Z2 = [A2 0; 0 0] with A22 nonsingular and UT
-         A2 = view(A,i2,i22)
-         _, tau = LinearAlgebra.LAPACK.tzrzf!(A2)
-         # A12 <- A12*Z2
-         LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(A,i1,i22))
-         withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(Z,:,i22))
-         # C <- C*Z2
-         ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(C,:,i22)); 
-         A2[:,:] = [ triu(A[i2,i2]) zeros(T,rA22,n3)  ] 
-      else
-         rA22 = 0
-      end
+      n2 == 0 && (return rE, 0)
+      # assume 
+      #    A = [A11 A12]
+      #        [A21 A22]
+      # compute in-place the QR-decomposition A22*P2 = Q2*[R2;0] with column pivoting 
+      i22 = rE+1:n
+      A22 = view(A,i22,i22)
+      _, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(A22)
+      tolA = max(atol2, rtol*opnorm(A,1))
+      rA22 = count(x -> x > tolA, abs.(diag(A22))) 
+      n3 = n2-rA22
+      i2 = rE+1:rE+rA22
+      i3 = rE+rA22+1:n
+      # A21 <- Q2'*A21
+      LinearAlgebra.LAPACK.ormqr!('L',tran,A22,τ,view(A,i22,i1))
+      # A12 <- A12*P1
+      A[i1,i22] = A[i1,i22[jpvt]]      
+      # Q <- Q*Q2
+      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',A22,τ,view(Q,:,i22))
+      # Z <- Z*P2
+      withZ && (Z[:,i22] = Z[:,i22[jpvt]])
+      # B <- Q2'*B
+      ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,A22,τ,view(B,i22,:))
+      # A22 = [R2;0] 
+      A22[:,:] = [ triu(A[i2,i22]); zeros(T,n3,n2) ]
+      # R <- R*P1
+      ismissing(C) || (C[:,i22] = C[:,i22[jpvt]])
+   
+      # compute in-place the complete orthogonal decomposition R2*Z2 = [A2 0; 0 0] with A22 nonsingular and UT
+      A2 = view(A,i2,i22)
+      _, tau = LinearAlgebra.LAPACK.tzrzf!(A2)
+      # A12 <- A12*Z2
+      LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(A,i1,i22))
+      withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(Z,:,i22))
+      # C <- C*Z2
+      ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(C,:,i22)); 
+      A2[:,:] = [ triu(A[i2,i2]) zeros(T,rA22,n3)  ] 
    else
       # compute the complete orthogonal decomposition of E using the SVD-decomposition
       U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',E)
@@ -162,37 +159,33 @@ function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
       # C <- C*V
       ismissing(C) || (C[:,:] = C[:,:]*Vt')
       E[:,:] = [ Diagonal(S[1:rE]) zeros(T,rE,n2) ; zeros(T,n2,n) ]
-      if n2 > 0
-         # assume 
-         #    A = [A11 A12]
-         #        [A21 A22]
-         # compute the complete orthogonal decomposition of A22 using the SVD-decomposition
-         i1 = 
-         i22 = rE+1:n
-         A22 = view(A,i22,i22)
-         U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',A22)
-         tolA = max(atol2, rtol*opnorm(A,1))
-         rA22 = count(x -> x > tolA, S) 
-         n3 = n2-rA22
-         i1 = 1:rE
-         i2 = rE+1:rE+rA22
-         i3 = rE+rA22+1:n
-         # A12 <- A12*V
-         A[i1,i22] = A[i1,i22]*Vt'
-         # A21 <- U'*A21
-         A[i22,i1] = U'*A[i22,i1]
-         # Q <- Q*U
-         withQ && (Q[:,i22] = Q[:,i22]*U)
-         # Z <- Q*V
-         withZ && (Z[:,i22] = Z[:,i22]*Vt')
-         # B <- U'*B
-         ismissing(B) || (B[i22,:] = U'*B[i22,:])
-         # C <- C*V
-         ismissing(C) || (C[:,i22] = C[:,i22]*Vt')
-         A22[:,:] = [ Diagonal(S[1:rA22]) zeros(T,rA22,n3); zeros(T,n3,n2) ]
-      else
-         rA22 = 0
-      end
+      n2 == 0 && (return rE, 0)
+      # assume 
+      #    A = [A11 A12]
+      #        [A21 A22]
+      # compute the complete orthogonal decomposition of A22 using the SVD-decomposition
+      i22 = rE+1:n
+      A22 = view(A,i22,i22)
+      U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',A22)
+      tolA = max(atol2, rtol*opnorm(A,1))
+      rA22 = count(x -> x > tolA, S) 
+      n3 = n2-rA22
+      i1 = 1:rE
+      i2 = rE+1:rE+rA22
+      i3 = rE+rA22+1:n
+      # A12 <- A12*V
+      A[i1,i22] = A[i1,i22]*Vt'
+      # A21 <- U'*A21
+      A[i22,i1] = U'*A[i22,i1]
+      # Q <- Q*U
+      withQ && (Q[:,i22] = Q[:,i22]*U)
+      # Z <- Q*V
+      withZ && (Z[:,i22] = Z[:,i22]*Vt')
+      # B <- U'*B
+      ismissing(B) || (B[i22,:] = U'*B[i22,:])
+      # C <- C*V
+      ismissing(C) || (C[:,i22] = C[:,i22]*Vt')
+      A22[:,:] = [ Diagonal(S[1:rA22]) zeros(T,rA22,n3); zeros(T,n3,n2) ]
    end
    return rE, rA22   
 end  

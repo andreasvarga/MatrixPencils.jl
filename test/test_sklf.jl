@@ -963,6 +963,15 @@ A = copy(A2); C = copy(C2); B = copy(B2);
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [1, 1, 1] && no == 3 && nu == 0
 
+A2 = rand(Ty,3,3); C2 = zeros(Ty,1,3); B2 = rand(Ty,3,2);
+A = copy(A2); C = copy(C2); B = copy(B2);
+
+@time Q, μl, no, nu  = sklf_left!(A,C,B,fast = fast)
+@test norm(Q'*A2*Q-A) < sqrt(eps(1.)) &&
+      norm(C2*Q-C) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+      μl == [] && no == 0 && nu == 3
+
 A2 = rand(Ty,3,3); C2 = rand(Ty,2,3); B2 = rand(Ty,3,2);
 A = copy(A2); C = copy(C2); B = copy(B2);
 

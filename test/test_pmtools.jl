@@ -305,8 +305,8 @@ info = pkstruct(sys[7],sys[8])
 # Example 3: P = [λ^2 λ; λ 1] DeTeran, Dopico, Mackey, ELA 2009
 λ = Polynomial([0,1],:λ)
 P = [λ^2 λ; λ 1]
-@test all(P.*one(λ) .≈ pm2poly(ls2pm(pm2ls(P)...),:λ))    # use the one(λ) trick 
-@test all(P.*one(λ) .≈ pm2poly(lps2pm(pm2lps(P)...),:λ))  # use the one(λ) trick 
+@test all(P .≈ pm2poly(ls2pm(pm2ls(P)...),:λ))    
+@test all(P .≈ pm2poly(lps2pm(pm2lps(P)...),:λ))   
 
 A, E, B, C, D = pm2ls(P,minimal = true)
 M1 = [A B; C D]
@@ -315,6 +315,15 @@ val1, info1 = peigvals(M1,N1)
 @test val1 ≈ [Inf, Inf] && (info1.rki, info1.lki, info1.id, info1.nf) == ([1], [1], [1, 1], 0) 
 val1, iz, info1 = pzeros(M1,N1)
 @test val1 ≈ Float64[] && iz == [] && (info1.rki, info1.lki, info1.id, info1.nf) == ([1], [1], [1, 1], 0) 
+
+λ = Polynomial([0,1],:λ)
+P1 = [λ^2 λ; λ 1; 0 0]
+A, E, B, C, D = pm2ls(P1,minimal = true)
+M1 = [A B; C D]
+N1 = [E zeros(size(B)...); zeros(size(C)...) zeros(size(D)...)]
+val1, info1 = peigvals(M1,N1)
+@test val1 ≈ [Inf, Inf] && (info1.rki, info1.lki, info1.id, info1.nf) == ([1], [0,1], [1, 1], 0) 
+
 
 P = zeros(2,2,3);
 P[:,:,1] = [0 0; 0 1.];

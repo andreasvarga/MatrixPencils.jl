@@ -26,13 +26,15 @@ end
 
 @testset "lsminreal and lsminreal2" begin
 
+for fast in (true, false)
+
 A2 = zeros(0,0); E2 = zeros(0,0); C2 = zeros(0,0); B2 = zeros(0,0); D2 = zeros(0,0);
 sys = (A2,E2,B2,C2,D2);
 
-sys1 = lsminreal(sys...)
+sys1 = lsminreal(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)
 
-sys1 = lsminreal2(sys...)
+sys1 = lsminreal2(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)
 
 
@@ -68,55 +70,55 @@ D2 = [0.0  0.0
 sys = (A2,E2,B2,C2,D2);
 
 # compute minimal realization 
-sys1 = lsminreal(sys...)
+sys1 = lsminreal(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
 # an order reduction without enforcing controllability and observability may not be possible
-sys1 = lsminreal(sys...,contr=false,obs=false)
+sys1 = lsminreal(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 !!
 # compute an irreducible realization which still contains a non-dynamic mode
-sys1 = lsminreal(sys...,noseig=false)
+sys1 = lsminreal(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
 sys = (E2,A2,B2,C2,D2); 
 # compute minimal realization for a standard system (i.e., irreducible realization)
-sys1 = lsminreal(sys...)
+sys1 = lsminreal(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 # an order reduction without enforcing controllability and observability may not be possible
-sys1 = lsminreal(sys...,contr=false,obs=false)
+sys1 = lsminreal(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 
 # compute an irreducible realization which still contains a non-dynamic mode
-sys1 = lsminreal(sys...,noseig=false)
+sys1 = lsminreal(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
 
 sys = (A2,E2,B2,C2,D2);
 # compute minimal realization 
-sys1 = lsminreal2(sys...)
+sys1 = lsminreal2(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
 # minimal realization is possible only applying the infinite controllability/observability algorithm
-sys1 = lsminreal2(sys...,finite = false)
+sys1 = lsminreal2(sys...,finite = false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 0
 # order reduction may results even when applying the finite controllability/observability algorithm
-sys1 = lsminreal2(sys...,infinite = false)
+sys1 = lsminreal2(sys...,infinite = false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (1,0,0)  # nuc == 1 && nuo == 0 && nse == 0
 # an order reduction without enforcing controllability and observability may not be possible
-sys1 = lsminreal2(sys...,contr=false,obs=false)
+sys1 = lsminreal2(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 !!
 # compute an irreducible realization which still contains a non-dynamic mode
-sys1 = lsminreal2(sys...,noseig=false)
+sys1 = lsminreal2(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
 
 
 sys = (E2,A2,B2,C2,D2); 
 # compute minimal realization for a standard system (i.e., irreducible realization)
-sys1 = lsminreal2(sys...)
+sys1 = lsminreal2(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 # an order reduction without enforcing controllability and observability may not be possible
-sys1 = lsminreal2(sys...,contr=false,obs=false)
+sys1 = lsminreal2(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 
 # compute an irreducible realization which still contains a non-dynamic mode
-sys1 = lsminreal2(sys...,noseig=false)
+sys1 = lsminreal2(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
 # Example Van Dooren & Dewilde, LAA 1983.
@@ -168,7 +170,7 @@ D2 = [ 1.0   2.0  -2.0
 # infinite zeros (with multiplicities), the left and right Kronecker structure
 #A2,E2,B2,C2,D2 = pol2lp(P)
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D);
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 1
 val, iz, info = spzeros(A1,E1,B1,C1,D1) 
@@ -177,7 +179,7 @@ val, info = speigvals(A1,E1,B1,C1,D1)
 @test val ≈ [1., Inf, Inf, Inf] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,obs=false);
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,obs=false, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 1
 val, iz, info = spzeros(A1,E1,B1,C1,D1) 
@@ -187,7 +189,7 @@ val, info = speigvals(A1,E1,B1,C1,D1)
 
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D);
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 1
 val, iz, info = spzeros(A1,E1,B1,C1,D1) 
@@ -196,7 +198,7 @@ val, info = speigvals(A1,E1,B1,C1,D1)
 @test val ≈ [1., Inf, Inf, Inf] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,obs=false,finite=false);
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,obs=false,finite=false, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 1
 val, iz, info = spzeros(A1,E1,B1,C1,D1) 
@@ -206,13 +208,13 @@ val, info = speigvals(A1,E1,B1,C1,D1)
 
 # perform lsminreal with A and E interchanged
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-E1, A1, B1, C1, D1, nuc, nuo, nse  = lsminreal(E,A,B,C,D,obs = false)
+E1, A1, B1, C1, D1, nuc, nuo, nse  = lsminreal(E,A,B,C,D,obs = false, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 0
 
 # perform lsminreal2 with A and E interchanged
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-E1, A1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(E,A,B,C,D,obs = false)
+E1, A1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(E,A,B,C,D,obs = false, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 0
 
@@ -259,22 +261,22 @@ D2 = [ 1.0   2.0  -2.0
 
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,contr = false);
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,contr = false, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,contr = false,finite=false);
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,contr = false,finite=false, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
 
@@ -318,34 +320,34 @@ D2 = zeros(Float64,3,3);
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
 A1, E1, B1, C1, D1, nuc, nuo, nse  = 
-     lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+     lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
       
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
 A1, E1, B1, C1, D1, nuc, nuo, nse  = 
-     lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7,contr=false);
+     lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7,contr=false, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,I,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,I,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,I,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 6 && nuo == 3 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
 A1, E1, B1, C1, D1, nuc, nuo, nse  = 
-      lsminreal2(A,E,B,C,D,contr=false,finite=false,atol1 = 1.e-7, atol2 = 1.e-7);
+      lsminreal2(A,E,B,C,D,contr=false,finite=false,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 5 && nse == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,I,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,I,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,I,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 6 && nuo == 3 && nse == 0
 
@@ -386,43 +388,43 @@ A2 = [
 D2 = zeros(Int,2,2);  
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7,noseig=true)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7,noseig=true, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 2 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,obs=false,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,obs=false,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 0 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,contr=false,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,contr=false,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 2 && nse == 0
 
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7,noseig=true)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7,noseig=true, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 2 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,obs=false,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,obs=false,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 0 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,contr=false,finite=false,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,contr=false,finite=false,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 0 && nuo == 2 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1',E1',C1',B1',D1') &&
       nuc == 2 && nuo == 0 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1',E1',C1',B1',D1') &&
       nuc == 2 && nuo == 0 && nse == 0
 
@@ -464,33 +466,33 @@ C2 = [
 D2 = zeros(Int,2,2);  
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 6 && nuo == 0 && nse == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 6 && nuo == 0 && nse == 1
 
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1',E1',C1',B1',D1') &&
       nuc == 2 && nuo == 4 && nse == 1 
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A',E',C',B',D',atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1',E1',C1',B1',D1') &&
       nuc == 2 && nuo == 4 && nse == 1 
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A',E',C',B',D',contr=false, atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A',E',C',B',D',contr=false, atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1',E1',C1',B1',D1') &&
       nuc == 0 && nuo == 6 && nse == 1 
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A',E',C',B',D',contr=false, atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A',E',C',B',D',contr=false, atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1',E1',C1',B1',D1') &&
       nuc == 0 && nuo == 6 && nse == 1 
 
@@ -513,18 +515,23 @@ C2 = reshape([0 0 0 0 0 0 0 1 0 0 0],1,11)
 D2 = zeros(Int,1,1)
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 7 && nuo == 3 && nse == 0
+
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A1,E1,B1,C1,D1,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
+@test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
+      nuc == 0 && nuo == 0 && nse == 0
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7)
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A,E,B,C,D,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 7 && nuo == 3 && nse == 0
-      
 
+A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal2(A1,E1,B1,C1,D1,atol1 = 1.e-7, atol2 = 1.e-7, fast = fast)
+@test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
+      nuc == 0 && nuo == 0 && nse == 0
 
-for fast in (true, false)
 
 for Ty in (Float64, Complex{Float64})
 
