@@ -21,12 +21,12 @@ end
      lsequal(A1, E1, B1, C1, D1, A2, E2, B2, C2, D2; 
              fastrank = true, atol1 = 0, atol2 = 0, rtol = min(atol1,atol2)>0 ? 0 : n*ϵ) -> flag::Bool
 
-Check if two linearizations `(A1-λE1,B1,C1,D1)` and `(A2-λE2,B2,C2,D2)` satisfy the equivalence condition  
+Check if two descriptor system linearizations `(A1-λE1,B1,C1,D1)` and `(A2-λE2,B2,C2,D2)` satisfy the equivalence condition  
    
                 -1                      -1
-     C1*(A1-λE1)  *B1 + D1 = C2*(A2-λE2)  *B2 + D2
+     C1*(λE1-A1)  *B1 + D1 = C2*(λE2-A2)  *B2 + D2
 
-The ckeck is performed by computing the normal rank `n` of the structured linear matrix pencil `M - λN`
+The ckeck is performed by computing the normal rank `n` of the structured matrix pencil `M - λN`
 
               | A1-λE1   0    |   B1  | 
               |   0    A2-λE2 |   B2  | 
@@ -50,7 +50,7 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N` 
 for the nonzero elements of `M` and `N`. The default relative tolerance is `k*ϵ`, where `k` is the size of 
 the smallest dimension of `M`, and `ϵ` is the machine epsilon of the element type of `M`. 
 
-[1] A. Varga, On Checking Null Rank Conditions of Rational Matrices, [https://arxiv.org/abs/1812.11396](https://arxiv.org/abs/1812.11396), 2018.
+[1] A. Varga, On checking null rank conditions of rational matrices, [arXiv:1812.11396](https://arxiv.org/abs/1812.11396), 2018.
 """
 function lsequal(A1::AbstractMatrix, E1::Union{AbstractMatrix,UniformScaling{Bool}}, 
    B1::AbstractMatrix, C1::AbstractMatrix, D1::AbstractMatrix,
@@ -87,13 +87,13 @@ end
               A2, E2, B2, F2, C2, G2, D2, H2; fastrank = true, atol1 = 0, atol2 = 0, rtol = min(atol1,atol2)>0 ? 0 : n*ϵ) 
               -> flag::Bool
 
-Check if two linear pencil linearizations `(A1-λE1,B1-λF1,C1-λG1,D1-λH1)` and `(A2-λE2,B2-λF2,C2-λG2,D2-λH2)` 
+Check if two pencil based linearizations `(A1-λE1,B1-λF1,C1-λG1,D1-λH1)` and `(A2-λE2,B2-λF2,C2-λG2,D2-λH2)` 
 satisfy the equivalence condition  
    
                       -1                                      -1
-     (C1-λG1)*(A1-λE1)  *(B1-λF1) + D1-λH1 = (C2-λG2)*(A2-λE2)  *(B2-λF2) + D2-λH2
+     (C1-λG1)*(λE1-A1)  *(B1-λF1) + D1-λH1 = (C2-λG2)*(λE2-A2)  *(B2-λF2) + D2-λH2
 
-The ckeck is performed by computing the normal rank `n` of the structured linear matrix pencil `M - λN`
+The ckeck is performed by computing the normal rank `n` of the structured matrix pencil `M - λN`
 
               | A1-λE1    0    |    B1-λF1      | 
               |   0     A2-λE2 |    B2-λF2      | 
@@ -117,7 +117,7 @@ nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,
 for the nonzero elements of `M` and `N`. The default relative tolerance is `k*ϵ`, where `k` is the size of 
 the smallest dimension of `M`, and `ϵ` is the machine epsilon of the element type of `M`. 
 
-[1] A. Varga, On Checking Null Rank Conditions of Rational Matrices, [https://arxiv.org/abs/1812.11396](https://arxiv.org/abs/1812.11396), 2018.
+[1] A. Varga, On checking null rank conditions of rational matrices, [arXiv:1812.11396](https://arxiv.org/abs/1812.11396), 2018.
 """
 function lpsequal(A1::AbstractMatrix, E1::Union{AbstractMatrix,UniformScaling{Bool}}, 
    B1::AbstractMatrix, F1::AbstractMatrix, C1::AbstractMatrix, G1::AbstractMatrix, 
@@ -636,7 +636,7 @@ and the relative tolerance for the nonzero elements of `A`, `B`, `C`, `D` and `E
 
 [1] F.M. Dopico, M.C. Quintana and P. Van Dooren, Linear system matrices of rational transfer functions, 
 to appear in "Realization and Model Reduction of Dynamical Systems", A Festschrift to honor the 70th birthday of Thanos Antoulas", 
-Springer-Verlag. [arXiv: 1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
+Springer-Verlag. [arXiv:1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
 
 [2] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.

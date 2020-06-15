@@ -169,7 +169,7 @@ function pmeval(P::AbstractArray{T,3},val::Number) where {T}
    end
    return R
 end
-pmeval(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number},val::Number) where T =
+pmeval(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat},val::Number) where T =
       pmeval(poly2pm(P),val::Number)
 """
     pmreverse(P[,j]) -> Q
@@ -216,7 +216,7 @@ The default value used for `l` is `l = deg(P(λ))`.
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
 If `P(λ)` is a `m x n` polynomial matrix of effective grade `l` and degree `d`, 
-then the resulting linear pencil `M - λN` satisfies the following conditions [1]:
+then the resulting matrix pencil `M - λN` satisfies the following conditions [1]:
 
 (1) `M - λN` has dimension `(m+n*(l-1)) x n*l` and `M - λN` is regular if `P(λ)` is regular;
 
@@ -272,7 +272,7 @@ The default value used for `l` is `l = deg(P(λ))`.
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-If `P(λ)` is a `m x n` polynomial matrix of effective grade `l` and degree `d`, then the resulting linear pencil 
+If `P(λ)` is a `m x n` polynomial matrix of effective grade `l` and degree `d`, then the resulting matrix pencil 
 `M - λN` satisfies the following conditions [1]:
 
 (1) `M - λN` has dimension `l*m x (n+(l-1)*m)` and `M - λN` is regular if `P(λ)` is regular;
@@ -315,7 +315,7 @@ end
 pm2lpCF2(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
        pm2lpCF2(poly2pm(P); kwargs...)
 """
-     pm2ls(P; contr = false, obs = false, noseig = true, minimal = false,
+     pm2ls(P; contr = false, obs = false, noseig = false, minimal = false,
               fast = true, atol = 0, rtol) -> (A, E, B, C, D)
 
 Build a structured linearization 
@@ -502,7 +502,7 @@ function pm2lps(P::AbstractArray{T,3}; contr::Bool = false, obs::Bool = false) w
    d == -1 && (return zeros(T,0,0), zeros(T,0,0), zeros(T,0,m), zeros(T,0,m), zeros(T,p,0), zeros(T,p,0), H, H)
    D = P[:,:,1]
    d == 0 && (return zeros(T,0,0), zeros(T,0,0), zeros(T,0,m), zeros(T,0,m), zeros(T,p,0), zeros(T,p,0), D, H)
-   d == 1 && (return zeros(T,0,0), zeros(T,0,0), zeros(T,0,m), zeros(T,0,m), zeros(T,p,0), zeros(T,p,0), D, P[:,:,2])
+   d == 1 && (return zeros(T,0,0), zeros(T,0,0), zeros(T,0,m), zeros(T,0,m), zeros(T,p,0), zeros(T,p,0), D, -P[:,:,2])
    if obs || (!contr && p <= m)
       # build a strongly observable linearization
       n = p*(d-1)
@@ -527,8 +527,9 @@ function pm2lps(P::AbstractArray{T,3}; contr::Bool = false, obs::Bool = false) w
      C = zeros(T,p,n)
      G = [ -P[:,:,nd] zeros(T,p,n-m)]
      k = n
-     for i = 1:d-1
-         C[:,k-m+1:k] = P[:,:,nd-i]
+     for i = 2:d
+         #C[:,k-m+1:k] = P[:,:,nd-i]
+         C[:,k-m+1:k] = P[:,:,i]
          k -= m
      end
      A = Matrix{T}(I,n,n)
@@ -797,8 +798,8 @@ function spm2ls(T::Union{AbstractArray{T1,3},AbstractArray{T1,2}},U::Union{Abstr
    end
    return Ar, Er, Br, Cr, Dr
 end
-spm2ls(T::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number}, U::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number}, 
-       V::Union{AbstractVecOrMat{Polynomial{T3}},Polynomial{T3},Number}, W::Union{AbstractVecOrMat{Polynomial{T4}},Polynomial{T4},Number}; kwargs...) where {T1, T2, T3, T4} =
+spm2ls(T::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}, U::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat{T2}}, 
+       V::Union{AbstractVecOrMat{Polynomial{T3}},Polynomial{T3},Number,AbstractVecOrMat{T3}}, W::Union{AbstractVecOrMat{Polynomial{T4}},Polynomial{T4},Number,AbstractVecOrMat{T4}}; kwargs...) where {T1, T2, T3, T4} =
        spm2ls(poly2pm(T),poly2pm(U),poly2pm(V),poly2pm(W); kwargs...)
 """
      spm2lps(T, U, V, W; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, F, C, G, D, H)
@@ -929,6 +930,6 @@ function spm2lps(T::Union{AbstractArray{T1,3},AbstractArray{T1,2}},U::Union{Abst
       return Ar,Er,Br,Fr,Cr,Gr,Dr,Hr
    end
 end
-spm2lps(T::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number}, U::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number}, 
-       V::Union{AbstractVecOrMat{Polynomial{T3}},Polynomial{T3},Number}, W::Union{AbstractVecOrMat{Polynomial{T4}},Polynomial{T4},Number}; kwargs...) where {T1, T2, T3, T4} =
+spm2lps(T::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}, U::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat{T2}}, 
+       V::Union{AbstractVecOrMat{Polynomial{T3}},Polynomial{T3},Number,AbstractVecOrMat{T3}}, W::Union{AbstractVecOrMat{Polynomial{T4}},Polynomial{T4},Number,AbstractVecOrMat{T4}}; kwargs...) where {T1, T2, T3, T4} =
        spm2lps(poly2pm(T),poly2pm(U),poly2pm(V),poly2pm(W); kwargs...)

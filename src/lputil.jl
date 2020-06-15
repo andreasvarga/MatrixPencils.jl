@@ -3,7 +3,7 @@
                 fast = true, atol = 0, rtol, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
                 withQ = true, withZ = true) -> n, m, p
 
-Reduce the partitioned linear pencil `M - λN` 
+Reduce the partitioned matrix pencil `M - λN` 
 
               [   *         *         *  ] roff
      M - λN = [   0      M22-λN22     *  ] npp

@@ -1,8 +1,9 @@
 """
-    pmkstruct(P; CF1, grade=l, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> KRInfo
+    pmkstruct(P; CF1, grade=l, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> KRInfo, iz, ip
   
-Determine the Kronecker-structure information of the polynomial matrix `P(λ)` and return an `KRInfo` object. 
-The computation of the Kronecker-structure employs strong linearizations of `P(λ)`in either 
+Determine the Kronecker-structure and infinite pole-zero structure information of the polynomial matrix `P(λ)` and 
+return an `KRInfo` object and the multiplicities of infinite zeros and poles. 
+The computation of the Kronecker-structure employs strong linearizations of `P(λ)` in either 
 the first companion form, if `CF1 = true`, or the second companion form, if `CF1 = false`. 
 The effective grade `l` to be used for linearization can be specified via the keyword argument `grade` as 
 `grade = l`, where `l` must be chosen equal to or greater than the degree of `P(λ)`. 
@@ -15,22 +16,25 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-The right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
-number of finite eigenvalues `nf` can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively.  
+The information on the Kronecker-structure consists of the right Kronecker indices `rki`, 
+left Kronecker indices `lki`, infinite elementary divisors `id`, the
+number of finite eigenvalues `nf` and normal rank `nrank` and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
+
 The determination of the Kronecker-structure information is performed by building a companion 
 form linearization `M-λN` of `P(λ)` and reducing the pencil `M-λN` to an 
-appropriate Kronecker-like form exhibiting all structural elements of the pencil `M-λN`.
-The Kronecker-structure information on `P(λ)` are recovered from the Kronecker-structure information
-on `M-λN` using the results of [1].
+appropriate Kronecker-like form (KLF) which exhibits the number of finite eigenvalues, 
+the multiplicities of the infinite eigenvalues, 
+the left and right Kronecker indices and the normal rank.
+The Kronecker-structure information and pole-zero stucture information on `P(λ)` are recovered from 
+the Kronecker-structure information on `M-λN` using the results of [1] and [2].
 
-The right Kronecker indices are provided in the integer vector `rki`, where each `i`-th element `rki[i]` is 
-the column dimension `k` of an elementary Kronecker block of size `(k-1) x k`. 
+The right Kronecker indices are provided in the integer vector `rki`. 
 The number of elements of `rki` is the dimension of the right nullspace of the polynomial matrix `P(λ)` 
 and their sum is the least degree of a right polynomial nullspace basis. 
 
-The left Kronecker indices are provided in the integer vector `lki`, where each `i`-th element `lki[i]` is 
-the row dimension `k` of an elementary Kronecker block of size `k x (k-1)`. 
+The left Kronecker indices are provided in the integer vector `lki`. 
 The number of elements of `lki` is the dimension of the left nullspace of the polynomial matrix `P(λ)` 
 and their sum is the least degree of a left polynomial nullspace basis. 
 
@@ -38,8 +42,16 @@ The multiplicities of infinite eigenvalues are provided in the integer vector `i
 where each `i`-th element `id[i]` is the order of an infinite elementary divisor 
 (i.e., the multiplicity of an infinite eigenvalue).   
 
-The reduction is performed using orthogonal similarity transformations and involves rank decisions based 
-on rank reevealing QR-decompositions with column pivoting, if `fast = true`, or, the more reliable, 
+The multiplicities of the infinite zeros of `P(λ)` are returned in `iz` and represent 
+the positive differences between the multiplicities of 
+the infinite eigenvalues of `P(λ)` and the effective grade `l` of `P(λ)` [2]. 
+
+The multiplicities of the infinite poles of `P(λ)` are returned in `ip` and represent 
+the absolute values of the negative differences between the multiplicities of 
+the infinite eigenvalues of `P(λ)` and the effective grade `l` of `P(λ)` [2]. 
+
+The reduction to the KLF is performed using orthogonal similarity transformations and involves rank decisions based 
+on rank revealing QR-decompositions with column pivoting, if `fast = true`, or, the more reliable, 
 SVD-decompositions, if `fast = false`. 
 
 The keyword arguments `atol`  and `rtol` specify the absolute and relative tolerances for the nonzero 
@@ -49,29 +61,39 @@ machine epsilon of the element type of coefficients of `P(λ)`.
 
 [1] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
 the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
+
+[2] A. Varga, On computing the Kronecker structure of polynomial matrices using Julia, June 2020, 
+[arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
 """
 function pmkstruct(P::AbstractArray{T,3}; CF1::Bool = size(P,1) <= size(P,2) ? false : true, 
                    grade::Int = pmdeg(P), fast::Bool = false, atol::Real = zero(real(T)), 
                    rtol::Real = (min(size(P)...)*eps(real(float(one(T)))))*iszero(atol)) where T
    if CF1
       M, N = pm2lpCF1(P, grade = grade)
-      val, kinfo = peigvals(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
+      kinfo = pkstruct(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
       kinfo.rki == [] || (grade > 1 && (kinfo.rki .-= grade-1))
+      kinfo.nrank > 0 && grade > 1 && (kinfo.nrank -= size(P,2)*(grade-1))
    else
       M, N = pm2lpCF2(P, grade = grade)
-      val, kinfo = peigvals(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
+      kinfo = pkstruct(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
       kinfo.lki == [] || (grade > 1 && (kinfo.lki .-= grade-1))
+      kinfo.nrank > 0 && grade > 1 && (kinfo.nrank -= size(P,1)*(grade-1))
    end
-   return kinfo
+   # determine the infinite structural indices
+   grade < 0 ? is = Int[] : (is = [zeros(Int,kinfo.nrank-length(kinfo.id)); kinfo.id] .- grade)
+   iz = is[is.>0]
+   ip = sort(abs.(is[is.<0])) 
+
+   return kinfo, iz, ip
 end 
 pmkstruct(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
           pmkstruct(poly2pm(P); kwargs...)
 """
     pmeigvals(P; CF1, grade = l, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, KRInfo)
 
-Return the finite and infinite eigenvalues of the polynomial matrix `P(λ)` in `val`, 
-and  the information on the complete Kronecker-structure of `P(λ)` in the `KRInfo` object. 
-The computation of eigenvalues and Kronecker-structure employs strong linearizations of `P(λ)`in either 
+Return the finite and infinite eigenvalues of the polynomial matrix `P(λ)` in `val` 
+and information on the Kronecker-structure of `P(λ)` in the `KRInfo` object. 
+The computation of eigenvalues and Kronecker-structure employs strong linearizations of `P(λ)` in either 
 the first companion form, if `CF1 = true`, or the second companion form, if `CF1 = false`. 
 The effective grade `l` to be used for linearization can be specified via the keyword argument `grade` as 
 `grade = l`, where `l` must be chosen equal to or greater than the degree of `P(λ)`.
@@ -83,22 +105,23 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, 
-left Kronecker indices `lki`, infinite elementary divisors `id` and the
-number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
+The information on the Kronecker-structure consists of the right Kronecker indices `rki`, 
+left Kronecker indices `lki`, infinite elementary divisors `id`, the
+number of finite eigenvalues `nf` and normal rank `nrank` and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. For more details, see  [`pkstruct`](@ref). 
 
 The computation of the eigenvalues is performed by building the companion form based linearization `M-λN` 
 of the polynomial matrix `P(λ)` and then reducing the pencil `M-λN` to an appropriate Kronecker-like form (KLF) 
-exhibiting its full Kronecker structure (i.e., number of finite eigenvalues, multiplicities of the infinite eigenvalues, 
-left and right Kronecker indices). 
+which exhibits the number of finite eigenvalues, the multiplicities of the infinite eigenvalues, 
+the left and right Kronecker indices and the normal rank. 
 The left and right Kronecker indices of `P(λ)` are returned in `KRInfo.rki` and `KRInfo.rki`, respectively, and 
 their values are recovered from the left and right Kronecker indices of `M-λN` using the results of [1].
 The multiplicities of the infinite eigenvalues of `P(λ)` of effective grade `l` is returned in `KRInfo.id`. 
 The number of finite eigenvalues in `val` is equal to the number of finite eigenvalues of `M-λN` (returned in `KRInfo.nf`), 
 while the number of infinite eigenvalues in `val` is the sum of multiplicites returned in `KRInfo.id`. 
 
-The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
+The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions 
+based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -117,10 +140,12 @@ function pmeigvals(P::AbstractArray{T,3}; CF1::Bool = size(P,1) <= size(P,2) ? f
       M, N = pm2lpCF1(P, grade = grade)
       val, kinfo = peigvals(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
       kinfo.rki == [] || (grade > 1 && (kinfo.rki .-= grade-1))
+      kinfo.nrank > 0 && grade > 1 && (kinfo.nrank -= size(P,2)*(grade-1))
    else
       M, N = pm2lpCF2(P, grade = grade)
       val, kinfo = peigvals(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
       kinfo.lki == [] || (grade > 1 && (kinfo.lki .-= grade-1))
+      kinfo.nrank > 0 && grade > 1 && (kinfo.nrank -= size(P,1)*(grade-1))
    end
    return val, kinfo
 end
@@ -130,8 +155,8 @@ pmeigvals(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs
     pmzeros(P; CF1, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
 
 Return the finite and infinite zeros of the polynomial matrix `P(λ)` in `val`, 
-the multiplicities of infinite zeros in `iz` and  the 
-information on the complete Kronecker-structure of `P(λ)` in the `KRInfo` object. 
+the multiplicities of infinite zeros in `iz` and   
+information on the  Kronecker-structure of `P(λ)` in the `KRInfo` object. 
 The computation of zeros and Kronecker-structure employs strong linearizations of `P(λ)` in either 
 the first companion form, if `CF1 = true`, or the second companion form, if `CF1 = false`. 
 
@@ -142,23 +167,23 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, 
-infinite elementary divisors `id` and the
-number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
+The information on the Kronecker-structure consists of the right Kronecker indices `rki`, 
+left Kronecker indices `lki`, infinite elementary divisors `id`, the
+number of finite eigenvalues `nf`, the normal rank `nrank`, and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
 
 The computation of the zeros is performed by building the companion form based linearization `M-λN` 
 of the polynomial matrix `P(λ)` and then reducing the pencil `M-λN` to an appropriate Kronecker-like form (KLF) 
-exhibiting its full Kronecker structure (i.e., number of finite eigenvalues, multiplicities of the infinite eigenvalues, 
-left and right Kronecker indices). 
+which exhibits information on its Kronecker structure. 
 The left and right Kronecker indices of `P(λ)` are returned in `KRInfo.rki` and `KRInfo.rki`, respectively, and 
 their values are recovered from the left and right Kronecker indices of `M-λN` using the results of [1].
-The multiplicities of the infinite zeros of `P(λ)` returned in `iz` are the positive differences between the multiplicities of 
+The multiplicities of the infinite zeros of `P(λ)`, returned in `iz`, are the positive differences between the multiplicities of 
 the infinite eigenvalues of `M-λN` and the degree of `P(λ)` [2]. 
 The number of finite zeros in `val` is equal to the number of finite eigenvalues of `M-λN` (returned in `KRInfo.nf`), 
 while the number of infinite zeros in `val` is the sum of multiplicites in `iz`. 
 
-The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
+The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -170,23 +195,26 @@ machine epsilon of the element type of coefficients of `P(λ)`.
 [1] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
 the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
 
-[2] P. Van Dooren, Private communications, April 2020.
+[2] A. Varga, On computing the Kronecker structure of polynomial matrices using Julia, June 2020, 
+[arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
 """
 function pmzeros(P::AbstractArray{T,3}; CF1::Bool = size(P,1) <= size(P,2) ? false : true, 
                  fast = false, atol::Real = zero(real(T)), 
                  rtol::Real = (min(size(P)...)*eps(real(float(one(T)))))*iszero(atol)) where T 
-   d = pmdeg(P)
+   dm1 = pmdeg(P)-1
    if CF1
       M, N = pm2lpCF1(P)
       val, iz, kinfo = pzeros(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
-      kinfo.rki == [] || d <= 1 || (kinfo.rki .-= d-1)
+      kinfo.rki == [] || dm1 <= 0 || (kinfo.rki .-= dm1)
+      kinfo.nrank > 0 && dm1 > 0 && (kinfo.nrank -= size(P,2)*dm1)
    else
       M, N = pm2lpCF2(P)
       val, iz, kinfo = pzeros(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol) 
-      kinfo.lki == [] || d <= 1 || (kinfo.lki .-= d-1)
+      kinfo.lki == [] || dm1 <= 0 || (kinfo.lki .-= dm1)
+      kinfo.nrank > 0 && dm1 > 0 && (kinfo.nrank -= size(P,1)*dm1)
    end
-   if iz !== [] && d > 1 
-      iz = iz[iz.>d] .- (d-1)
+   if iz !== [] && dm1 > 0 
+      iz = iz[iz .> dm1] .- (dm1)
       val = [val[1:kinfo.nf]; Inf*ones(real(T),sum(iz))]
    end 
    return val, iz, kinfo
@@ -197,7 +225,7 @@ pmzeros(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs..
     pmpoles(P; CF1, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, KRInfo)
    
 Return the finite and infinite poles of the polynomial matrix `P(λ)` in `val`, 
-the multiplicities of infinite poles in `ip` and  the information on the complete Kronecker-structure 
+the multiplicities of infinite poles in `ip` and information on the Kronecker-structure 
 of `Q(λ) = [P(λ) I; I 0]` in the `KRInfo` object. 
 The computation of poles and Kronecker-structure employs strong linearizations of `Q(λ)` in either 
 the first companion form, if `CF1 = true`, or the second companion form, if `CF1 = false`. 
@@ -209,23 +237,22 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, 
-infinite elementary divisors `id` and the number of finite eigenvalues `nf`, and can be obtained 
-from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` and `KRInfo.nf`, respectively. 
-For more details, see  [`pkstruct`](@ref). 
+The information on the Kronecker-structure consists of the right Kronecker indices `rki`, 
+left Kronecker indices `lki`, infinite elementary divisors `id`, the
+number of finite eigenvalues `nf`, the normal rank `nrank`, and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. For more details, see  [`pkstruct`](@ref). 
 
 The computation of the poles is performed by building the companion form based linearization `M-λN` 
 of the extended polynomial matrix `Q(λ) = [P(λ) I; I 0]` (see [1]) and then reducing the pencil `M-λN` to an appropriate 
-Kronecker-like form (KLF) exhibiting its full Kronecker structure (i.e., number of finite eigenvalues, 
-multiplicities of the infinite eigenvalues, left and right Kronecker indices). Since `Q(λ)` is regular, 
-`M-λN` has no left or right Kronecker indices.
-The multiplicities of the infinite poles of `P(λ)` returned in `ip` are the positive differences between the multiplicities of 
+Kronecker-like form (KLF) which exhibits information on its Kronecker structure. 
+Since `Q(λ)` is regular, `M-λN` has no left or right Kronecker indices.
+The multiplicities of the infinite poles of `P(λ)`, returned in `ip`, are the positive differences between the multiplicities of 
 the infinite eigenvalues of `M-λN` and the degree of `P(λ)` [2]. 
 The number of finite poles in `val` is equal to the number of finite eigenvalues of `M-λN` (returned in `KRInfo.nf`), 
 while the number of infinite poles in `val` is the sum of multiplicites in `ip`. 
 
 The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions 
-based on rank reevealing QR-decompositions with column pivoting, 
+based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -237,7 +264,8 @@ machine epsilon of the element type of coefficients of `P(λ)`.
 [1] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
 the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
 
-[2] P. Van Dooren, Private communications, April 2020.
+[2] A. Varga, On computing the Kronecker structure of polynomial matrices using Julia, June 2020, 
+[arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
 """
 function pmpoles(P::AbstractArray{T,3}; kwargs...) where T 
    p, m, k1 = size(P)
@@ -250,16 +278,19 @@ end
 pmpoles(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
        pmpoles(poly2pm(P); kwargs...)
 """
-    pmzeros1(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
+    pmzeros1(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo, ν)
 
 Return the finite and infinite zeros of the polynomial matrix `P(λ)` in `val`, 
-the multiplicities of infinite zeros in `iz` and the information on the complete 
-Kronecker-structure of the underlying strongly irreducible linear pencil based linearization of `P(λ)`
-in the `KRInfo` object. 
-The information on the complete Kronecker-structure of the underlying linearization consists of 
-the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` 
-and the number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
+the multiplicities of infinite zeros in `iz`, information on the  
+Kronecker-structure of the underlying strongly irreducible pencil based linearization of `P(λ)`
+in the `KRInfo` object, and the order `ν` of the underlying strongly irreducible pencil based realization.  
+
+The information on the  Kronecker-structure of the underlying linearization consists of 
+the right Kronecker indices `rki` (the same as of `P(λ)`), left Kronecker indices `lki` (the same as of `P(λ)`), 
+infinite elementary divisors `id`, the number of finite eigenvalues `nf` (the same as of `P(λ)`) and the 
+normal rank 'nrank', and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -268,24 +299,23 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-The computation of the zeros is performed by first building a strongly irreducible linear pencil based 
-linearization of `P(λ)` [1] as a structured linear pencil 
+The computation of the zeros is performed by first building a strongly irreducible pencil based 
+linearization of `P(λ)` [1] of order `ν` as a structured system matrix pencil 
 
               | A-λE | B-λF | 
      M - λN = |------|------| ,
               | C-λG | D-λH |  
       
 such that `P(λ) = (C-λG)*inv(λE-A)*(B-λF)+D-λH`, and then reducing the pencil `M-λN` to an 
-appropriate Kronecker-like form (KLF) exhibiting its full Kronecker structure 
-(i.e., number of finite eigenvalues, multiplicities of the infinite eigenvalues, 
-left and right Kronecker indices). 
+appropriate Kronecker-like form (KLF) which exhibits information on its Kronecker structure. 
 The left and right Kronecker indices of `M-λN` and `P(λ)` are the same [2] and are 
 returned in `KRInfo.rki` and `KRInfo.rki`, respectively.
 The multiplicities of the infinite zeros of `M-λN` and of `P(λ)` are the same [2] and are returned in `iz`.
 The number of finite zeros in `val` is equal to the number of finite eigenvalues of `M-λN` 
 (returned in `KRInfo.nf`), while the number of infinite zeros in `val` is the sum of multiplicites in `iz`. 
+The normal rank of `P(λ)` can be evaluated as `KRInfo.nrank - ν`. 
 
-The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
+The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -295,7 +325,7 @@ The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest 
 machine epsilon of the element type of coefficients of `P(λ)`. 
 
 [1] F.M. Dopico, M.C. Quintana and P. Van Dooren, Linear system matrices of rational transfer functions, to appear in "Realization and Model Reduction of Dynamical Systems", 
-A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [arXiv: 1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
+A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [arXiv:1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
 
 [2] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.
@@ -308,22 +338,27 @@ function pmzeros1(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)
    else              
       A, E, B, F, C, G, D, H, = lpsminreal(pm2lps(P; contr = true)...; fast = fast, 
                                            atol1 = atol, atol2 = atol, rtol = rtol, contr = false) 
-   end             
-   return pzeros([A B; C D], [E F; G H]; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   end   
+   val, iz, info = pzeros([A B; C D], [E F; G H]; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   return val, iz, info, size(A,1)
 end
 pmzeros1(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
        pmzeros1(poly2pm(P); kwargs...)
 """
-    pmpoles1(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, KRInfo)
+    pmpoles1(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, KRInfo, ν)
    
 Return the finite and infinite poles of the polynomial matrix `P(λ)` in `val`, 
-the multiplicities of infinite poles in `ip` and  the information on the complete 
-Kronecker-structure of the underlying strongly irreducible linear pencil based linearization of 
-`Q(λ) := [P(λ) I; I 0]` in the `KRInfo` object. 
-The information on the complete Kronecker-structure of the underlying linearization consists of  
-the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` 
-and the number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
+the multiplicities of infinite poles in `ip`, information on the  
+Kronecker-structure of the underlying strongly irreducible pencil based linearization of 
+`Q(λ) := [P(λ) I; I 0]` in the `KRInfo` object and , and the order `ν` of the underlying 
+strongly irreducible pencil based realization.   
+
+The information on the  Kronecker-structure of the underlying linearization consists of 
+the right Kronecker indices `rki` (which is an empty vector), left Kronecker indices `lki` (which is an empty vector), 
+the infinite elementary divisors `id`, the number of finite eigenvalues `nf` (which is zero) and the 
+normal rank 'nrank', and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -332,25 +367,24 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 `P(λ)` can also be specified as a matrix, vector or scalar of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
-The computation of the poles is performed by first building a strongly irreducible linear pencil based 
-linearization of `Q(λ) := [P(λ) I; I 0]` [1] as a structured linear pencil 
+The computation of the poles is performed by first building a strongly irreducible pencil based 
+linearization of `Q(λ) := [P(λ) I; I 0]` of order `ν` [1] as a structured system matrix pencil 
 
               | A-λE | B-λF | 
      M - λN = |------|------| ,
               | C-λG | D-λH |  
       
-such that `P(λ) = (C-λG)*inv(λE-A)*(B-λF)+D-λH`, and then reducing the pencil `M-λN` to an 
-appropriate Kronecker-like form (KLF) exhibiting its full Kronecker structure 
-(i.e., number of finite eigenvalues, multiplicities of the infinite eigenvalues, 
-left and right Kronecker indices). 
-The left and right Kronecker indices of `M-λN` and `P(λ)` are the same [2] and are 
+such that `Q(λ) = (C-λG)*inv(λE-A)*(B-λF)+D-λH`, and then reducing the pencil `M-λN` to an 
+appropriate Kronecker-like form (KLF) which exhibits information on its Kronecker structure. 
+The left and right Kronecker indices of `M-λN` and `Q(λ)` are the same [2], are both empty and are 
 returned in `KRInfo.rki` and `KRInfo.rki`, respectively.
-The multiplicities of the infinite poles of `M-λN` and of `P(λ)` are the same [2] and are returned in `ip`.
-The number of finite zeros in `val` is equal to the number of finite eigenvalues of `M-λN` 
-(returned in `KRInfo.nf`), while the number of infinite zeros in `val` is the sum of multiplicites in `ip`. 
+The multiplicities of the infinite zeros of `M-λN` and of infinite poles of `P(λ)` are the same [2] and are returned in `ip`.
+The number of finite poles in `val` is equal to the number of finite eigenvalues of `M-λN` and is equal to zero
+(returned in `KRInfo.nf`), while the number of infinite poles in `val` is the sum of multiplicites in `ip`. 
+The normal rank returned in `KRInfo.nrank` is equal to sum of row and column dimensions of `P(λ)`. 
 
 The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions 
-based on rank reevealing QR-decompositions with column pivoting, 
+based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -360,7 +394,7 @@ The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest 
 machine epsilon of the element type of coefficients of `P(λ)`. 
 
 [1] F.M. Dopico, M.C. Quintana and P. Van Dooren, Linear system matrices of rational transfer functions, to appear in "Realization and Model Reduction of Dynamical Systems", 
-A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [arXiv: 1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
+A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [arXiv:1903.05016](https://arxiv.org/pdf/1903.05016.pdf)
 
 [2] G. Verghese, Comments on ‘Properties of the system matrix of a generalized state-space system’,
 Int. J. Control, Vol.31(5) (1980) 1007–1009.
@@ -379,21 +413,25 @@ function pmpoles1(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)
    n = size(A,1)       
    M = [A zeros(T,n,p+m); zeros(T,p,n+m) I; zeros(T,m,n) I zeros(T,m,p)]
    N = [E F zeros(T,n,p); G H zeros(T,p,p); zeros(T,m,n+m+p)]
-   return pzeros(M, N; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   val, iz, info = pzeros(M, N; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   return val, iz, info, n
 end
 pmpoles1(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
        pmpoles1(poly2pm(P); kwargs...)
 """
-      pmzeros2(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
+      pmzeros2(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo, ν)
    
 Return the finite and infinite zeros of the polynomial matrix `P(λ)` in `val`, 
-the multiplicities of infinite zeros in `iz` and the information on the complete 
+the multiplicities of infinite zeros in `iz`, information on the  
 Kronecker-structure of the underlying irreducible descriptor system based linearization of `P(λ)`
-in the `KRInfo` object. 
-The information on the complete Kronecker-structure of the underlying linearization consists of 
-the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` 
-and the number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
+in the `KRInfo` object, and the order `ν` of the irreducible descriptor system based linearization. 
+
+The information on the  Kronecker-structure of the underlying linearization consists of 
+the right Kronecker indices `rki` (the same as of `P(λ)`), left Kronecker indices `lki` (the same as of `P(λ)`), 
+infinite elementary divisors `id`, the number of finite eigenvalues `nf` (the same as of `P(λ)`) and the 
+normal rank 'nrank', and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -403,23 +441,22 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
 The computation of the zeros is performed by first building an irreducible descriptor system based 
-linearization of `P(λ)` [1] as a structured linear pencil 
+linearization of `P(λ)` [1] of order `ν` as a structured system matrix pencil 
 
               | A-λE | B | 
      M - λN = |------|---| ,
               |  C   | D |  
       
 such that `P(λ) = C*inv(λE-A)*B+D`, and then reducing the pencil `M-λN` to an 
-appropriate Kronecker-like form (KLF) exhibiting its full Kronecker structure 
-(i.e., number of finite eigenvalues, multiplicities of the infinite eigenvalues, 
-left and right Kronecker indices). 
+appropriate Kronecker-like form (KLF) which exhibits information on its Kronecker structure.  
 The left and right Kronecker indices of `M-λN` and `P(λ)` are the same [2] and are 
 returned in `KRInfo.rki` and `KRInfo.rki`, respectively.
 The multiplicities of the infinite zeros of `M-λN` and of `P(λ)` are the same [2] and are returned in `iz`.
 The number of finite zeros in `val` is equal to the number of finite eigenvalues of `M-λN` 
 (returned in `KRInfo.nf`), while the number of infinite zeros in `val` is the sum of multiplicites in `iz`. 
+The normal rank of `P(λ)` can be evaluated as `KRInfo.nrank - ν`. 
 
-The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
+The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -437,21 +474,25 @@ Int. J. Control, Vol.31(5) (1980) 1007–1009.
 function pmzeros2(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)), 
                   rtol::Real = (min(size(P)...)*eps(real(float(one(T)))))*iszero(atol)) where T 
    sys = pm2ls(P; contr = true, obs = true, fast = fast, atol = atol, rtol = rtol)  
-   return spzeros(sys...; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   val, iz, info = spzeros(sys...; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   return val, iz, info, size(sys[1],1)
 end
 pmzeros2(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
        pmzeros2(poly2pm(P); kwargs...)
 """
-    pmpoles2(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, KRInfo)
+    pmpoles2(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, KRInfo, ν)
    
 Return the finite and infinite poles of the polynomial matrix `P(λ)` in `val`, 
-the multiplicities of infinite poles in `ip` and  the information on the complete 
-Kronecker-structure of the underlying strongly irreducible linear pencil based linearization of 
-`Q(λ) := [P(λ) I; I 0]` in the `KRInfo` object. 
-The information on the complete Kronecker-structure of the underlying linearization consists of  
-the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` 
-and the number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
+the multiplicities of infinite poles in `ip`, information on the  
+Kronecker-structure of the pole pencil of the underlying irreducible descriptor system based linearization of `P(λ)`
+in the `KRInfo` object, and the order `ν` of the irreducible descriptor system based linearization.
+
+The information on the  Kronecker-structure of the pole pencil of the underlying linearization consists of 
+the right Kronecker indices `rki` (which is an empty vector), left Kronecker indices `lki` (which is an empty vector), 
+the infinite elementary divisors `id`, the number of finite eigenvalues `nf` (which is zero) and the 
+normal rank 'nrank', and can be obtained from `KRInfo` as 
+`KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -461,24 +502,22 @@ where `P[:,:,i]` contains the `i`-th coefficient matrix `P_i` (multiplying `λ**
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
 
 The computation of the poles is performed by first building an irreducible  
-linearization of `Q(λ) := [P(λ) I; I 0]` [1] as a structured linear pencil 
+linearization of `Q(λ) := [P(λ) I; I 0]` [1] as a structured matrix pencil 
 
               | A-λE | B | 
      M - λN = |------|---| ,
               |  C   | D |  
       
-such that `P(λ) = C*inv(λE-A)*B+D`, and then reducing the pencil `M-λN` to an 
-appropriate Kronecker-like form (KLF) exhibiting its full Kronecker structure 
-(i.e., number of finite eigenvalues, multiplicities of the infinite eigenvalues, 
-left and right Kronecker indices). 
-The left and right Kronecker indices of `M-λN` and `P(λ)` are the same [2] and are 
+such that `P(λ) = C*inv(λE-A)*B+D`, and then reducing the regular pole pencil `A-λE` to an 
+appropriate Kronecker-like form (KLF) which exhibits information on its Kronecker structure.  
+The left and right Kronecker indices of `A-λE` and `P(λ)` are zero and  
 returned in `KRInfo.rki` and `KRInfo.rki`, respectively.
-The multiplicities of the infinite poles of `M-λN` and of `P(λ)` are the same [2] and are returned in `ip`.
-The number of finite zeros in `val` is equal to the number of finite eigenvalues of `M-λN` 
-(returned in `KRInfo.nf`), while the number of infinite zeros in `val` is the sum of multiplicites in `ip`. 
+The multiplicities of the infinite zeros of `A-λE` and of infinite poles of `P(λ)` are the same [2] and are returned in `ip`.
+The number of finite poles in `val` is equal to zero (returned in `KRInfo.nf`), while the number of infinite poles 
+in `val` is the sum of multiplicites in `ip`. 
 
-The reduction of `M-λN` to the KLF is performed using orthonal similarity transformations and involves rank decisions 
-based on rank reevealing QR-decompositions with column pivoting, 
+The reduction of `A-λE` to the KLF is performed using orthonal similarity transformations and involves rank decisions 
+based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -495,8 +534,9 @@ Int. J. Control, Vol.31(5) (1980) 1007–1009.
 """
 function pmpoles2(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)), 
                   rtol::Real = (min(size(P)...)*eps(real(float(one(T)))))*iszero(atol)) where T 
-   A, E, = pm2ls(P; contr = true, obs = true, fast = fast, atol = atol, rtol = rtol)  
-   return pzeros(A, E; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   A, E, _ = pm2ls(P; contr = true, obs = true, fast = fast, atol = atol, rtol = rtol)  
+   val, ip, info = pzeros(A, E; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   return val, ip, info, size(A,1)
 end
 pmpoles2(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
        pmpoles2(poly2pm(P); kwargs...)
@@ -515,7 +555,7 @@ provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) packa
 The roots of `det(P(λ))` are computed as the finite eigenvalues of a companion form linearization `M-λN`of `P(λ)`.
 The finite eigenvalues are computed by reducing the pencil `M-λN` to an appropriate Kronecker-like form (KLF) 
 exhibiting the spliting of the infinite and finite eigenvalue structures of the pencil `M-λN`. 
-The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
+The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -527,7 +567,7 @@ machine epsilon of the element type of coefficients of `P(λ)`.
 function pmroots(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)), 
                  rtol::Real = (min(size(P)...)*eps(real(float(one(T)))))*iszero(atol)) where T 
    ispmregular(P,atol = atol, rtol = rtol) || error("The polynomial matrix is not regular")
-   val, iz, = pmzeros(P, fast = fast, atol = atol, rtol = rtol)  
+   val, iz, _ = pmzeros(P, fast = fast, atol = atol, rtol = rtol)  
    return val[1:end-sum(iz)]
 end
 pmroots(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =

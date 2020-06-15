@@ -1,21 +1,21 @@
 """
     pzeros(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
 
-Return the finite and infinite zeros of the linear pencil `M-λN` in `val`, the multiplicities of infinite zeros in `iz` and  the 
-information on the complete Kronecker-structure in the `KRInfo` object. 
+Return the finite and infinite zeros of the matrix pencil `M-λN` in `val`, the multiplicities of infinite zeros in `iz` and   
+information on the  Kronecker-structure in the `KRInfo` object. 
 
 The information on the multiplicities of infinite zeros is provided in the vector `iz`, 
 where each `i`-th element `iz[i]` is equal to `k-1`, where `k` is the order of an infinite elementary divisor with `k > 0`.
 The number of infinite zeros contained in `val` is the sum of the components of `iz`. 
 
-The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, 
-infinite elementary divisors `id` and the
-number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref). 
+The information on the  Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, 
+infinite elementary divisors `id`, the number of finite eigenvalues `nf`, and the normal rank `nrank` and can be obtained 
+from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
 
 The computation of the zeros is performed by reducing the pencil `M-λN` to an appropriate Kronecker-like form (KLF) 
 exhibiting the spliting of the infinite and finite eigenvalue structures of the pencil `M-λN`. 
-The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
+The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
@@ -31,7 +31,7 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool 
    mM, nM = size(M)
    if N === nothing
       r = rank(M,atol = atol1, rtol = rtol)
-      return eltype(M)[], Int[], KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0)
+      return eltype(M)[], Int[], KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0, r)
    end
 
    # Step 0: Reduce to the standard form
@@ -64,6 +64,7 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool 
       m = ρ
       p -= τ 
    end
+   r = mrinf + n
 
    rtrail = 0
    ctrail = 0
@@ -83,22 +84,23 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool 
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
    return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
-           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
+           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """
     peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, KRInfo)
 
-Return the (finite and infinite) eigenvalues of the linear pencil `M-λN` in `val` and the 
-information on the complete Kronecker-structure in the `KRInfo` object. 
+Return the (finite and infinite) eigenvalues of the matrix pencil `M-λN` in `val` and  
+information on the  Kronecker-structure in the `KRInfo` object. 
 
-The information on the complete Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
-number of finite eigenvalues `nf`, and can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively. For more details, see  [`pkstruct`](@ref).  
+The information on the  Kronecker-structure consists of the right Kronecker indices `rki`, left Kronecker indices `lki`, 
+infinite elementary divisors `id`, the number of finite eigenvalues `nf`, and the normal rank `nrank` and can be obtained 
+from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively. 
+For more details, see  [`pkstruct`](@ref). 
 
 The computation of the eigenvalues
 is performed by reducing the pencil `M-λN` to an appropriate Kronecker-like form (KLF) exhibiting the spliting 
 of the infinite and finite eigenvalue structures of the pencil `M-λN`.
-The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank reevealing QR-decompositions with column pivoting, 
+The reduction is performed using orthonal similarity transformations and involves rank decisions based on rank revealing QR-decompositions with column pivoting, 
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations. 
 
@@ -114,7 +116,7 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
    mM, nM = size(M)
    if N === nothing
       r = rank(M,atol = atol1, rtol = rtol)
-      return eltype(M)[], KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0)
+      return eltype(M)[], KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0, r)
    end
 
    # Step 0: Reduce to the standard form
@@ -147,6 +149,9 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
       m = ρ
       p -= τ 
    end
+
+   r = mrinf + n
+
    rtrail = 0
    ctrail = 0
    j = 0
@@ -165,7 +170,7 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
    return [eigvals(M1[if1,jf1],N1[if1,jf1]); Inf*ones(real(eltype(M1)),ni) ], 
-          KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
+          KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """
     KRInfo
@@ -174,62 +179,67 @@ Kronecker-structure object definition.
 
 If `info::KRInfo` is the Kronecker-structure object, then:
 
-`info.rki` is a vector, whose components contains the column dimensions of  
-elementary Kronecker blocks of the form `(k-1) x k`, called the right Kronecker indices;
+`info.rki` is a vector, whose components contains the right Kronecker indices;
 
-`info.lki` is a vector, whose components contains the row dimensions of  
-elementary Kronecker blocks of the form `k x (k-1)`, called the left Kronecker indices;
+`info.lki` is a vector, whose components contains the left Kronecker indices;
 
 `info.id` is a vector, whose components contains the orders of the infinite elementary divisors (i.e., the
 multiplicities of infinite eigenvalues). 
 
 `info.nf` is the number of finite eigenvalues.
 
-Destructuring via iteration produces the components `info.rki`, `info.lki`, `info.id`, and `info.nf`.
+`info.nrank` is the normal rank.
+
+Destructuring via iteration produces the components `info.rki`, `info.lki`, `info.id`, `info.nf` and `info.nrank`.
 """
 mutable struct KRInfo
    rki::Vector{Int}
    lki::Vector{Int}
    id::Vector{Int}
    nf::Int
-   function KRInfo(rki,lki,id,nf)
-      (any(rki .< 0) || any(lki .< 0) || any(id .< 0) || nf < 0) && error("no negative components allowed")
-      new(rki,lki,id,nf)
+   nrank::Int
+   function KRInfo(rki,lki,id,nf,nrank)
+      (any(rki .< 0) || any(lki .< 0) || any(id .< 0) || nf < 0 || nrank < 0) && error("no negative components allowed")
+      new(rki,lki,id,nf,nrank)
    end
 end
 # iteration for destructuring into components
 Base.iterate(info::KRInfo) = (info.rki, Val(:lki))
 Base.iterate(info::KRInfo, ::Val{:lki}) = (info.lki, Val(:id))
 Base.iterate(info::KRInfo, ::Val{:id}) = (info.id, Val(:nf))
-Base.iterate(info::KRInfo, ::Val{:nf}) = (info.nf, Val(:done))
+Base.iterate(info::KRInfo, ::Val{:nf}) = (info.nf, Val(:nrank))
+Base.iterate(info::KRInfo, ::Val{:nrank}) = (info.nrank, Val(:done))
 #Base.iterate(info::KRInfo, ::Val{:done}) = nothing
 """
     pkstruct(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> KRInfo
   
-Determine the Kronecker-structure information of the linear pencil `M-λN` and return an `KRInfo` object. 
+Determine the Kronecker-structure information of the matrix pencil `M-λN` and return an `KRInfo` object. 
 
-The right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id` and the
-number of finite eigenvalues `nf` can be obtained from `KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id` 
-and `KRInfo.nf`, respectively.  
+The right Kronecker indices `rki`, left Kronecker indices `lki`, infinite elementary divisors `id`, the
+number of finite eigenvalues `nf` and the normal rank `nrank` can be obtained from 
+`KRInfo` as `KRInfo.rki`, `KRInfo.lki`, `KRInfo.id`, `KRInfo.nf` and `KRInfo.nrank`, respectively.  
 The determination of the Kronecker-structure information is performed by reducing the pencil `M-λN` to an 
 appropriate Kronecker-like form (KLF) exhibiting all structural elements of the pencil `M-λN`.
 The reduction is performed using orthogonal similarity transformations and involves rank decisions based 
-on rank reevealing QR-decompositions with column pivoting, if `fast = true`, or, the more reliable, 
+on rank revealing QR-decompositions with column pivoting, if `fast = true`, or, the more reliable, 
 SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations. 
 
 The right Kronecker indices are provided in the integer vector `rki`, where each `i`-th element `rki[i]` is 
-the column dimension `k` of an elementary Kronecker block of size `(k-1) x k`. 
+the row dimension `k` of an elementary Kronecker block of size `k x (k+1)`. 
 The number of elements of `rki` is the dimension of 
-the right nullspace of the pencil `M-λN` and their sum is the least degree of a right polynomial nullspace basis. 
+the right nullspace of the pencil `M-λN` and their sum is the degree of a right minimal polynomial nullspace basis. 
 
 The left Kronecker indices are provided in the integer vector `lki`, where each `i`-th element `lki[i]` is 
-the row dimension `k` of an elementary Kronecker block of size `k x (k-1)`. 
+the column dimension `k` of an elementary Kronecker block of size `(k+1) x k`. 
 The number of elements of `lki` is the dimension of 
-the left nullspace of the pencil `M-λN` and their sum is the least degree of a left polynomial nullspace basis. 
+the left nullspace of the pencil `M-λN` and their sum is the degree of a left minimal polynomial nullspace basis. 
 
 The multiplicities of infinite eigenvalues are provided in the integer vector `id`, where each `i`-th element `id[i]` is
-the order of an infinite elementary divisor (i.e., the multiplicity of an infinite eigenvalue). 
+the order of an infinite elementary divisor (i.e., the multiplicity of an infinite eigenvalue).  
+The number of elements of `id` is the number of infinite elementary divisors of the pencil `M-λN`. 
+
+The normal rank `nrank` is the maximum rank of `M-λN` for all values of `λ`. If `N = nothing`, then `nrank` is the rank of `M`.  
 
 The keyword arguements `atol1`, `atol2`  and `rtol` specify the absolute tolerance for the nonzero
 elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the relative tolerance for the nonzero elements of `M` and `N`, respectively. 
@@ -242,7 +252,7 @@ function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = fa
    mM, nM = size(M)
    if N === nothing
       r = rank(M,atol = atol1, rtol = rtol)
-      return KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0)
+      return KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0, r)
    end
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
@@ -273,6 +283,9 @@ function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = fa
       m = ρ
       p -= τ 
    end
+
+   r = mrinf + n
+
    rtrail = 0
    ctrail = 0
    j = 0
@@ -288,7 +301,7 @@ function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = fa
       n -= ρ
       p = ρ
    end
-   return KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n)
+   return KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 function kroni(ind)
    # Kronecker indices evaluated from the ranks of blocks of the staircase form
@@ -325,11 +338,11 @@ end
 """
     prank(M::AbstractMatrix, N::AbstractMatrix; fastrank = true, atol1::Real=0, atol2::Real=0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ)
 
-Compute the normal rank of a linear matrix pencil `M - λN`. If `fastrank = true`, the rank is evaluated 
+Compute the normal rank of a matrix pencil `M - λN`. If `fastrank = true`, the rank is evaluated 
 by counting how many singular values of `M - γ N` have magnitude greater than `max(max(atol1,atol2), rtol*σ₁)`,
 where `σ₁` is the largest singular value of `M - γ N` and `γ` is a randomly generated value. If `fastrank = false`, 
 the rank is evaluated as `nr + ni + nf + nl`, where `nr` and `nl` are the sums of right and left Kronecker indices, 
-respectively, while `ni` and `nf` are the number of finite and infinite eigenvalues, respectively. The sums `nr+ni` and  
+respectively, while `ni` and `nf` are the number of infinite and finite eigenvalues, respectively. The sums `nr+ni` and  
 `nf+nl`, are determined from an appropriate Kronecker-like form (KLF) exhibiting the spliting of the right and left structures 
 of the pencil `M - λN`.
 
@@ -371,7 +384,6 @@ function prank(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fastrank::Bo
       M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = false, withQ = false, withZ = false) 
 
       n == min(mM,nM) && (return n)
-      prnk = 0
       tol1 = max(atol1, rtol*opnorm(M,1))
       mrinf = 0
       nrinf = 0
@@ -380,13 +392,12 @@ function prank(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fastrank::Bo
          ired = mrinf+1:mM
          jred = nrinf+1:nM
          τ, ρ = _preduce1!(n,m,p,view(M1,ired,jred),view(N1,ired,jred),Q,Z,tol1; fast = false, withQ = false, withZ = false)
-         prnk += ρ+τ
          mrinf += ρ+τ
          nrinf += m
          n -= ρ
          m = ρ
          p -= τ 
       end
-      return prnk+n
+      return mrinf+n
    end
 end

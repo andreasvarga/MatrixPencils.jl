@@ -1,7 +1,7 @@
 """
     _qrE!(A, E, Q, B; withQ = true) 
 
-Reduce the linear regular pencil `A - λE` to an equivalent form `A1 - λE1 = Q1'*(A - λE)` using an
+Reduce the regular matrix pencil `A - λE` to an equivalent form `A1 - λE1 = Q1'*(A - λE)` using an
 orthogonal or unitary transformation matrix `Q1` such that the transformed matrix `E1` is upper triangular.
 The reduction is performed using the QR-decomposition of E.
 
@@ -30,7 +30,7 @@ end
 """
     _svdlikeAE!(A, E, Q, Z, B, C; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (rE, rA22)
 
-Reduce the linear regular pencil `A - λE` to an equivalent form `A1 - λE1 = Q1'*(A - λE)*Z1` using 
+Reduce the regular matrix pencil `A - λE` to an equivalent form `A1 - λE1 = Q1'*(A - λE)*Z1` using 
 orthogonal or unitary transformation matrices `Q1` and `Z1` such that the transformed matrices `A1` and `E1` 
 are in the following SVD-like coordinate form
 
@@ -192,7 +192,7 @@ end
 """
     isregular(A, E, γ; atol::Real = 0,  rtol::Real = atol > 0 ? 0 : n*ϵ) -> Bool
 
-Test whether the linear pencil `A-λE` is regular at `λ = γ` (i.e., `A-λE` is square and ``{\\small\\det(A-λE) \\neq 0}``). 
+Test whether the matrix pencil `A-λE` is regular at `λ = γ` (i.e., `A-λE` is square and ``{\\small\\det(A-λE) \\neq 0}``). 
 The underlying computational procedure checks the maximal rank of `A-γE` if `γ` is finite and of `E` if 
 `γ` is infinite . 
 
@@ -217,7 +217,7 @@ end
 """
     isregular(A, E; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
 
-Test whether the linear pencil `A-λE` is regular (i.e., `A-λE` is square and ``{\\small\\det(A-λE) \\not\\equiv 0}``). 
+Test whether the matrix pencil `A-λE` is regular (i.e., `A-λE` is square and ``{\\small\\det(A-λE) \\not\\equiv 0}``). 
 The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form, 
 which provides information on the rank of `A-λE`. 
 
@@ -260,7 +260,7 @@ end
 """
     isunimodular(A, E; atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> Bool
 
-Test whether the linear pencil `A-λE` is unimodular (i.e., `A-λE` is square, regular and `det(A-λE) == constant`). 
+Test whether the matrix pencil `A-λE` is unimodular (i.e., `A-λE` is square, regular and `det(A-λE) == constant`). 
 The underlying computational procedure reduces the pencil `A-λE` to an appropriate Kronecker-like form, 
 which provides information to check the full rank of `A-λE` and the lack of finite eigenvalues. 
 
@@ -305,7 +305,7 @@ end
 """
     fisplit(A, E, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (At, Et, Bt, Ct, Q, Z, ν, nf, ni)
 
-Reduce the linear regular pencil `A - λE` to an equivalent form `At - λEt = Q'*(A - λE)*Z` using 
+Reduce the regular matrix pencil `A - λE` to an equivalent form `At - λEt = Q'*(A - λE)*Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `At` and `Et` are in one of the
 following block upper-triangular forms:
 
@@ -391,7 +391,7 @@ end
 """
     fisplit!(A, E, B, C, Q, Z; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (ν, nf, ni)
 
-Reduce the linear regular pencil `A - λE` to an equivalent form `At - λEt = Q1'*(A - λE)*Z1` using 
+Reduce the regular matrix pencil `A - λE` to an equivalent form `At - λEt = Q1'*(A - λE)*Z1` using 
 orthogonal or unitary transformation matrices `Q1` and `Z1` such that the transformed matrices `At` and `Et` are in one of the
 following block upper-triangular forms:
 

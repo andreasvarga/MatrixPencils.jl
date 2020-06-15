@@ -1,7 +1,7 @@
 """
     sreduceBF(A, E, B, C, D; fast = true, atol = 0, rtol, withQ = true, withZ = true) -> F, G, Q, Z, n, m, p
 
-Reduce the partitioned linear pencil `M - λN` 
+Reduce the partitioned matrix pencil `M - λN` 
 
                | A-λE | B | ndx
       M - λN = |------|---|
@@ -125,7 +125,7 @@ end
 """
     sklf(A, E, B, C, D; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, νi, nf, νl, μl)
 
-Reduce the structured linear pencil `M - λN` 
+Reduce the structured matrix pencil `M - λN` 
 
                | A-λE | B | 
       M - λN = |------|---|
@@ -262,7 +262,7 @@ end
 """
     sklf_right(A, E, B, C, D; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, nf, ν, μ)
 
-Reduce the structured linear pencil `M - λN` 
+Reduce the structured matrix pencil `M - λN` 
 
                | A-λE | B | 
       M - λN = |------|---|
@@ -333,7 +333,7 @@ end
 """
     sklf_left(A, E, B, C, D; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, nf, νl, μl)
 
-Reduce the structured linear pencil `M - λN` 
+Reduce the structured matrix pencil `M - λN` 
 
                | A-λE | B | 
       M - λN = |------|---|
@@ -408,7 +408,7 @@ end
 """
     sklf_right!(A, E, B, F, C, G, D, H; fast = true, atol1 = 0, atol2 = 0, atol3 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, nc)
 
-Reduce the partitioned full row rank linear pencil 
+Reduce the partitioned full row rank matrix pencil 
 
       M - λN = | B-λF | A-λE | n
                   m      n     
@@ -519,7 +519,7 @@ end
 """
     sklf_left!(A, E, C, B, F, G, D, H; fast = true, atol1 = 0, atol2 = 0, atol3 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, no)
 
-Reduce the partitioned full row rank linear pencil 
+Reduce the partitioned full row rank matrix pencil 
 
     M - λN = | A-λE | n
              | C-λG | p
@@ -634,7 +634,7 @@ end
 """
     sklf_right!(A, E, B, C; fast = true, atol1 = 0, atol2 = 0, atol3 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, νr, nc, nfuc, niuc)
 
-Reduce the partitioned full row rank linear pencil 
+Reduce the partitioned full row rank matrix pencil 
 
       M - λN = | B | A-λE | n
                  m    n     
@@ -757,7 +757,7 @@ end
     sklf_rightfin!(A, E, B, C; fast = true, atol1 = 0, atol2 = 0,  
                    rtol, withQ = true, withZ = true) -> (Q, Z, νr, nc, nuc)
 
-Reduce the partitioned full row rank linear pencil 
+Reduce the partitioned full row rank matrix pencil 
 
       M - λN = | B | A-λE | n
                  m    n     
@@ -851,7 +851,7 @@ end
 """
     sklf_left!(A, E, C, B; fast = true, atol1 = 0, atol2 = 0, atol3 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, μl, no, nfuo, niuo)
 
-Reduce the partitioned full column rank linear pencil 
+Reduce the partitioned full column rank matrix pencil 
 
       M - λN = | A-λE | n
                |  C   | p
@@ -978,7 +978,7 @@ end
     sklf_leftfin!(A, E, C, B; fast = true, atol1 = 0, atol2 = 0,  
                   rtol, withQ = true, withZ = true) -> (Q, Z, μl, no, nuo)
 
-Reduce the partitioned full column rank linear pencil 
+Reduce the partitioned full column rank matrix pencil 
 
       M - λN = | A-λE | n
                |  C   | p
@@ -1075,7 +1075,7 @@ end
 """
     sklf_right!(A, B, C; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true) -> (Q, νr, nc, nuc)
 
-Reduce the partitioned full row rank linear pencil 
+Reduce the partitioned full row rank matrix pencil 
 
       M - λN = | B | A-λI | n
                  m    n     
@@ -1161,7 +1161,7 @@ end
 """
     sklf_left!(A, C, B; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true) -> (Q, μl, no, nuo)
 
-Reduce the partitioned full column rank linear pencil 
+Reduce the partitioned full column rank matrix pencil 
 
       M - λN = | A-λI | n
                |  C   | p

@@ -17,32 +17,32 @@ for fast in (false,true)
 
 M = zeros(0,0); N = zeros(0,0);
 @time info  = pkstruct(M, N, fast = fast)
-@test info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0
+@test info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0 && info.nrank == 0
 
 
 M = zeros(3,0); N = zeros(3,0);
 @time info = pkstruct(M, N, fast = fast)
-@test info.rki == [] && info.lki == [0, 0, 0] && info.id == [] && info.nf == 0
+@test info.rki == [] && info.lki == [0, 0, 0] && info.id == [] && info.nf == 0 && info.nrank == 0
 
 M = zeros(0,3); N = zeros(0,3);
 @time info = pkstruct(M, N, fast = fast)
-@test info.rki == [0, 0, 0] && info.lki == [] && info.id == [] && info.nf == 0
+@test info.rki == [0, 0, 0] && info.lki == [] && info.id == [] && info.nf == 0 && info.nrank == 0
 
 M = zeros(1,1); N = ones(1,1);
 @time info = pkstruct(M, N, fast = fast)
-@test info.rki == [] && info.lki == [] && info.id == [] && info.nf == 1
+@test info.rki == [] && info.lki == [] && info.id == [] && info.nf == 1 && info.nrank == 1
 
 M = ones(1,1); N = zeros(1,1); 
 @time info = pkstruct(M, N, fast = fast)
-@test info.rki == [] && info.lki == [] && info.id == [1] && info.nf == 0
+@test info.rki == [] && info.lki == [] && info.id == [1] && info.nf == 0 && info.nrank == 1
 
 M = ones(1,1); N = nothing; 
 @time info = pkstruct(M, N, fast = fast)
-@test info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0
+@test info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0 && info.nrank == 1
 
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 @time info = pkstruct(M, N)
-@test info.rki == [] && info.lki == [] && info.id == [2] && info.nf == 0
+@test info.rki == [] && info.lki == [] && info.id == [2] && info.nf == 0 && info.nrank == 2
 
 M = [  22  34  31   31  17
         45  45  42   19  29
@@ -57,8 +57,8 @@ N = [   13  26  25  17  24
         24  35  18  21  22  ];
 
 @time info = pkstruct(M, N)
-rki, lki, id, nf = info
-@test rki == [0] && lki == [0] && id == [1] && nf == 3
+rki, lki, id, nf, nrank = info
+@test rki == [0] && lki == [0] && id == [1] && nf == 3 && nrank == 4
 
 # Test Suite 2 (Example 2.2.1, Beelen)
 M = zeros(14,16); 
@@ -79,7 +79,7 @@ M2 = Q*M*Z; N2 = Q*N*Z;
 
 M = copy(M2); N = copy(N2); 
 @time info = pkstruct(M, N, fast = true, atol1 = 1.e-7, atol2 = 1.e-7)
-@test info.rki == [0, 0, 1, 2] && info.lki == [0, 3] && info.id == [1,2] && info.nf == 3
+@test info.rki == [0, 0, 1, 2] && info.lki == [0, 3] && info.id == [1,2] && info.nf == 3 && info.nrank == 12
 
 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
@@ -109,7 +109,7 @@ N = Q*N*Z;
 
 atol1 = 1.e-7; atol2 = 1.e-7;
 @time info = pkstruct(M, N, fast = fast, atol1 = atol1, atol2 = atol2)
-@test info.rki == [mr] && info.lki == [nl] && info.id == [ni] && info.nf == nf
+@test info.rki == [mr] && info.lki == [nl] && info.id == [ni] && info.nf == nf && info.nrank == mr+nl+ni+nf
 
 
 end
@@ -126,32 +126,32 @@ for fast in (false,true)
 
 M = zeros(0,0); N = zeros(0,0);
 @time val, kinfo  = peigvals(M, N, fast = fast)
-@test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 0)
+@test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[], 0, 0)
 
 M = zeros(3,0); N = zeros(3,0);
 @time val, kinfo = peigvals(M, N, fast = fast)
-@test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], [0, 0, 0], Int64[], 0)
+@test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [0, 0, 0], Int64[], 0, 0)
 
 M = zeros(0,3); N = zeros(0,3);
 @time val, kinfo = peigvals(M, N, fast = fast)
-@test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0, 0, 0], Int64[], Int64[], 0)
+@test val == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([0, 0, 0], Int64[], Int64[], 0, 0)
 
 M = zeros(1,1); N = ones(1,1);
 @time val, kinfo = peigvals(M, N, fast = fast)
-@test val == [0] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 1)
+@test val == [0] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[], 1, 1)
 
 N = zeros(1,1); M = ones(1,1);
 @time val, kinfo = peigvals(M, N, fast = fast)
-@test val == [Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], [1], 0)
+@test val == [Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], [1], 0, 1)
 
 M = ones(1,1); N = nothing; 
 @time val, info = peigvals(M, N, fast = fast)
-@test val == Float64[] && info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0
+@test val == Float64[] && info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0 && info.nrank == 1
 
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 
 @time val, kinfo = peigvals(M, N)
-@test val == [Inf;Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], [2], 0)
+@test val == [Inf;Inf] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], [2], 0, 2)
 
 M = [  22  34  31   31  17
         45  45  42   19  29
@@ -169,7 +169,7 @@ N = [   13  26  25  17  24
 @test length(val) == 4 &&
       length(filter(y-> y == true,isinf.(val))) == 1 &&
       length(filter(y-> y == true,isfinite.(val))) == 3 &&
-      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0], [0], [1], 3)
+      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([0], [0], [1], 3, 4)
 
 # Test Suite 2 (Example 2.2.1, Beelen)
 M = zeros(14,16); 
@@ -193,10 +193,10 @@ M = copy(M2); N = copy(N2);
 @test length(val) == 6 &&
       length(filter(y-> y == true,isinf.(val))) == 3 &&
       length(filter(y-> y == true,isfinite.(val))) == 3 &&
-      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0, 0, 1, 2], [0, 3], [1, 2], 3)
+      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([0, 0, 1, 2], [0, 3], [1, 2], 3, 12)
 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
-Ty = Float64; fast = true;
+#Ty = Float64; fast = true;
 for Ty in (Float64, Complex{Float64})
 
 abstol = sqrt(eps(one(real(Ty))))
@@ -213,16 +213,16 @@ N = [rand(Ty,mr,nM);
      zeros(Ty,ni,nr) diagm(1 => ones(Ty,ni-1)) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
-# Q = qr(rand(Ty,mM,mM)).Q;
-# Z = qr(rand(Ty,nM,nM)).Q; 
-# M = Q*M*Z;
-# N = Q*N*Z;
+Q = qr(rand(Ty,mM,mM)).Q;
+Z = qr(rand(Ty,nM,nM)).Q; 
+M = Q*M*Z;
+N = Q*N*Z;
 
 @time val, kinfo = peigvals(M, N, fast = fast, atol1 = abstol, atol2 = abstol)
 @test length(val) == ni+nf &&
       length(filter(y-> y == true,isinf.(val))) == ni &&
       length(filter(y-> y == true,isfinite.(val))) == nf && 
-      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([mr], [nl], [ni], nf)
+      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([mr], [nl], [ni], nf, mr+nl+ni+nf)
 end
 end
 end
@@ -238,34 +238,33 @@ for fast in (false,true)
 
 M = zeros(0,0); N = zeros(0,0);
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
-@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 0)
+@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[], 0, 0)
 
 
 M = zeros(3,0); N = zeros(3,0);
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
-@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], [0, 0, 0], Int64[], 0)
+@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [0, 0, 0], Int64[], 0, 0)
 
 
 M = zeros(0,3); N = zeros(0,3);
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
-@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0, 0, 0], Int64[], Int64[], 0)
+@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([0, 0, 0], Int64[], Int64[], 0, 0)
 
 M = zeros(1,1); N = ones(1,1);
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
-@test val == [0] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], Int64[], 1)
+@test val == [0] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[], 1, 1)
 
 N = zeros(1,1); M = ones(1,1);
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
-@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], [1], 0)
+@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], [1], 0, 1)
 
 M = ones(1,1); N = nothing; 
 @time val, iz, info = pzeros(M, N, fast = fast)
-@test val == Float64[] && iz == [] && info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0
+@test val == Float64[] && iz == [] && info.rki == [] && info.lki == [] && info.id == [] && info.nf == 0  && info.nrank == 1
 
-fast = true
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 @time val, iz, kinfo  = pzeros(M, N, fast = fast)
-@test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == (Int64[], Int64[], [2], 0)
+@test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], [2], 0, 2)
 
 M = [  22  34  31   31  17
         45  45  42   19  29
@@ -283,7 +282,7 @@ N = [   13  26  25  17  24
 @test length(val) == 3 &&
       length(filter(y-> y == true,isinf.(val))) == 0 &&
       length(filter(y-> y == true,isfinite.(val))) == 3 &&
-      iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0], [0], [1], 3)
+      iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([0], [0], [1], 3, 4)
 
 # Test Suite 2 (Example 2.2.1, Beelen)
 M = zeros(14,16); 
@@ -307,17 +306,16 @@ M = copy(M2); N = copy(N2);
 @test length(val) == 4 &&
       length(filter(y-> y == true,isinf.(val))) == 1 &&
       length(filter(y-> y == true,isfinite.(val))) == 3 &&
-      iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([0, 0, 1, 2], [0, 3], [1, 2], 3)
+      iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([0, 0, 1, 2], [0, 3], [1, 2], 3, 12)
 
 
-Ty = Float64; fast = true;
-for fast in (true,false)
+#Ty = Float64; fast = true;
 for Ty in (Float64, Complex{Float64})
 
 abstol = sqrt(eps(one(real(Ty))))
 
 # given structure 
-mr = 2; nr = mr+1; ni = 4; nf = 10; nl = 4; ml = nl+1; 
+mr = 2; nr = mr+1; ni = 4; nf = 8; nl = 4; ml = nl+1; 
 mM = mr+ni+nf+ml;
 nM = nr+ni+nf+nl;
 M2 = [rand(Ty,mr,nM); 
@@ -328,20 +326,19 @@ N2 = [rand(Ty,mr,nM);
      zeros(Ty,ni,nr) diagm(1 => ones(Ty,ni-1)) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
-# Q = qr(rand(Ty,mM,mM)).Q;
-# Z = qr(rand(Ty,nM,nM)).Q; 
-# M2 = Q*M2*Z;
-# N2 = Q*N2*Z;
+Q = qr(rand(Ty,mM,mM)).Q;
+Z = qr(rand(Ty,nM,nM)).Q; 
+M2 = Q*M2*Z;
+N2 = Q*N2*Z;
 
 M = copy(M2); N = copy(N2);
 atol1 = 1.e-7; atol2 = 1.e-7; 
 @time val, iz, kinfo  = pzeros(M, N, fast = fast, atol1 = atol1, atol2 = atol2)
 @test length(val) == ni+nf-1 &&
-      length(filter(y-> y == true,isinf.(val))) == ni-1 &&
-      length(filter(y-> y == true,isfinite.(val))) == nf && iz == (ni > 1 ? [ni-1] : [ ]) && 
-      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf) == ([mr], [nl], ni > 0 ? [ni] : [], nf)
+      length(val[isinf.(val)]) == ni-1 &&
+      length(val[isfinite.(val)]) == nf && iz == (ni > 1 ? [ni-1] : [ ]) && 
+      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([mr], [nl], ni > 0 ? [ni] : [], nf, mr+nl+ni+nf)
 
-end
 end
 end
 end # pzeros

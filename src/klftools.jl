@@ -1,7 +1,7 @@
 """
     preduceBF(M, N; fast = true, atol = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, n, m, p)
 
-Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'*(M - λN)*Z` using 
+Reduce the matrix pencil `M - λN` to an equivalent form `F - λG = Q'*(M - λN)*Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the pencil `M - λN` is transformed 
 into the following standard form
  
@@ -49,7 +49,7 @@ end
 """
     klf_rlsplit(M, N; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, n, m, p)
 
-Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'*(M - λN)*Z` using 
+Reduce the matrix pencil `M - λN` to an equivalent form `F - λG = Q'*(M - λN)*Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `F` and `G` are in one of the
 following Kronecker-like forms:
 
@@ -216,7 +216,7 @@ end
 """
     klf(M, N; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, νi, nf, νl, μl)
 
-Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
+Reduce the matrix pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `F` and `G` are in the
 following Kronecker-like form exhibiting the complete Kronecker structure:
  
@@ -347,7 +347,7 @@ end
 """
     klf_right(M, N; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, nf, ν, μ)
 
-Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
+Reduce the matrix pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `F` and `G` are in the
 following Kronecker-like form exhibiting the right and finite Kronecker structures:
  
@@ -410,7 +410,7 @@ end
 """
     klf_left(M, N; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, nf, νl, μl)
 
-Reduce the linear pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
+Reduce the matrix pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `F` and `G` are in the
 following Kronecker-like form exhibiting the finite and left Kronecker structures:
  
@@ -477,7 +477,7 @@ end
 """
     klf_right!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol = 0, rtol, withQ = true, withZ = true) -> (Q, Z, νr, μr, nf, ν, μ, tol)
 
-Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
+Reduce the partitioned matrix pencil `M - λN` (`*` stands for a not relevant subpencil)
 
               [   *         *        *  ] roff
      M - λN = [   0      M22-λN22    *  ] m
@@ -609,7 +609,7 @@ end
 
      klf_right_refine!(ν, μ, M, N, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) -> (νr, μr, νi)
 
-Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
+Reduce the partitioned matrix pencil `M - λN` (`*` stands for a not relevant subpencil)
 
              [   *         *        *  ] roff
     M - λN = [   0      Mri-λNri    *  ] mri
@@ -735,7 +735,7 @@ end
 """
     klf_left!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol = 0, rtol, withQ = true, withZ = true) -> (Q, Z, ν, μ, nf, νl, μl, tol)
 
-Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
+Reduce the partitioned matrix pencil `M - λN` (`*` stands for a not relevant subpencil)
 
               [   *         *        *  ] roff
      M - λN = [   0      M22-λN22    *  ] m
@@ -862,7 +862,7 @@ end
 """
     klf_left_refine!(ν, μ, M, N, tol; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, withQ = true, withZ = true) -> (νi, νl, μl)
 
-Reduce the partitioned linear pencil `M - λN` (`*` stands for a not relevant subpencil)
+Reduce the partitioned matrix pencil `M - λN` (`*` stands for a not relevant subpencil)
 
              [   *         *        *  ] roff
     M - λN = [   0      Mli-λNli    *  ] mli

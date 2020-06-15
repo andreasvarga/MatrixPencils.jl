@@ -209,6 +209,56 @@ sys = spm2lps(T,U,V,W);
 @test lpseval(sys...,1) ≈ pmeval(V,1)*(pmeval(T,1)\pmeval(U,1))+pmeval(W,1)
 
 
+# Example Rosenbrock
+s = Polynomial([0, 1],:s);
+T = [s+1 s^3+2s^2; s^2+3s+2 s^4+4s^3+4s^2+s+2];
+U = [s^2+1;s^3+2s^2+s+3];
+V = -[s^2+3s+1 s^4+4s^3+4s^2-1];
+W = [s^3+2s^2+s+2];
+
+# G = (2*s + 3)/(s^2 + 3*s + 2)
+T1 = [s+1 0;0 s+2];
+U1 = [1;1];
+V1 = [1 1];
+W1 = [0];
+
+sys = spm2ls(T,U,V,W,atol = 1.e-7, minimal=true); 
+sys1 = spm2ls(T1,U1,V1,W1,atol = 1.e-7, minimal=true); 
+@test lsequal(sys1...,sys...,atol1=1.e-7,atol2=1.e-7)
+
+syslps = spm2lps(T,U,V,W,atol = 1.e-7, minimal=true); 
+syslps1 = spm2lps(T1,U1,V1,W1,atol = 1.e-7, minimal=true); 
+@test lpsequal(syslps1...,syslps...,atol1=1.e-7,atol2=1.e-7)
+
+
+# 
+s = Polynomial([0, 1],:s);
+T = [s+1 s^3+2s^2; s^2+3s+2 s^4+4s^3+4s^2+s+2];
+U = [s^2+1;s^3+2s^2+s+3];
+V = -[s^2+3s+1 s^4+4s^3+4s^2-1];
+W = [s^3+2s^2+s+2];
+
+T1 = [s+1 0;0 s+2];
+U1 = [1;1];
+V1 = [1 1];
+W1 = [0];
+S1 = [-T1 U1; V1 W1];
+A, E, B, F, C, G, D, H = pm2lps(S1,obs=true);
+c = 3; v1 = lpseval(A, E, B, F, C, G, D, H,c)
+A, E, B, F, C, G, D, H = pm2lps(S1,contr=true);
+c = 3; v2 = lpseval(A, E, B, F, C, G, D, H,c)
+@test v1 ≈ v2
+
+
+S = [-T U; V W];
+
+A, E, B, F, C, G, D, H = pm2lps(S,obs=true);
+c = 3; v1 = lpseval(A, E, B, F, C, G, D, H,c)
+A, E, B, F, C, G, D, H = pm2lps(S,contr=true);
+c = 3; v2 = lpseval(A, E, B, F, C, G, D, H,c)
+@test v1 ≈ v2
+
+
 
 #  simple transfer function realization
 D = reshape([-2,-1,2,1],1,1,4);
