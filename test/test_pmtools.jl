@@ -156,12 +156,23 @@ W = zeros(3,3);
 A2,E2,B2,C2,D2 = spm2ls(D,D,D,W,atol = 1.e-7, minimal=true)  
 @test D2 ≈ -D  
 
+D = rand(3,3);
+W = zeros(3,3,1);   
+A2,E2,B2,C2,D2 = spm2ls(D,D,D,W,atol = 1.e-7, minimal=true)  
+@test D2 ≈ -D  
+
 A2,E2,B2,C2,D2 = spm2ls(D,D,D,W,atol = 1.e-7)  
 @test -C2*inv(A2)*B2+D2 ≈ -D && iszero(E2)
 
 #  simple test
 D = rand(3,3);
 W = zeros(3,3);   
+sys = spm2lps(D,D,D,W,atol = 1.e-7, minimal=true)  
+@test sys[7] ≈ -D  && sys[8] ≈ 0*D
+
+#  simple test
+D = rand(3,3);
+W = zeros(3,3,1);   
 sys = spm2lps(D,D,D,W,atol = 1.e-7, minimal=true)  
 @test sys[7] ≈ -D  && sys[8] ≈ 0*D
 
