@@ -24,7 +24,7 @@ elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 
 """
-function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool = true, 
+function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScaling{Bool}}; fast::Bool = true, 
    atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(min(atol1,atol2)))
 
@@ -32,6 +32,11 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Bool 
    if N === nothing
       r = rank(M,atol = atol1, rtol = rtol)
       return eltype(M)[], Int[], KRInfo(zeros(Int,nM-r), zeros(Int,mM-r), zeros(Int,0), 0, r)
+   end
+
+   if isequal(N,I)
+      mM == nM || error("M must be a square matrix")
+      return eigvals(M), Int[], KRInfo(Int[], Int[], Int[], mM, mM)
    end
 
    # Step 0: Reduce to the standard form
@@ -179,11 +184,11 @@ Kronecker-structure object definition.
 
 If `info::KRInfo` is the Kronecker-structure object, then:
 
-`info.rki` is a vector, whose components contains the right Kronecker indices;
+`info.rki` is a vector whose components contains the right Kronecker indices;
 
-`info.lki` is a vector, whose components contains the left Kronecker indices;
+`info.lki` is a vector whose components contains the left Kronecker indices;
 
-`info.id` is a vector, whose components contains the orders of the infinite elementary divisors (i.e., the
+`info.id` is a vector whose components contains the orders of the infinite elementary divisors (i.e., the
 multiplicities of infinite eigenvalues). 
 
 `info.nf` is the number of finite eigenvalues.

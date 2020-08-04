@@ -161,7 +161,7 @@ end
 Reduce the linearization `(A-λE,B,C,D)` of a rational matrix to a reduced form `(Ar-λEr,Br,Cr,Dr)` such that
 
              -1                    -1
-     C*(A-λE)  *B + D = Cr*(Ar-λEr)  *Br + Dr
+     C*(λE-A)  *B + D = Cr*(λEr-Ar)  *Br + Dr
      
 with the least possible order `nr` of `Ar-λEr` if `finite = true`, `infinite = true`, 
 `contr = true`, `obs = true` and `nseig = true`. Such a realization is called `minimal` and satisfies:
@@ -221,185 +221,250 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
                     fast::Bool = true, finite::Bool = true, infinite::Bool = true, 
                     contr::Bool = true, obs::Bool = true, noseig::Bool = true)
 
-    emat = (typeof(E) <: AbstractMatrix)
-    eident = !emat || isequal(E,I) 
-    n = LinearAlgebra.checksquare(A)
-    emat && (n,n) !== size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
-    p, m = size(D)
-    (n,m) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
-    (p,n) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
-    T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
-    eident || (T = promote_type(T,eltype(E)))
-    T <: BlasFloat || (T = promote_type(Float64,T))        
+   emat = (typeof(E) <: AbstractMatrix)
+   eident = !emat || isequal(E,I) 
+   n = LinearAlgebra.checksquare(A)
+   emat && (n,n) !== size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
+   p, m = size(D)
+   (n,m) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
+   (p,n) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
+   T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
+   eident || (T = promote_type(T,eltype(E)))
+   T <: BlasFloat || (T = promote_type(Float64,T))        
 
-    A1 = copy_oftype(A,T)   
-    eident ? E1 = copy(E) : E1 = copy_oftype(E,T)
-    B1 = copy_oftype(B,T)
-    C1 = copy_oftype(C,T)
-    D1 = copy_oftype(D,T)  
+   A1 = copy_oftype(A,T)   
+   eident ? E1 = copy(E) : E1 = copy_oftype(E,T)
+   B1 = copy_oftype(B,T)
+   C1 = copy_oftype(C,T)
+   D1 = copy_oftype(D,T)  
 
-    (n == 0 || m == 0 || p == 0) && (return A1, E1, B1, C1, D1, 0, 0, 0)
-    # save system matrices
-    Ar = copy(A1)
-    Br = copy(B1)
-    Cr = copy(C1)
-    Dr = copy(D1)
-    Er = copy(E1)
-    ir = 1:n
-    if eident
-        if contr
-           _, _, nr, nuc = sklf_right!(Ar, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol1, rtol = rtol, withQ = false) 
-           if nuc > 0
-              ir = 1:nr
-              # save intermediary results
-              A1 = Ar[ir,ir]
-              B1 = Br[ir,:]
-              C1 = Cr[:,ir]
-           else
-              # restore original matrices 
-              Ar = copy(A1)
-              Br = copy(B1)
-              Cr = copy(C1)
-           end
-        else
-           nuc = 0
-        end
-        if obs
-            _, _, no, nuo = sklf_left!(view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); fast = fast, atol1 = atol1, atol2 = atol1, rtol = rtol, withQ = false) 
-            if nuo > 0
-               ir = ir[end-no+1:end]
+   (n == 0 || m == 0 || p == 0) && (return A1, E1, B1, C1, D1, 0, 0, 0)
+
+   if eident
+      A1, B1, C1, nuc, nuo  = lsminreal(A1, B1, C1, contr = contr, obs = obs, fast = fast, atol = atol1, rtol = rtol)
+      return A1, emat ? Matrix{T}(I,size(A1)...) : I, B1, C1, D1, nuc, nuo, 0
+   else
+      # save system matrices
+      Ar = copy(A1)
+      Br = copy(B1)
+      Cr = copy(C1)
+      Dr = copy(D1)
+      Er = copy(E1)
+      ir = 1:n
+      if finite
+         if contr  
+            _, _, _, nr, nfuc = sklf_rightfin!(Ar, Er, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
+            if nfuc > 0
+               ir = 1:nr
+               # save intermediary results
+               A1 = Ar[ir,ir]
+               E1 = Er[ir,ir]
+               B1 = Br[ir,:]
+               C1 = Cr[:,ir]
             else
-               # restore saved matrices
-               Ar[ir,ir] = A1
-               Br[ir,:] = B1
-               Cr[:,ir] = C1
+               # restore original matrices 
+               Ar = copy(A1)
+               Er = copy(E1)
+               Br = copy(B1)
+               Cr = copy(C1)
             end
-        else
-           nuo = 0
-        end
-        return Ar[ir,ir], emat ? Er[ir,ir] : I, Br[ir,:], Cr[:,ir], Dr, nuc, nuo, 0
-    else
-        if finite
-           if contr  
-              _, _, _, nr, nfuc = sklf_rightfin!(Ar, Er, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
-              if nfuc > 0
-                 ir = 1:nr
-                 # save intermediary results
-                 A1 = Ar[ir,ir]
-                 E1 = Er[ir,ir]
-                 B1 = Br[ir,:]
-                 C1 = Cr[:,ir]
-              else
-                 # restore original matrices 
-                 Ar = copy(A1)
-                 Er = copy(E1)
-                 Br = copy(B1)
-                 Cr = copy(C1)
-              end
-           else
-              nfuc = 0
-           end
-           if obs 
-               _, _, _, no, nfuo = sklf_leftfin!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
-                                                fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
-               if nfuo > 0
-                  ir = ir[end-no+1:end]
-                  # save intermediary results
-                  A1 = Ar[ir,ir]
-                  E1 = Er[ir,ir]
-                  B1 = Br[ir,:]
-                  C1 = Cr[:,ir]
-               else
-                  # restore saved matrices
-                  Ar[ir,ir] = A1
-                  Er[ir,ir] = E1
-                  Br[ir,:] = B1
-                  Cr[:,ir] = C1
-               end
-           else
-               nfuo = 0
-           end
          else
             nfuc = 0
-            nfuo = 0
          end
-         if infinite
-            if contr  
-               _, _, _, nr, niuc = sklf_rightfin!(view(Er,ir,ir), view(Ar,ir,ir), view(Br,ir,:), view(Cr,:,ir); 
-                                                 fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, 
-                                                 withQ = false, withZ = false) 
-               if niuc > 0
-                  ir = ir[1:nr]
-                  # save intermediary results
-                  A1 = Ar[ir,ir]
-                  E1 = Er[ir,ir]
-                  B1 = Br[ir,:]
-                  C1 = Cr[:,ir]
-               else
-                  # restore original matrices 
-                  Ar[ir,ir] = A1
-                  Er[ir,ir] = E1
-                  Br[ir,:] = B1
-                  Cr[:,ir] = C1
-               end
+         if obs 
+            _, _, _, no, nfuo = sklf_leftfin!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
+                                              fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
+            if nfuo > 0
+                ir = ir[end-no+1:end]
+                # save intermediary results
+                A1 = Ar[ir,ir]
+                E1 = Er[ir,ir]
+                B1 = Br[ir,:]
+                C1 = Cr[:,ir]
             else
-               niuc = 0
-            end
-            if obs 
-                _, _, _, no, niuo = sklf_leftfin!(view(Er,ir,ir), view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
-                                                 fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, 
-                                                 withQ = false, withZ = false) 
-                if niuo > 0
-                   ir = ir[end-no+1:end]
-                   # save intermediary results
-                   A1 = Ar[ir,ir]
-                   E1 = Er[ir,ir]
-                   B1 = Br[ir,:]
-                   C1 = Cr[:,ir]
-                else
-                   # restore saved matrices
-                   Ar[ir,ir] = A1
-                   Er[ir,ir] = E1
-                   Br[ir,:] = B1
-                   Cr[:,ir] = C1
-                end
-            else
-                niuo = 0
+                # restore saved matrices
+                Ar[ir,ir] = A1
+                Er[ir,ir] = E1
+                Br[ir,:] = B1
+                Cr[:,ir] = C1
             end
          else
-            niuc = 0
-            niuo = 0
-          end
-          nuc = nfuc+niuc
-          nuo = nfuo+niuo
-          if noseig
-            rE, rA22  = _svdlikeAE!(view(Ar,ir,ir), view(Er,ir,ir), nothing, nothing, view(Br,ir,:), view(Cr,:,ir), 
-                        fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false)
-            if rA22 > 0
-               i1 = ir[1:rE]
-               i2 = ir[rE+1:rE+rA22]
-               # make A22 = I
-               fast ? (A22 = UpperTriangular(Ar[i2,i2])) : (A22 = Diagonal(Ar[i2,i2]))
-               ldiv!(A22,view(Ar,i2,i1))
-               ldiv!(A22,view(Br,i2,:))
-               # apply simplified residualization formulas
-               Dr -= Cr[:,i2]*Br[i2,:]
-               Br[i1,:] -= Ar[i1,i2]*Br[i2,:]
-               Cr[:,i1] -= Cr[:,i2]*Ar[i2,i1]
-               Ar[i1,i1] -= Ar[i1,i2]*Ar[i2,i1]
-               ir = [i1; ir[rE+rA22+1:end]]
+            nfuo = 0
+         end
+      else
+         nfuc = 0
+         nfuo = 0
+      end
+      if infinite
+         if contr  
+            _, _, _, nr, niuc = sklf_rightfin!(view(Er,ir,ir), view(Ar,ir,ir), view(Br,ir,:), view(Cr,:,ir); 
+                                              fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, 
+                                              withQ = false, withZ = false) 
+            if niuc > 0
+               ir = ir[1:nr]
+               # save intermediary results
+               A1 = Ar[ir,ir]
+               E1 = Er[ir,ir]
+               B1 = Br[ir,:]
+               C1 = Cr[:,ir]
             else
-               # restore saved matrices
+               # restore original matrices 
                Ar[ir,ir] = A1
                Er[ir,ir] = E1
                Br[ir,:] = B1
                Cr[:,ir] = C1
             end
-            return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, rA22
          else
-            return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, 0
+            niuc = 0
          end
-     end
+         if obs 
+             _, _, _, no, niuo = sklf_leftfin!(view(Er,ir,ir), view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
+                                              fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, 
+                                              withQ = false, withZ = false) 
+            if niuo > 0
+                ir = ir[end-no+1:end]
+                # save intermediary results
+                A1 = Ar[ir,ir]
+                E1 = Er[ir,ir]
+                B1 = Br[ir,:]
+                C1 = Cr[:,ir]
+            else
+                # restore saved matrices
+                Ar[ir,ir] = A1
+                Er[ir,ir] = E1
+                Br[ir,:] = B1
+                Cr[:,ir] = C1
+            end
+         else
+             niuo = 0
+         end
+      else
+         niuc = 0
+         niuo = 0
+      end
+      nuc = nfuc+niuc
+      nuo = nfuo+niuo
+      if noseig
+         rE, rA22  = _svdlikeAE!(view(Ar,ir,ir), view(Er,ir,ir), nothing, nothing, view(Br,ir,:), view(Cr,:,ir), 
+                     fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false)
+         if rA22 > 0
+            i1 = ir[1:rE]
+            i2 = ir[rE+1:rE+rA22]
+            # make A22 = I
+            fast ? (A22 = UpperTriangular(Ar[i2,i2])) : (A22 = Diagonal(Ar[i2,i2]))
+            ldiv!(A22,view(Ar,i2,i1))
+            ldiv!(A22,view(Br,i2,:))
+            # apply simplified residualization formulas
+            Dr -= Cr[:,i2]*Br[i2,:]
+            Br[i1,:] -= Ar[i1,i2]*Br[i2,:]
+            Cr[:,i1] -= Cr[:,i2]*Ar[i2,i1]
+            Ar[i1,i1] -= Ar[i1,i2]*Ar[i2,i1]
+            ir = [i1; ir[rE+rA22+1:end]]
+         else
+            # restore saved matrices
+            Ar[ir,ir] = A1
+            Er[ir,ir] = E1
+            Br[ir,:] = B1
+            Cr[:,ir] = C1
+         end
+         return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, rA22
+      else
+         return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, 0
+      end
+   end
+end
+"""
+    lsminreal(A, B, C; fast = true, atol = 0, rtol, contr = true, obs = true, noseig = true) 
+              -> (Ar, Br, Cr, nuc, nuo)
+
+Reduce the linearization `(A-λI,B,C,0)` of a strictly proper rational matrix to a reduced form `(Ar-λI,Br,Cr,0)` such that
+
+             -1                 -1
+     C*(λI-A)  *B  = Cr*(λI-Ar)  *Br 
+     
+with the least possible order `nr` of `Ar` if `contr = true` and `obs = true`. 
+Such a realization is called `minimal` and satisfies:
+
+     (1) rank[Br Ar-λI] = nr for all λ (controllability);
+
+     (2) rank[Ar-λI; Cr] = nr for all λ (observability).
+
+The achieved dimensional reductions to fulfill conditions (1) and (2) are returned in `nuc` and `nuo`, respectively. 
+
+Some reduction steps can be skipped by appropriately selecting the keyword arguments `contr` and `obs`. 
+
+If `contr = false`, then the controllability condition (1) is not enforced. 
+
+If `obs = false`, then observability condition (2) is not enforced.
+
+To enforce conditions (1)-(2), orthogonal similarity transformations are performed on 
+the matrices of the original linearization `(A-λI,B,C,0)` to obtain a minimal linearization using
+structured pencil reduction algorithms, as the fast versions of the reduction techniques of the 
+full row rank pencil [B A-λI] and full column rank pencil [A-λI;C] proposed in [1]. 
+
+The underlying pencil manipulation algorithms employ rank determinations based on either the use of 
+rank revealing QR-decomposition with column pivoting, if `fast = true`, or the SVD-decomposition.
+The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
+
+The keyword arguments `atol` and `rtol`, specify, respectively, the absolute and relative tolerances for the 
+nonzero elements of matrices `A`, `B`, `C`.  
+
+[1] P. Van Dooreen, The generalized eigenstructure problem in linear system theory, 
+IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
+"""
+function lsminreal(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix; 
+                   atol::Real = zero(real(eltype(A))), 
+                   rtol::Real =  (size(A,1)+1)*eps(real(float(one(real(eltype(A))))))*iszero(atol), 
+                   fast::Bool = true, contr::Bool = true, obs::Bool = true)
+   n = LinearAlgebra.checksquare(A)
+   (n1,m) = size(B)
+   n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
+   (p,n1) = size(C)
+   n1 == n || throw(DimensionMismatch("A and C must have the same number of columns"))
+   T = promote_type(eltype(A), eltype(B), eltype(C))
+   T <: BlasFloat || (T = promote_type(Float64,T))        
+
+   A1 = copy_oftype(A,T)   
+   B1 = copy_oftype(B,T)
+   C1 = copy_oftype(C,T)
+
+   (n == 0 || m == 0 || p == 0) && (return A1, B1, C1, 0, 0)
+   # save system matrices
+   Ar = copy(A1)
+   Br = copy(B1)
+   Cr = copy(C1)
+   ir = 1:n
+   if contr
+      _, _, nr, nuc = sklf_right!(Ar, Br, Cr; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false)
+      if nuc > 0
+         ir = 1:nr
+         # save intermediary results
+         A1 = Ar[ir,ir]
+         B1 = Br[ir,:]
+         C1 = Cr[:,ir]
+      else
+         # restore original matrices 
+         Ar = copy(A1)
+         Br = copy(B1)
+         Cr = copy(C1)
+      end
+   else
+      nuc = 0
+   end
+   if obs
+      _, _, no, nuo = sklf_left!(view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false) 
+      if nuo > 0
+         ir = ir[end-no+1:end]
+      else
+         # restore saved matrices
+         Ar[ir,ir] = A1
+         Br[ir,:] = B1
+         Cr[:,ir] = C1
+      end
+   else
+      nuo = 0
+   end
+   return Ar[ir,ir], Br[ir,:], Cr[:,ir], nuc, nuo
 end
 """
     lsminreal(A, E, B, C, D; fast = true, atol1 = 0, atol2, rtol, contr = true, obs = true, noseig = true) 
@@ -408,7 +473,7 @@ end
 Reduce the linearization `(A-λE,B,C,D)` of a rational matrix to a reduced form `(Ar-λEr,Br,Cr,Dr)` such that
 
              -1                    -1
-     C*(A-λE)  *B + D = Cr*(Ar-λEr)  *Br + Dr
+     C*(λE-A)  *B + D = Cr*(λEr-Ar)  *Br + Dr
      
 with the least possible order `nr` of `Ar-λEr` if `contr = true`, `obs = true` and `nseig = true`. 
 Such a realization is called `minimal` and satisfies:
@@ -463,134 +528,106 @@ function lsminreal(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Boo
                    rtol::Real =  (size(A,1)+1)*eps(real(float(one(real(eltype(A))))))*iszero(max(atol1,atol2)), 
                    fast::Bool = true, contr::Bool = true, obs::Bool = true, noseig::Bool = true)
 
-    emat = (typeof(E) <: AbstractMatrix)
-    eident = !emat || isequal(E,I) 
-    n = LinearAlgebra.checksquare(A)
-    emat && (n,n) !== size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
-    p, m = size(D)
-    (n,m) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
-    (p,n) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
-    T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
-    eident || (T = promote_type(T,eltype(E)))
-    T <: BlasFloat || (T = promote_type(Float64,T))        
+   emat = (typeof(E) <: AbstractMatrix)
+   eident = !emat || isequal(E,I) 
+   n = LinearAlgebra.checksquare(A)
+   emat && (n,n) !== size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
+   p, m = size(D)
+   (n,m) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
+   (p,n) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
+   T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
+   eident || (T = promote_type(T,eltype(E)))
+   T <: BlasFloat || (T = promote_type(Float64,T))        
 
-    A1 = copy_oftype(A,T)   
-    eident ? E1 = copy(E) : E1 = copy_oftype(E,T)
-    B1 = copy_oftype(B,T)
-    C1 = copy_oftype(C,T)
-    D1 = copy_oftype(D,T)  
+   A1 = copy_oftype(A,T)   
+   eident ? E1 = copy(E) : E1 = copy_oftype(E,T)
+   B1 = copy_oftype(B,T)
+   C1 = copy_oftype(C,T)
+   D1 = copy_oftype(D,T)  
 
-    (n == 0 || m == 0 || p == 0) && (return A1, E1, B1, C1, D1, 0, 0, 0)
-    # save system matrices
-    Ar = copy(A1)
-    Br = copy(B1)
-    Cr = copy(C1)
-    Dr = copy(D1)
-    Er = copy(E1)
-    ir = 1:n
-    if eident
-        if contr
-           _, _, nr, nuc = sklf_right!(Ar, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol1, rtol = rtol, withQ = false) 
-           if nuc > 0
-              ir = 1:nr
-              # save intermediary results
-              A1 = Ar[ir,ir]
-              B1 = Br[ir,:]
-              C1 = Cr[:,ir]
-           else
-              # restore original matrices 
-              Ar = copy(A1)
-              Br = copy(B1)
-              Cr = copy(C1)
-           end
-        else
-           nuc = 0
-        end
-        if obs
-            _, _, no, nuo = sklf_left!(view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); fast = fast, atol1 = atol1, atol2 = atol1, rtol = rtol, withQ = false) 
-            if nuo > 0
-               ir = ir[end-no+1:end]
-            else
-               # restore saved matrices
-               Ar[ir,ir] = A1
-               Br[ir,:] = B1
-               Cr[:,ir] = C1
-            end
-        else
-           nuo = 0
-        end
-        return Ar[ir,ir], emat ? Er[ir,ir] : I, Br[ir,:], Cr[:,ir], Dr, nuc, nuo, 0
-    else
-        if contr  
-            _, _, _, nr, nfuc, niuc = sklf_right!(Ar, Er, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol2, atol3 = atol1, rtol = rtol, withQ = false, withZ = false) 
-            nuc = nfuc+niuc
-            if nuc > 0
-               ir = 1:nr
-               # save intermediary results
-               A1 = Ar[ir,ir]
-               E1 = Er[ir,ir]
-               B1 = Br[ir,:]
-               C1 = Cr[:,ir]
-            else
-               # restore original matrices 
-               Ar = copy(A1)
-               Er = copy(E1)
-               Br = copy(B1)
-               Cr = copy(C1)
-            end
+   (n == 0 || m == 0 || p == 0) && (return A1, E1, B1, C1, D1, 0, 0, 0)
+
+   if eident
+      A1, B1, C1, nuc, nuo  = lsminreal(A1, B1, C1, contr = contr, obs = obs, fast = fast, atol = atol1, rtol = rtol)
+      return A1, emat ? Matrix{T}(I,size(A1)...) : I, B1, C1, D1, nuc, nuo, 0
+   else
+      # save system matrices
+      Ar = copy(A1)
+      Br = copy(B1)
+      Cr = copy(C1)
+      Dr = copy(D1)
+      Er = copy(E1)
+      ir = 1:n
+      if contr  
+         _, _, _, nr, nfuc, niuc = sklf_right!(Ar, Er, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol2, atol3 = atol1, rtol = rtol, withQ = false, withZ = false) 
+         nuc = nfuc+niuc
+         if nuc > 0
+            ir = 1:nr
+            # save intermediary results
+            A1 = Ar[ir,ir]
+            E1 = Er[ir,ir]
+            B1 = Br[ir,:]
+            C1 = Cr[:,ir]
          else
-            nuc = 0
+            # restore original matrices 
+            Ar = copy(A1)
+            Er = copy(E1)
+            Br = copy(B1)
+            Cr = copy(C1)
          end
-         if obs 
-            _, _, _, no, nfuo, niuo = sklf_left!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
-                                               fast = fast, atol1 = atol1, atol2 = atol2, atol3 = atol1, 
-                                               rtol = rtol, withQ = false, withZ = false) 
-             nuo = nfuo+niuo
-             if nuo > 0
-                ir = ir[end-no+1:end]
-                # save intermediary results
-                A1 = Ar[ir,ir]
-                E1 = Er[ir,ir]
-                B1 = Br[ir,:]
-                C1 = Cr[:,ir]
-             else
-                # restore saved matrices
-                Ar[ir,ir] = A1
-                Er[ir,ir] = E1
-                Br[ir,:] = B1
-                Cr[:,ir] = C1
-             end
+      else
+         nuc = 0
+      end
+      if obs 
+         _, _, _, no, nfuo, niuo = sklf_left!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
+                                            fast = fast, atol1 = atol1, atol2 = atol2, atol3 = atol1, 
+                                            rtol = rtol, withQ = false, withZ = false) 
+          nuo = nfuo+niuo
+          if nuo > 0
+             ir = ir[end-no+1:end]
+             # save intermediary results
+             A1 = Ar[ir,ir]
+             E1 = Er[ir,ir]
+             B1 = Br[ir,:]
+             C1 = Cr[:,ir]
+          else
+             # restore saved matrices
+             Ar[ir,ir] = A1
+             Er[ir,ir] = E1
+             Br[ir,:] = B1
+             Cr[:,ir] = C1
+          end
+      else
+          nuo = 0
+      end
+      if noseig
+         rE, rA22  = _svdlikeAE!(view(Ar,ir,ir), view(Er,ir,ir), nothing, nothing, view(Br,ir,:), view(Cr,:,ir), 
+                     fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false)
+         if rA22 > 0
+            i1 = ir[1:rE]
+            i2 = ir[rE+1:rE+rA22]
+            # make A22 = I
+            fast ? (A22 = UpperTriangular(Ar[i2,i2])) : (A22 = Diagonal(Ar[i2,i2]))
+            ldiv!(A22,view(Ar,i2,i1))
+            ldiv!(A22,view(Br,i2,:))
+            # apply simplified residualization formulas
+            Dr -= Cr[:,i2]*Br[i2,:]
+            Br[i1,:] -= Ar[i1,i2]*Br[i2,:]
+            Cr[:,i1] -= Cr[:,i2]*Ar[i2,i1]
+            Ar[i1,i1] -= Ar[i1,i2]*Ar[i2,i1]
+            ir = [i1; ir[rE+rA22+1:end]]
          else
-             nuo = 0
+            # restore saved matrices
+            Ar[ir,ir] = A1
+            Er[ir,ir] = E1
+            Br[ir,:] = B1
+            Cr[:,ir] = C1
          end
-         if noseig
-            rE, rA22  = _svdlikeAE!(view(Ar,ir,ir), view(Er,ir,ir), nothing, nothing, view(Br,ir,:), view(Cr,:,ir), 
-                        fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false)
-            if rA22 > 0
-               i1 = ir[1:rE]
-               i2 = ir[rE+1:rE+rA22]
-               # make A22 = I
-               fast ? (A22 = UpperTriangular(Ar[i2,i2])) : (A22 = Diagonal(Ar[i2,i2]))
-               ldiv!(A22,view(Ar,i2,i1))
-               ldiv!(A22,view(Br,i2,:))
-               # apply simplified residualization formulas
-               Dr -= Cr[:,i2]*Br[i2,:]
-               Br[i1,:] -= Ar[i1,i2]*Br[i2,:]
-               Cr[:,i1] -= Cr[:,i2]*Ar[i2,i1]
-               Ar[i1,i1] -= Ar[i1,i2]*Ar[i2,i1]
-               ir = [i1; ir[rE+rA22+1:end]]
-            else
-               # restore saved matrices
-               Ar[ir,ir] = A1
-               Er[ir,ir] = E1
-               Br[ir,:] = B1
-               Cr[:,ir] = C1
-            end
-            return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, rA22
-         else
-            return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, 0
-         end
-     end
+         return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, rA22
+      else
+         return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nuo, 0
+      end
+   end
 end
 """
     lpsminreal(A, E, B, F, C, G, D, H; fast = true, atol1 = 0, atol2, rtol, contr = true, obs = true)  
@@ -601,7 +638,7 @@ Reduce the linearization `(A-λE,B-λF,C-λG,D-λH)` of a rational matrix to a r
 invertible upper triangular matrices `V` and `W`, 
 
                       -1                                     -1
-     V'*((C-λG)*(A-λE)  *(B-λF) + D-λH)*W = (Cr-λGr)*(Ar-λEr)  *(Br-λFr) + Dr-λHr
+     V'*((C-λG)*(λE-A)  *(B-λF) + D-λH)*W = (Cr-λGr)*(λEr-Ar)  *(Br-λFr) + Dr-λHr
      
 with the least possible order `nr` of `Ar-λEr` if `contr = true` and `obs = true`.
 Such a realization is called `strongly minimal` and satisfies:

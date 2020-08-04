@@ -8,7 +8,7 @@ makedocs(
   format   = Documenter.HTML(prettyurls = false),
   pages    = [
      "Home"   => "index.md",
-     "Library" => [
+     "Library" => [ 
         "klftools.md",
         "sklftools.md",
         "klfapps.md",
@@ -16,7 +16,9 @@ makedocs(
         "pregular.md",
         "lstools.md",
         "pmtools.md",
-        "pmapps.md"
+        "pmapps.md",
+        "rmtools.md",
+        "rmapps.md"
      ],
      "Internal" => [
         "klftools_int.md"

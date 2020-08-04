@@ -93,8 +93,8 @@ val, info = pmeigvals(0,grade=3, fast = fast)
 val, iz, info = pmzeros(0, fast = fast)
 @test val ≈ Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [0], [], 0, 0)
 
-val, ip, info = pmpoles(0, fast = fast)
-@test val ≈ Float64[] && ip == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [], [], 0, 2)
+val, ip, id = pmpoles(0, fast = fast)
+@test val ≈ Float64[] && ip == [] && id == []
 
 @test pmrank(0) == 0 && pmrank(0,fastrank=false) == 0
 
@@ -122,8 +122,8 @@ val, info = pmeigvals(1,grade=3, fast = fast)
 val, iz, info = pmzeros(1, fast = fast)
 @test val ≈ Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [], [], 0, 1)
 
-val, ip, info = pmpoles(1, fast = fast)
-@test val ≈ Float64[] && ip == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [], [], 0, 2)
+val, ip, id = pmpoles(1, fast = fast)
+@test val ≈ Float64[] && ip == [] && id == []
 
 @test pmrank(1) == 1 && pmrank(1,fastrank=false) == 1
 
@@ -161,8 +161,8 @@ val, iz, info = pmzeros(λ, fast = fast)
 val = pmroots(λ, fast = fast)
 @test val ≈ [0.] 
 
-val, ip, info = pmpoles(λ, fast = fast)
-@test val == [Inf] && ip == [1] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [], [2], 0, 2)
+val, ip, id = pmpoles(λ, fast = fast)
+@test val == [Inf] && ip == [1] && id == [2]
 
 @test pmrank(λ) == 1 && pmrank(λ,fastrank=false) == 1
 
@@ -195,8 +195,8 @@ val, info = pmeigvals(P,grade=3, fast = fast)
 val, iz, info = pmzeros(P, fast = fast)
 @test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [], [], 0, 1)
 
-val, ip, info = pmpoles(P, fast = fast)
-@test val == [Inf] && ip == [1] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [], [1, 2], 0, 3)
+val, ip, id = pmpoles(P, fast = fast)
+@test val == [Inf] && ip == [1] && id == [1, 2]
 
 @test pmrank(P) == 1 && pmrank(P,fastrank=false) == 1
 
@@ -230,8 +230,8 @@ val, info = pmeigvals(P,grade=3, fast = fast)
 val, iz, info = pmzeros(P, fast = fast)
 @test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [1], [], 0, 1)
 
-val, ip, info = pmpoles(P, fast = fast)
-@test val == [Inf, Inf] && ip == [2] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [], [2, 2, 4], 0, 4)
+val, ip, id = pmpoles(P, fast = fast)
+@test val == [Inf, Inf] && ip == [2] && id == [2, 2, 4]
 
 @test pmrank(P) == 1 && pmrank(P,fastrank=false) == 1
 
@@ -262,20 +262,20 @@ val, info = pmeigvals(P,grade = 3, fast = fast)
 val, iz, info = pmzeros(P, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [2], 1, 2)
 
-val, ip, info = pmpoles(P, fast = fast)
-@test val ≈ [Inf, Inf] && ip == [2] && (info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [2, 2, 2, 2, 4], 0, 6)
+val, ip, id = pmpoles(P, fast = fast)
+@test val ≈ [Inf, Inf] && ip == [2] && id == [2, 2, 2, 2, 4]
 
-val, iz, info, ν  = pmzeros1(P, fast = fast)
-@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 3) && ν  == 1
+val, iz, info  = pmzeros1(P, fast = fast)
+@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2) 
 
-val, ip, info, ν = pmpoles1(P, fast = fast)
-@test val ≈ [Inf, Inf] && ip == [2] && (info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [1, 1, 1, 1, 3], 0, 7) && ν  == 1
+val, ip, id = pmpoles1(P, fast = fast)
+@test val ≈ [Inf, Inf] && ip == [2] && id == [1, 1, 1, 1, 3]
 
-val, iz, info, ν = pmzeros2(P, fast = fast)
-@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1, 1, 1, 1], 1, 6) && ν  == 4
+val, iz, info = pmzeros2(P, fast = fast)
+@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1, 1, 1, 1], 1, 2) 
 
-val, ip, info, ν = pmpoles2(P, fast = fast)
-@test val ≈ [Inf, Inf] && ip == [2] && (info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [1, 3], 0, 4) && ν  == 4
+val, ip, id = pmpoles2(P, fast = fast)
+@test val ≈ [Inf, Inf] && ip == [2] && id == [1, 3]
 
 @test !ispmregular(P) && !ispmregular(P,fastrank=false)
 
@@ -310,23 +310,23 @@ val, info = pmeigvals(P,CF1=false, grade = 3, fast = fast)
 val, iz, info = pmzeros(P, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [2], 1, 2)
 
-val, iz, info = pmpoles(P, fast = fast)
-@test val ≈ [Inf, Inf] && iz == [2] && (info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [2, 2, 2, 2, 4], 0, 6)
+val, iz, id = pmpoles(P, fast = fast)
+@test val ≈ [Inf, Inf] && iz == [2] && id == [2, 2, 2, 2, 4]
 
-val, iz, info = pmpoles(P,CF1=false, fast = fast)
-@test val ≈ [Inf, Inf] && iz == [2] && (info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [2, 2, 2, 2, 4], 0, 6)
+val, iz, id = pmpoles(P,CF1=false, fast = fast)
+@test val ≈ [Inf, Inf] && iz == [2] && id == [2, 2, 2, 2, 4]
 
-val, iz, info, ν = pmzeros1(P, fast = fast)
-@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 3) && ν == 1
+val, iz, info = pmzeros1(P, fast = fast)
+@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2) 
 
-val, ip, info, ν = pmpoles1(P, fast = fast)
-@test val ≈ [Inf, Inf] && ip == [2] && (info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [1, 1, 1, 1, 3], 0, 7) && ν == 1
+val, ip, id = pmpoles1(P, fast = fast)
+@test val ≈ [Inf, Inf] && ip == [2] && id == [1, 1, 1, 1, 3]
 
-val, iz, info, ν = pmzeros2(P, fast = fast)
-@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1, 1, 1, 1], 1, 6) && ν == 4
+val, iz, info = pmzeros2(P, fast = fast)
+@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1, 1, 1, 1], 1, 2) 
 
-val, ip, info, ν = pmpoles2(P, fast = fast)
-@test val ≈ [Inf, Inf] && ip == [2] && (info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [1, 3], 0, 4) && ν == 4
+val, ip, id = pmpoles2(P, fast = fast)
+@test val ≈ [Inf, Inf] && ip == [2] && id == [1, 3]
 
 
 @test pmrank(P) == 2 && pmrank(P,fastrank=false) == 2
@@ -369,14 +369,14 @@ val, iz, kinfo  = pmzeros(P, CF1 = true, fast = fast)
 @test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[2], 0, 2)
 val, iz, kinfo  = pmzeros(P, CF1 = false, fast = fast)
 @test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[2], 0, 2)
-val, iz, kinfo, ν  = pmzeros2(P, fast = fast)
-@test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[1, 1, 2], 0, 4) && ν  == 2
+val, iz, kinfo  = pmzeros2(P, fast = fast)
+@test val == [Inf] && iz == [1] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[1, 1, 2], 0, 2) 
 
 N = zeros(1,1); M = ones(1,1);
 P = zeros(1,1,3)
 P[:,:,1] = M; P[:,:,2] = -N;
-val, iz, kinfo, ν  = pmzeros2(P, fast = fast)
-@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[1], 0, 1) && ν  == 0
+val, iz, kinfo  = pmzeros2(P, fast = fast)
+@test val == [] && iz == [] && (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], Int64[], Int64[1], 0, 1) 
 
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 P = zeros(2,2,3)
@@ -462,34 +462,29 @@ val, info = pmeigvals(P,CF1=false, grade = 5, fast = fast)
 val, iz, info = pmzeros(P, fast = fast)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 2)
 
-val, iz, info = pmpoles(P,CF1=false, fast = fast)
-@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && iz == [4, 4] && 
-(info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [4, 8, 8], 0, 5)
+val, ip, id = pmpoles(P,CF1=false, fast = fast)
+@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [4, 8, 8]
 
-val, ip, info = pmpoles(P,CF1=true, fast = fast)
-@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && 
-(info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [4, 8, 8], 0, 5)
+val, ip, id = pmpoles(P,CF1=true, fast = fast)
+@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [4, 8, 8]
 
-val, iz, info, ν = pmzeros1(P, fast = fast)
-@test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 8) && ν == 6
+val, iz, info = pmzeros1(P, fast = fast)
+@test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 2) 
 
-val, iz, info, ν = pmzeros1(P1, fast = fast)
-@test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [8], [], 0, 8) && ν == 6
+val, iz, info = pmzeros1(P1, fast = fast)
+@test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [8], [], 0, 2) 
 
-val, ip, info, ν = pmpoles1(P, fast = fast, atol = abstol)
-@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && 
-(info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [1, 5, 5], 0, 11) && ν == 6
+val, ip, id = pmpoles1(P, fast = fast, atol = abstol)
+@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [1, 5, 5]
 
-val, ip, info, ν = pmpoles1(P1, fast = fast, atol = abstol)
-@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && 
-(info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [1, 5, 5], 0, 11) && ν == 6
+val, ip, id = pmpoles1(P1, fast = fast, atol = abstol)
+@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [1, 5, 5]
 
-val, iz, info, ν = pmzeros2(P, fast = fast)
-@test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [1, 1, 1, 1], 0, 12)  && ν == 10
+val, iz, info = pmzeros2(P, fast = fast)
+@test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [1, 1, 1, 1], 0, 2)  
 
-val, ip, info, ν = pmpoles2(P, fast = fast)
-@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && 
-(info.rki, info.lki, info.id, info.nf,info.nrank) == ([], [], [5, 5], 0, 10) && ν == 10
+val, ip, id = pmpoles2(P, fast = fast)
+@test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [5, 5]
 
 
 @test pmrank(P) == 2 && pmrank(P,fastrank=false) == 2

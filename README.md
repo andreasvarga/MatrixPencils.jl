@@ -1,5 +1,5 @@
 # MatrixPencils.jl
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3837409.svg)](https://doi.org/10.5281/zenodo.3837409)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3894504.svg)](https://doi.org/10.5281/zenodo.3894504)
 [![Travis](https://travis-ci.com/andreasvarga/MatrixPencils.jl.svg?branch=master)](https://travis-ci.com/andreasvarga/MatrixPencils.jl)
 [![codecov.io](https://codecov.io/gh/andreasvarga/MatrixPencils.jl/coverage.svg?branch=master)](https://codecov.io/gh/andreasvarga/MatrixPencils.jl?branch=master)
 [![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://andreasvarga.github.io/MatrixPencils.jl/dev/)
@@ -53,23 +53,23 @@ The current version of the package includes the following functions:
 
 **Some applications of matrix pencil computations**
 
-* **pkstruct** Determination of the complete Kronecker structure.  
-* **prank** Determination of the normal rank.
+* **pkstruct** Determination of the Kronecker structure information.  
 * **peigvals** Computation of the finite and infinite eigenvalues.
 * **pzeros** Computation of the finite and infinite zeros.
+* **prank** Determination of the normal rank.
 
 **Some applications to structured linear matrix pencils of the form `[A-λE B; C D]`**
 
-* **spkstruct**  Determination of the complete Kronecker structure.
-* **sprank**  Determination of the normal rank.
+* **spkstruct**  Determination of the Kronecker structure information.
 * **speigvals**  Computation of the finite and infinite eigenvalues.
 * **spzeros**  Computation of the finite and infinite zeros.
+* **sprank**  Determination of the normal rank.
 
-**Manipulation of linearizations of the form `[A-λE B; C D]` and `[A-λE B-λF; C-λG D-λH]` of polynomial or rational matrices**
+**Manipulation of linearizations of polynomial or rational matrices**
 
-* **lsminreal** Computation of minimal order linearizations `[A-λE B; C D]` of rational matrices.
-* **lsminreal2** Computation of minimal order linearizations `[A-λE B; C D]` of rational matrices (potentially more efficient).
-* **lpsminreal**  Computation of strong minimal pencil based linearizations `[A-λE B-λF; C-λG D-λH]` of rational matrices.
+* **lsminreal** Computation of minimal order linearizations of the form `[A-λE B; C D]`.
+* **lsminreal2** Computation of minimal order linearizations of the form `[A-λE B; C D]` (potentially more efficient).
+* **lpsminreal**  Computation of strong minimal pencil based linearizations of the form `[A-λE B-λF; C-λG D-λH]`.
 * **lsequal**  Check the equivalence of two linearizations.
 * **lpsequal**  Check the equivalence of two pencil based linearizations.  
 
@@ -104,11 +104,35 @@ The current version of the package includes the following functions:
 * **ispmregular**  Checking the regularity of a polynomial matrix.
 * **ispmunimodular**  Checking the unimodularity of a polynomial matrix.
 
+**Manipulation of rational matrices** 
+
+* **rm2lspm** Representation of a rational matrix as a linearization of its strictly proper part plus its polynomial part.
+* **rmeval** Evaluation of a rational matrix for a given value of its argument.
+* **rm2ls** Building a descriptor system based structured linearization of a rational matrix.
+* **ls2rm** Computation of the rational matrix from its descriptor system based structured linearization.
+* **rm2lps** Building a pencil based structured linearization of a rational matrix.
+* **lps2rm** Computation of the rational matrix from its pencil based structured linearization.
+* **lpmfd2ls** Building a descriptor system based structured linearization of a left polynomial matrix fractional description.  
+* **rpmfd2ls** Building a descriptor system based structured linearization of a right polynomial matrix fractional description.
+* **lpmfd2lps** Building a pencil based structured linearization of a left polynomial matrix fractional description.
+* **rpmfd2lps** Building a pencil based structured linearization of a right polynomial matrix fractional description.
+* **pminv2ls** Building a descriptor system based structured linearization of the inverse of a polynomial matrix.
+* **pminv2lps** Building a pencil based structured linearization of the inverse of a polynomial matrix.
+
+**Some applications to rational matrices**
+
+* **rmkstruct**  Determination of the Kronecker structure and infinite pole-zero structure.
+* **rmzeros**  Computation of the finite and infinite zeros using structured pencil based linearization.
+* **rmzeros1**  Computation of the finite and infinite zeros using linear pencil based structured linearization.
+* **rmpoles**  Computation of the infinite poles using structured pencil based linearization.
+* **rmpoles1**  Computation of the infinite poles using linear pencil based structured linearization.
+* **rmrank**  Determination of the normal rank.
+
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as new tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), building linearizations of polynomial matrices in other bases (e.g., orthogonal polynomial bases), applications of structured linear pencils manipulations to rational matrix problems, etc.
+The collection of tools will be extended by adding new functionality, such as new tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), building linearizations of polynomial matrices in other bases (e.g., orthogonal polynomial bases), etc.
 
 ## Supplimentary information
 

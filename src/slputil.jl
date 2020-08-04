@@ -341,7 +341,7 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B
          T <: Complex && (v = conj(v))
          it = 1:n-i+1
          larf!('L',v, τ[i], view(A,it,:))
-         larf!('R',v, conj(τ[i]), view(A1,:,it))
+         larf!('R',v, conj(τ[i]), view(A,:,it))
          ismissing(B) || larf!('L',v, τ[i], view(B,it,:))
          withQ && larf!('R',v, conj(τ[i]), view(Q,:,it))
       end
@@ -367,8 +367,8 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B
       ρ == 0 && (return ρ)
       Q1 = reverse(SVD.V,dims=2)
       withQ && (Q[:,jcs] = Q[:,jcs]*Q1)
-      A1[jcs,1:n+ctrail] = Q1'*A1[jcs,1:n+ctrail]
-      A1[ia,jcs] = A1[ia,jcs]*Q1
+      A[jcs,:] = Q1'*A[jcs,:]
+      A[ia,jcs] = A[ia,jcs]*Q1
       ismissing(B) || (B[jcs,:] = Q1'*B[jcs,:])
    end
    return ρ 

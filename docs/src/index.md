@@ -78,9 +78,9 @@ The current version of the package includes the following functions:
 
 | Function | Description |
 | :--- | :--- |
-| **[`lsminreal`](@ref)** | Computation of irreducible descriptor system based linearizations `[A-λE B; C D]` of rational matrices |
-| **[`lsminreal2`](@ref)** | Computation of irreducible descriptor system based linearizations `[A-λE B; C D]` of rational matrices (potentially more efficient)|
-| **[`lpsminreal`](@ref)** | Computation of strongly minimal pencil based linearizations `[A-λE B-λF; C-λG D-λH]` of rational matrices |
+| **[`lsminreal`](@ref)** | Computation of irreducible descriptor system based linearizations  |
+| **[`lsminreal2`](@ref)** | Computation of irreducible descriptor system based linearizations (potentially more efficient)|
+| **[`lpsminreal`](@ref)** | Computation of strongly minimal pencil based linearizations |
 | **[`lsequal`](@ref)** | Check the equivalence of two descriptor system based linearizations |
 | **[`lpsequal`](@ref)** | Check the equivalence of two pencil based linearizations |
 
@@ -93,6 +93,7 @@ The current version of the package includes the following functions:
 | **[`pmdeg`](@ref)** | Determination of the degree of a polynomial matrix |
 | **[`pmeval`](@ref)** | Evaluation of a polynomial matrix for a given value of its argument.|
 | **[`pmreverse`](@ref)** | Building the reversal of a polynomial matrix  |
+| **[`pmdivrem`](@ref)** | Quotients and remainders of elementwise divisions of two polynomial matrices  |
 | **[`pm2lpCF1`](@ref)** | Building a linearization in the first companion Frobenius form  |
 | **[`pm2lpCF2`](@ref)** | Building a linearization in the second companion Frobenius form  |
 | **[`pm2ls`](@ref)** | Building a descriptor system based structured linearization `[A-λE B; C D]` of a polynomial matrix |
@@ -119,6 +120,34 @@ The current version of the package includes the following functions:
 | **[`ispmregular`](@ref)** | Checking the regularity of a polynomial matrix |
 | **[`ispmunimodular`](@ref)** | Checking the unimodularity of a polynomial matrix |
 
+**Manipulation of rational matrices** 
+
+| Function | Description |
+| :--- | :--- |
+| **[`rm2lspm`](@ref)** | Representation of a rational matrix as a linearization of its strictly proper part plus its polynomial part |
+| **[`rmeval`](@ref)** | Evaluation of a rational matrix for a given value of its argument.|
+| **[`rm2ls`](@ref)** | Building a descriptor system based structured linearization `[A-λE B; C D]` of a rational matrix |
+| **[`ls2rm`](@ref)** | Computation of the rational matrix from its descriptor system based structured linearization |
+| **[`rm2lps`](@ref)** | Building a pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a rational matrix |
+| **[`lps2rm`](@ref)** | Computation of the rational matrix from its pencil based structured linearization |
+| **[`lpmfd2ls`](@ref)** | Building a descriptor system based structured linearization `[A-λE B; C D]` of a left polynomial matrix fractional description |
+| **[`rpmfd2ls`](@ref)** | Building a descriptor system based structured linearization `[A-λE B; C D]` of a right polynomial matrix fractional description |
+| **[`lpmfd2lps`](@ref)** | Building a pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a left polynomial matrix fractional description |
+| **[`rpmfd2lps`](@ref)** | Building a pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of a right polynomial matrix fractional description |
+| **[`pminv2ls`](@ref)** | Building a descriptor system based structured linearization `[A-λE B; C D]` of the inverse of a polynomial matrix |
+| **[`pminv2lps`](@ref)** | Building a pencil based structured linearization `[A-λE B-λF; C-λG D-λH]` of the inverse of a polynomial matrix |
+
+**Some applications to rational matrices** 
+
+| Function | Description |
+| :--- | :--- |
+| **[`rmkstruct`](@ref)** | Determination of the Kronecker and infinite zero-pole structure using descriptor system based structured linearization |
+| **[`rmzeros`](@ref)** | Computation of the finite and infinite zeros using descriptor system based structured linearization |
+| **[`rmzeros1`](@ref)** | Computation of the finite and infinite zeros using pencil based structured linearization |
+| **[`rmpoles`](@ref)** | Computation of the (infinite) poles using descriptor system based structured linearization  |
+| **[`rmpoles1`](@ref)** | Computation of the (infinite) poles using pencil based structured linearization |
+| **[`rmrank`](@ref)** | Determination of the normal rank |
+
 A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
 
 ## Future plans
@@ -127,6 +156,12 @@ The collection of tools will be extended by adding new functionality, such as to
 (e.g., orthogonal polynomial bases) or in sparse polynomial representations, applications of structured matrix pencils manipulations to rational matrix problems, etc.
 
 ## Release Notes
+
+### Version 1.1
+
+This minor release includes implementations of computational procedures to manipulate rational matrices specified as ratios of elements of polynomial matrices of numerators and denominators. The
+numerator and denominator polynomial matrices can be alternatively specified as matrices, vectors or scalars of elements of the `Polynomial` type
+provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.  Several linearization functions are available which allow the extension of pencil manipulation techniques to rational matrices. Some straightforward applications are covered such as the computation of finite and infinite poles and zeros, the determination of the normal rank, the determination of Kronecker indices and finite and infinite pole and zero structures. Several lower level functions have been implemented to perform polynomial operations (such as product, exact division, long division) or to compute the greatest common divisor or least common multiple of two polynomials. These function underly the implementation of several linearizations techniques of rational matrices. The user interfaces of functions **pmpoles**, **pmpoles1** and **pmpoles2** have been simplified and a new function has been implemented to perform elementwise long divison of two polynomial matrices.
 
 ### Version 1.0.2
 

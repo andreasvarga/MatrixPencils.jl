@@ -26,7 +26,25 @@ function poly2pm(PM::Matrix{Polynomial{T}}; grade::Union{Int,Missing} = missing)
    end
    return P      
 end
-function poly2pm(PM::Matrix{T}; grade::Union{Int,Missing} = missing) where T
+function poly2pm(PM::Matrix{Polynomial}; grade::Union{Int,Missing} = missing) 
+   p, m = size(PM)
+   degs = degree.(PM)
+   d = maximum(degs)
+   ismissing(grade) ? k = d+1 : k = max(d,grade)+1
+   T = Int
+   for i = 1:p*m
+       T = promote_type(T,eltype(PM[i])) 
+   end 
+   k == 0 && (return zeros(T,p,m,1))
+   P = zeros(T,p,m,k)
+   for j = 1:m
+      for i = 1:p
+         degs[i,j] < 0 || (P[i,j,1:degs[i,j]+1] = coeffs(PM[i,j])) 
+      end
+   end
+   return P      
+end
+function poly2pm(PM::Matrix{T}; grade::Union{Int,Missing} = missing) where T <: Number
    p, m = size(PM)
    d = 0
    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
@@ -51,7 +69,23 @@ function poly2pm(PM::Vector{Polynomial{T}}; grade::Union{Int,Missing} = missing)
    end
    return P      
 end
-function poly2pm(PM::Vector{T}; grade::Union{Int,Missing} = missing) where T
+function poly2pm(PM::Vector{Polynomial}; grade::Union{Int,Missing} = missing)
+   m = length(PM)
+   degs = degree.(PM)
+   d = maximum(degs)
+   ismissing(grade) ? k = d+1 : k = max(d,grade)+1
+   T = Int
+   for i = 1:m
+       T = promote_type(T,eltype(PM[i])) 
+   end 
+   k == 0 && (return zeros(T,m,1,1))
+   P = zeros(T,m,1,k)
+   for i = 1:m
+      degs[i] < 0 || (P[i,1,1:degs[i]+1] = coeffs(PM[i])) 
+   end
+   return P      
+end
+function poly2pm(PM::Vector{T}; grade::Union{Int,Missing} = missing) where T <: Number
    m = length(PM)
    d = 0
    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
@@ -64,7 +98,7 @@ function poly2pm(PM::Vector{T}; grade::Union{Int,Missing} = missing) where T
    end
    return P      
 end
-function poly2pm(PM::Union{Adjoint{T,Vector{T}},Transpose{T,Vector{T}}}; grade::Union{Int,Missing} = missing) where T
+function poly2pm(PM::Union{Adjoint{T,Vector{T}},Transpose{T,Vector{T}}}; grade::Union{Int,Missing} = missing) where T <: Number
    m = length(PM)
    d = 0
    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
@@ -201,6 +235,59 @@ end
 pmreverse(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where T =
       pmreverse(poly2pm(P); kwargs...)
 """
+    pmdivrem(N,D) -> (Q, R)
+
+Compute the quotients in `Q(λ)` and remainders in `R(λ)` of the elementwise polynomial divisions `N(λ)./D(λ)`. 
+
+`N(λ)` is a polynomial matrix of the form `N(λ) = N_1 + λ N_2 + ... + λ**k N_(k+1)`, for which  
+the coefficient matrices `N_i`, `i = 1, ..., k+1` are stored in the 3-dimensional matrix `N`, 
+where `N[:,:,i]` contains the `i`-th coefficient matrix `N_i` (multiplying `λ**(i-1)`). 
+
+`D(λ)` is a polynomial matrix of the form `D(λ) = D_1 + λ D_2 + ... + λ**l D_(l+1)`, for which 
+the coefficient matrices `D_i`, `i = 1, ..., l+1`, are stored in the 3-dimensional matrix `D`, 
+where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(i-1)`). 
+
+Alternatively, `N(λ)` and `D(λ)` can be specified as matrices of elements of the `Polynomial` type 
+provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+
+The polynomial matrices of quotients `Q(λ)` and remainders `R(λ)` are stored in the 3-dimensional 
+matrices `Q` and  `R`, respectively, where `Q[:,:,i]` and `R[:,:,i]` contain the `i`-th 
+coefficient matrix multiplying `λ**(i-1)`. 
+"""
+function pmdivrem(N::AbstractArray{T1,3},D::AbstractArray{T2,3}) where {T1,T2}
+    p, m, k = size(N)
+    p1, m1, k1 = size(D)
+    (p,m) == (p1, m1) || error("Numerator and denominator polynomial matrices must have the same size")
+
+    degQ1 = 0
+    degD1 = 0
+    for j = 1:m
+        for i = 1:p
+            n1 = poldeg1(N[i,j,1:k])
+            d1 = poldeg1(D[i,j,1:k1])
+            d1 == 0 && error("DivideError: zero denominator polynomial")
+            n1 < d1 || (degQ1 = max(degQ1,n1-d1+1))
+            degD1 = max(degD1,d1)
+        end
+    end
+    T = eltype(one(T1)/one(T2))
+    R = zeros(T,p,m,max(degD1-1,1))
+    Q = zeros(T,p,m,max(degQ1,1))
+    for j = 1:m
+        for i = 1:p
+            q, r = poldivrem(N[i,j,1:k],D[i,j,1:k1])
+            nq1 = poldeg1(q)
+            nr1 = poldeg1(r)
+            nq1 == 0 || (Q[i,j,1:nq1] = copy_oftype(q[1:nq1],T))
+            nr1 == 0 || (R[i,j,1:nr1] = copy_oftype(r[1:nr1],T))
+        end
+    end
+    return Q[:,:,1:pmdeg(Q)+1], R[:,:,1:pmdeg(R)+1]
+end
+pmdivrem(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat},
+         D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}) where {T1,T2} = 
+         pmdivrem(poly2pm(N),poly2pm(D))
+"""
      pm2lpCF1(P; grade = l) -> (M, N)
 
 Build a strong linearization `M - λN` of a polynomial matrix `P(λ)` in the first companion Frobenius form. 
@@ -318,13 +405,13 @@ pm2lpCF2(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs.
      pm2ls(P; contr = false, obs = false, noseig = false, minimal = false,
               fast = true, atol = 0, rtol) -> (A, E, B, C, D)
 
-Build a structured linearization 
+Build a structured linearization as a system matrix `S(λ)` of the form
 
-              | A-λE | B | 
-     M - λN = |------|---|
-              |  C   | D |  
+            | A-λE | B | 
+     S(λ) = |------|---|
+            |  C   | D |  
       
-of a polynomial matrix `P(λ)` which preserves a part of the Kronecker structure of `P(λ)`. 
+of the polynomial matrix `P(λ)` which preserves a part of the Kronecker structure of `P(λ)`. 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -338,16 +425,18 @@ If `d` is the degree of `P(λ)` and `n` is the order of `A-λE`, then the comput
 (1) `A-λE` is regular and `P(λ) = C*inv(λE-A)*B+D`;
 
 (2) `rank[B A-λE] = n` (controllability) if `minimal = true` or `contr = true`, in which case 
-the finite and right Kronecker structures are preserved;
+the right Kronecker structure is preserved;
 
 (3) `rank[A-λE; C] = n` (observability)  if `minimal = true` or `contr = true`, in which case 
-the finite and left Kronecker structures are preserved;
+the left Kronecker structure is preserved;
 
 (4) `A-λE` has no non-dynamic modes if `minimal = true` or `noseig = true`. 
 
 If conditions (1)-(4) are satisfied, the linearization is called `minimal` and the resulting order `n`
 is the least achievable order. If conditions (1)-(3) are satisfied, the linearization is called `irreducible` 
 and the resulting order `n` is the least achievable order using orthogonal similarity transformations.
+For an irreducible linearization `S(λ)` preserves the pole-zero structure (finite and infinite) and the 
+left and right Kronecker structures of `P(λ)`. 
 
 The underlying pencil manipulation algorithms [1] and [2] to compute reduced order linearizations 
 employ rank determinations based on either the use of 
@@ -466,13 +555,13 @@ pm2ls(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...)
 """
      pm2lps(P; contr = false, obs = false) -> (A, E, B, F, C, G, D, H)
 
-Build a structured linearization  
+Build a structured linearization as a system matrix `S(λ)` of the form
 
-              | A-λE | B-λF | 
-     M - λN = |------|------|
-              | C-λG | D-λH |  
+            | A-λE | B-λF | 
+     S(λ) = |------|------|
+            | C-λG | D-λH |  
       
-of a polynomial matrix `P(λ)` which preserves a part of the Kronecker structure of `P(λ)`. 
+of the polynomial matrix `P(λ)` which preserves a part of the Kronecker structure of `P(λ)`. 
 
 `P(λ)` can be specified as a grade `k` polynomial matrix of the form `P(λ) = P_1 + λ P_2 + ... + λ**k P_(k+1)`, 
 for which the coefficient matrices `P_i`, `i = 1, ..., k+1`, are stored in the 3-dimensional matrix `P`, 
@@ -489,10 +578,19 @@ and `n = m(d-1)` otherwise;
 (2) `P(λ) = (C-λG)*inv(λE-A)*(B-λF)+D-λH`;
 
 (3) `rank[B-λF A-λE] = n` for any finite and infinite `λ` (strong controllability) if `contr = true`, in which case 
-the finite and right Kronecker structures are preserved;
+the right Kronecker structure is preserved;
 
 (4) `rank[A-λE; C-λG] = n` for any finite and infinite `λ` (strong observability)  if `obs = true`, in which case 
-the finite and left Kronecker structures are preserved. 
+the left Kronecker structure is preserved. 
+
+If conditions (1)-(4) are satisfied, the linearization is called `strongly minimal`, the resulting order `n`
+is the least achievable order and `S(λ)` preserves the pole-zero structure (finite and infinite) and the 
+left and right Kronecker structures of `P(λ)`. 
+
+The pencil based linearization is built using the methods described in [1].
+
+[1] A. Varga, On computing the Kronecker structure of polynomial and rational matrices using Julia, 2020, 
+[arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
 """
 function pm2lps(P::AbstractArray{T,3}; contr::Bool = false, obs::Bool = false) where T
    p, m, k1 = size(P)
@@ -547,7 +645,7 @@ Build the polynomial matrix `P(λ) = C*inv(λE-A)*B+D` corresponding to its stru
      |------|---|
      |  C   | D |  
 
-by explicitly determining for each polynomial entry, its coefficients from its roots and corresponding gain. 
+by explicitly determining for each polynomial entry, its coefficients from its roots and a corresponding gain. 
 
 The keyword arguments `atol1` and `atol2` specify the absolute tolerances for the elements of `A`, `B`, `C`, `D`, and,  
 respectively, of `E`, and `rtol` specifies the relative tolerances for the nonzero elements of `A`, `B`, `C`, `D` and `E`.
@@ -583,7 +681,7 @@ function ls2pm(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, C::Abstr
            if abs(Pval[i,j]) > gaintol
               zer, iz, = spzeros(A1, E1, B1[:,j:j], C1[i:i,:], D1[i:i,j:j]; 
                                  fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
-              c, pval = poly_coeffval(zer[1:(length(zer)-sum(iz))],val)
+              c, pval = polcoeffval(zer[1:(length(zer)-sum(iz))],val)
               P[i,j,1:length(c)] = compl ? c*(Pval[i,j]/pval) : real(c*(Pval[i,j]/pval)) 
            end
        end
@@ -647,40 +745,21 @@ function lps2pm(A::AbstractMatrix, E::AbstractMatrix,B::AbstractMatrix, F::Abstr
             indj[n1] = n+j
             zer, iz, = pzeros(view(M1,indi,indj),view(N1,indi,indj); 
                               fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
-            # zer, iz, = pzeros(M1[indi,indj],N1[indi,indj]; 
-            #                   fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
-            c, pval = poly_coeffval(zer[1:(length(zer)-sum(iz))],val)
+            c, pval = polcoeffval(zer[1:(length(zer)-sum(iz))],val)
             P[i,j,1:length(c)] = compl ? c*(Pval[i,j]/pval) : real(c*(Pval[i,j]/pval)) 
          end
       end
    end
-return P[:,:,1:pmdeg(P)+1]
-end
-function poly_coeffval(r::AbstractVector{T},val::Number) where {T}
-   # Compute the coefficients of a polynomial from its roots and evaluate the polynomial
-   # for a given value of its argument. Both are equal to one for an empty vector r.
-   T1 = promote_type(T,eltype(val))
-   n = length(r)
-   c = zeros(T1, n+1)
-   ONE = one(T1)
-   c[1] = ONE
-   pval = ONE
-   for j = 1:n
-       pval = pval*(val-r[j])
-       for i = j:-1:1
-           c[i+1] = c[i+1]-r[j]*c[i]
-       end
-   end
-   return reverse(c), pval
+   return P[:,:,1:pmdeg(P)+1]
 end
 """
      spm2ls(T, U, V, W; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, C, D)
             
-Build a structured linearization 
+Build a structured linearization as a system matrix `S(λ)` of the form
 
-              | A-λE | B | 
-     M - λN = |------|---|
-              |  C   | D |  
+            | A-λE | B | 
+     S(λ) = |------|---|
+            |  C   | D |  
 
 of the structured polynomial matrix 
 
@@ -688,9 +767,9 @@ of the structured polynomial matrix
        P(λ) = |-------|------|
               | V(λ)  | W(λ) |
 
-such that `V(λ)*inv(T(λ))*U(λ)+W(λ) = C*inv(λE-A)*B+D`. The resulting linearization `M - λN` preserves a part, 
+such that `V(λ)*inv(T(λ))*U(λ)+W(λ) = C*inv(λE-A)*B+D`. The resulting linearization `S(λ)` preserves a part, 
 if `minimal = false`, or the complete Kronecker structure, if `minimal = true`, of `P(λ)`. In the latter case, 
-the order `n` of `A-λE` is the least possible one and `M - λN` is a strong linearization of `P(λ)`.
+the order `n` of `A-λE` is the least possible one and `S(λ)` is a strong linearization of `P(λ)`.
 
 `T(λ)`, `U(λ)`, `V(λ)`, and `W(λ)` can be specified as polynomial matrices of the form `X(λ) = X_1 + λ X_2 + ... + λ**k X_(k+1)`, 
 for `X = T`, `U`, `V`, and `W`, for which the coefficient matrices `X_i`, `i = 1, ..., k+1`, are stored in 
@@ -714,6 +793,11 @@ the finite and left Kronecker structures are preserved;
 The keyword arguments `atol` and `rtol`, specify, respectively, the absolute and relative tolerance for the 
 nonzero coefficients of the matrices `T(λ)`, `U(λ)`, `V(λ)` and `W(λ)`. The default relative tolerance is `nt*ϵ`, 
 where `nt` is the size of the square matrix `T(λ)` and `ϵ` is the machine epsilon of the element type of its coefficients. 
+
+The structured linearization is built using the methods described in [1].
+
+[1] A. Varga, On computing the Kronecker structure of polynomial and rational matrices using Julia, 2020, 
+[arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
 """
 function spm2ls(T::Union{AbstractArray{T1,3},AbstractArray{T1,2}},U::Union{AbstractArray{T2,3},AbstractArray{T2,2}},
                 V::Union{AbstractArray{T3,3},AbstractArray{T3,2}},W::Union{AbstractArray{T4,3},AbstractArray{T4,2}}; 

@@ -11,6 +11,8 @@ using Test, MatrixPencils
     include("test_lstools.jl")
     include("test_pmtools.jl")
     include("test_pmapps.jl")
+    include("test_rmtools.jl")
+    include("test_rmapps.jl")
 end
 
 end

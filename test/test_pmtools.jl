@@ -64,7 +64,7 @@ a = rand(Complex{Float64},3);
 end # conversions
 
 
-@testset "Basic polynomial manipulations" begin
+@testset "Basic polynomial matrix manipulations" begin
 
 P = rand(0,0,4);
 @test pmeval(P,2) ≈ lseval(pm2ls(P)[1:5]...,2)
@@ -134,6 +134,80 @@ P = rand(0,0,4);
 
 
 end # Basic manipulations
+
+@testset "Tests pmdivrem" begin
+
+# Example Vlad Ionescu
+s = Polynomial([0, 1],:s);
+NUM = [s^2+3*s+3 1; -1 2*s^2+7*s+4];
+DEN = [(s+1)^2 s+2; (s+1)^3 (s+1)*(s+2)]
+X = divrem.(NUM,DEN)
+Q = first.(X)
+R = last.(X)
+Q = [x[1] for x in X]
+R = [x[2] for x in X]
+Q1, R1 = pmdivrem(NUM,DEN)
+@test Q1 == poly2pm(Q) && R1 == poly2pm(R) 
+
+NUM = rand(1,1,4); DEN = rand(1,1,3);
+num = Polynomial(NUM[1,1,1:4]); den = Polynomial(DEN[1,1,1:3]);
+q, r = divrem(num,den)
+@test num ≈ den*q+r
+Q, R = pmdivrem(NUM,DEN)
+@test num ≈ den*Polynomial(Q[1,1,1:size(Q,3)])+Polynomial(R[1,1,1:size(R,3)])
+
+NUM = rand(0,0,4); DEN = rand(0,0,3);
+Q, R = pmdivrem(NUM,DEN)
+@test Q == Array{Float64}(undef,0,0,0) && R ==  Array{Float64}(undef,0,0,0)
+
+NUM = rand(2,3,4); DEN = rand(2,3,3);
+Q, R = pmdivrem(NUM,DEN)
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+NUM = rand(2,3,4); DEN = ones(2,3,1);
+Q, R = pmdivrem(NUM,DEN)
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+NUM = rand(2,3,4); DEN = rand(2,3,3);
+Q, R = pmdivrem(NUM,DEN)
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+NUM = rand(2,3,4); DEN = ones(2,3,1);
+Q, R = pmdivrem(NUM,DEN)
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+NUM = zeros(2,3,4); DEN = ones(2,3,1);
+Q, R = pmdivrem(NUM,DEN)
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+
+NUM = rand(2,3,4); DEN = NUM;
+Q, R = pmdivrem(NUM,DEN)
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+
+try
+  NUM = zeros(2,3,4); DEN = zeros(2,3,1);
+  Q, R = pmdivrem(NUM,DEN)
+  @test false
+catch
+  @test true
+end
+
+Ty = Complex{Float64}
+NUM = rand(Ty,2,3,4); DEN = rand(Ty,2,3,2);
+Q, R = pmdivrem(NUM,DEN);
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+Ty = Int
+NUM = rand(Ty,2,3,4); DEN = rand(Ty,2,3,2);
+Q, R = pmdivrem(NUM,DEN);
+@test all(pm2poly(NUM) .≈ pm2poly(DEN) .* pm2poly(Q) .+ pm2poly(R))
+
+
+end # end pmdivrem
+
+
 
 @testset "Structured polynomial matrix linearization tools" begin
 
@@ -474,7 +548,7 @@ sys2  = pm2lps(P,obs=true)
 @test lpseval(sys1...,2) ≈ lpseval(sys2...,2)
 
 # 
-@test lps2pm(sys1...,atol1=1.e-7,atol2=1.e-7,val=2) ≈ lps2pm(sys2...,atol1=1.e-7,atol2=1.e-7)
+@test lps2pm(sys1...,atol1=1.e-7,atol2=1.e-7,val=2) ≈ lps2pm(sys2...,atol1=1.e-7,atol2=1.e-7,val=2)
 @test ls2pm(pm2ls(P,contr=true)...,atol1=1.e-7,atol2=1.e-7,val=2) ≈ P[:,:,1:3]
 
 (A, E, B, F, C, G, D, H) = copy.(sys2)

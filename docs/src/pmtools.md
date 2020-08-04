@@ -6,6 +6,7 @@ pm2poly
 pmdeg
 pmeval
 pmreverse
+pmdivrem
 pm2lpCF1
 pm2lpCF2
 pm2ls
