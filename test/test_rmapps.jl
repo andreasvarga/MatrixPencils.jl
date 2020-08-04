@@ -249,7 +249,8 @@ val, ip, id = rmpoles1(N, fast = fast)
 s = Polynomial([0, 1],:s);
 N = [s^2+3*s+3 1; -1 2*s^2+7*s+4];
 D = [(s+1)^2 s+2; (s+1)^3 (s+1)*(s+2)]
-info, iz, nfp, ip = rmkstruct(N, D, fast = fast)
+info, iz, nfp, ip = rmkstruct(N, D, fast = fast, atol=1.e-7)
+printl("info, iz, nfp, ip = $(info, iz, nfp, ip)")
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == (Int64[], Int64[], [1, 1], 4, 2)  && iz == [] && ip == [] && nfp == 4
 
 val, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)

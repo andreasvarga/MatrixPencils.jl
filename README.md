@@ -136,4 +136,4 @@ The collection of tools will be extended by adding new functionality, such as ne
 
 ## Supplimentary information
 
-The mathematical background and the computational aspects which underly the implementation of functions for polynomial matrices are presented in the eprint [arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
+The mathematical background and the computational aspects which underly the implementation of functions for polynomial and rational matrices are presented in the eprint [arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
