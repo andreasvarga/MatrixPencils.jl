@@ -19,7 +19,7 @@ export sreduceBF, sklf, sklf_right, sklf_left, sklf_right!, sklf_left!, sklf_rig
 export sprank, spkstruct, speigvals, spzeros
 export lsminreal, lsminreal2, lsequal, lseval
 export lpsminreal, lpsequal, lpseval
-export poldivrem, polgcdvw, pollcm, conv, poldiv, convmtx, gcdvwupd, qrsolve!, poldeg1
+export poldivrem, polgcdvw, pollcm, conv, poldiv, convmtx, gcdvwupd, qrsolve!, poldeg, poldeg1
 export poly2pm, pm2poly, pmdeg, pmreverse, pmeval, pmdivrem
 export pm2lpCF1, pm2lpCF2, pm2lps, pm2ls, spm2ls, spm2lps, ls2pm, lps2pm
 export pmkstruct, pmeigvals, pmzeros, pmzeros1, pmzeros2, pmroots, pmpoles, pmpoles1, pmpoles2, pmrank, ispmregular, ispmunimodular 

@@ -162,6 +162,9 @@ val, iz, info = rmzeros(N, fast = fast)
 val, iz, info = rmzeros(N, D, fast = fast)
 @test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [1], [1, 1, 1], 0, 1)
 
+val, iz, info = rmzeros1(N, D, fast = fast)
+@test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [1], [], 0, 1)
+
 val, iz, info = rmzeros(N, poly2pm(D), fast = fast)
 @test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [1], [1, 1, 1], 0, 1)
 

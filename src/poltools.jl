@@ -25,9 +25,7 @@ function poldiv(a::Vector{T}, b::Vector{S}) where {T <: Number, S <: Number }
     na1 = poldeg1(a) # degree(a) + 1
     nb1 = poldeg1(b) # degree(b) + 1
     nb1 == 0 && throw(DivideError())
-    if na1 < nb1
-       error("Degree of second polynomial exceeds the degree of first polynomial")
-    end
+    na1 < nb1 && error("Degree of second polynomial exceeds the degree of first polynomial")
     a1, b1  = promote(float(a[1:na1]), float(b[1:nb1]))
     #return Matrix(Toeplitz([den;zeros(n1-length(den))],[den[1];zeros(n1-m1)]))\num[1:n1] 
     #return convmtx(b[1:nb1],na1-nb1+1)\a[1:na1] 

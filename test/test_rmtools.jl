@@ -16,6 +16,8 @@ using Test
 num = Polynomial([0.8581454436924945, 0.249671302254737, 0.8048498901050951, 0.1922713965697087])
 den = Polynomial([0.9261520696359462, 0.07141031902098072, 0.378071465860349])
 
+@test poldeg(coeffs(num)) == 3 && poldeg1(coeffs(num)) == 4 
+
 q1, r1 = poldivrem(coeffs(num),coeffs(den))
 @test coeffs(num) ≈ conv(coeffs(den),q1) + [r1;zeros(2) ]
 
@@ -376,9 +378,18 @@ val = float(pi)
 num1, den1 = ls2rm(sys[1:5]...,atol1 = 1.e-7)
 @test all(NUM .* pm2poly(den1,:s) .≈ DEN .* pm2poly(num1,:s))
 
+num1, den1 = ls2rm(sys[1],sys[3:5]...,atol1 = 1.e-7)
+@test all(NUM .* pm2poly(den1,:s) .≈ DEN .* pm2poly(num1,:s))
+
+
 psys = rm2lps(NUM,DEN,atol = 1.e-3, minimal=true) 
 val = float(pi)
 @test pmeval(NUM,val) ./ pmeval(DEN,val) ≈ lpseval(psys[1:8]...,val)
+
+λ = Polynomial([0,1],:λ)
+sys=rm2lps(λ)
+info = pkstruct(sys[7],sys[8])
+@test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [], 1, 1)
 
 
 s = Polynomial([0, 1],:s);
@@ -642,6 +653,9 @@ A, B, C, D, blkdims = rm2lspm(num,den,contr=true)
 A, B, C, D, blkdims = rm2lspm(num,den,obs=true)
 @test rmeval(num,den,1) ≈ lseval(A,I,B,C,zeros(2,2),1) + pmeval(D,1)
 
+A, B, C, D, blkdims = rm2lspm(num,obs=true)
+@test rmeval(num,1) ≈ lseval(A,I,B,C,zeros(2,2),1) + pmeval(D,1)
+@test rmeval(poly2pm(num),1) ≈ lseval(A,I,B,C,zeros(2,2),1) + pmeval(D,1)
 
 # Example 4.4 (transposed) Antsaklis, Michel 2006
 s = Polynomial([0, 1],:s)*im
