@@ -32,7 +32,8 @@ export rmkstruct, rmzeros, rmzeros1, rmpoles, rmpoles1, rmrank
 #export _preduceBF!, _preduce1!, _preduce2!, _preduce3!, _preduce4!
 
 #import Base: +, -, *
-import LinearAlgebra: copy_oftype, require_one_based_indexing
+#import LinearAlgebra: copy_oftype, require_one_based_indexing
+import LinearAlgebra: copy_oftype
 
 include("klftools.jl")
 include("regtools.jl")
