@@ -147,6 +147,12 @@ info, iz, nfp, ip = rmkstruct(N, fast = fast)
 info, iz, nfp, ip = rmkstruct(N, D, fast = fast)
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([1], [1], [1, 1, 1], 0, 1) && iz == [] && ip == [2] && nfp == 0
 
+info, iz, nfp, ip = rmkstruct(poly2pm(N), D, fast = fast)
+@test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([1], [1], [1, 1, 1], 0, 1) && iz == [] && ip == [2] && nfp == 0
+
+info, iz, nfp, ip = rmkstruct(N, poly2pm(D), fast = fast)
+@test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([1], [1], [1, 1, 1], 0, 1) && iz == [] && ip == [2] && nfp == 0
+
 info, iz, nfp, ip = rmkstruct(D, N, fast = fast)
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([1], [1], [1], 0, 1) && iz == [] && ip == [] && nfp == 2
 
@@ -156,6 +162,9 @@ val, iz, info = rmzeros(N, fast = fast)
 val, iz, info = rmzeros(N, D, fast = fast)
 @test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [1], [1, 1, 1], 0, 1)
 
+val, iz, info = rmzeros(N, poly2pm(D), fast = fast)
+@test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [1], [1, 1, 1], 0, 1)
+
 val, iz, info = rmzeros(D, N, fast = fast)
 @test val == Float64[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([1], [1], [1], 0, 1)
 
@@ -163,6 +172,9 @@ val, ip, id = rmpoles(N, fast = fast)
 @test val == [Inf, Inf] && ip == [2] && id ==  [1, 3]
 
 val, ip, id = rmpoles(N, D, fast = fast)
+@test val == [Inf, Inf] && ip == [2] && id ==  [1, 3]
+
+val, ip, id = rmpoles(N, poly2pm(D), fast = fast)
 @test val == [Inf, Inf] && ip == [2] && id ==  [1, 3]
 
 val, ip, id = rmpoles(D, N, fast = fast)
@@ -189,6 +201,15 @@ val, ip, id = rmpoles(N, fast = fast)
 
 val, ip, id = rmpoles(N, D, fast = fast)
 @test val ≈ [Inf, Inf] && ip == [2] && id == [1, 3]
+
+val, iz, info = rmzeros1(N, D, fast = fast)
+@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2)
+
+val, iz, info = rmzeros1(N, poly2pm(D), fast = fast)
+@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2)
+
+val, iz, info = rmzeros1(pm2poly(N), reshape(D,3,3,1), fast = fast)
+@test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2)
 
 val, iz, info  = rmzeros1(N, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2) 
@@ -250,10 +271,18 @@ s = Polynomial([0, 1],:s);
 N = [s^2+3*s+3 1; -1 2*s^2+7*s+4];
 D = [(s+1)^2 s+2; (s+1)^3 (s+1)*(s+2)]
 info, iz, nfp, ip = rmkstruct(N, D, fast = fast, atol=1.e-7)
-println("info, iz, nfp, ip = $((info, iz, nfp, ip))")
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == (Int64[], Int64[], [1, 1], 4, 2)  && iz == [] && ip == [] && nfp == 4
 
 val, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)
+@test fromroots(val) ≈ Polynomial([2, 7, 9, 5, 1]) && ip == [] && id == []
+
+val, ip, id = rmpoles1(N, D, fast = fast, atol=1.e-7)
+@test fromroots(val) ≈ Polynomial([2, 7, 9, 5, 1]) && ip == [] && id == []
+
+val, ip, id = rmpoles1(poly2pm(N), D, fast = fast, atol=1.e-7)
+@test fromroots(val) ≈ Polynomial([2, 7, 9, 5, 1]) && ip == [] && id == []
+
+val, ip, id = rmpoles1(N, poly2pm(D), fast = fast, atol=1.e-7)
 @test fromroots(val) ≈ Polynomial([2, 7, 9, 5, 1]) && ip == [] && id == []
 
 # Example 1 (Polynomial): Dopico et al. 2020

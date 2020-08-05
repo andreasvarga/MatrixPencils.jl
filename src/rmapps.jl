@@ -118,11 +118,11 @@ function rmkstruct(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number
 end
 function rmkstruct(N::AbstractArray{T1,3}, 
                    D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
-return rmkstructs(N,poly2pm(D); kwargs...)
+   return rmkstruct(N,poly2pm(D); kwargs...)
 end
 function rmkstruct(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
                    D::AbstractArray{T2,3}; kwargs...) where {T1,T2} 
-return rmkstruct(poly2pm(N),D; kwargs...)
+   return rmkstruct(poly2pm(N),D; kwargs...)
 end
 """
     rmzeros(N, D; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
@@ -381,8 +381,8 @@ A Festschrift to honor the 70th birthday of Thanos Antoulas", Springer-Verlag. [
 function rmzeros1(N::AbstractArray{T1,3}, D::AbstractArray{T2,3}; 
                   fast = false, atol::Real = zero(real(T1)), 
                    rtol::Real = (min(size(N)...)*eps(real(float(one(T1)))))*iszero(atol)) where {T1,T2} 
-   A, E, B, F, C, G, D, H, blkdims = rm2lps(N,D; obs = true, contr = true, fast = fast, 
-                                            atol1 = atol, atol2 = atol, rtol = rtol) 
+   A, E, B, F, C, G, D, H, blkdims = rm2lps(N, D; obs = true, contr = true, fast = fast, 
+                                            atol = atol, rtol = rtol) 
    val, iz, info = pzeros([A B; C D], [E F; G H]; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
    info.nrank -= size(A,1)
    return val, iz, info
