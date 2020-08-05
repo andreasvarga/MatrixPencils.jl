@@ -387,8 +387,8 @@ val = float(pi)
 @test pmeval(NUM,val) ./ pmeval(DEN,val) ≈ lpseval(psys[1:8]...,val)
 
 λ = Polynomial([0,1],:λ)
-sys=rm2lps(λ)
-info = pkstruct(sys[7],sys[8])
+syst=rm2lps(λ)
+info = pkstruct(syst[7],syst[8])
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [], 1, 1)
 
 
