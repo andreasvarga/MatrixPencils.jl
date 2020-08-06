@@ -149,6 +149,8 @@ R = [x[2] for x in X]
 Q1, R1 = pmdivrem(NUM,DEN)
 @test Q1 == poly2pm(Q) && R1 == poly2pm(R) 
 
+@test reshape(Q1[:,1,:],2,1,1) == poly2pm(Q[:,1]) && reshape(R1[:,1,:],2,1,2) == poly2pm(R[:,1])
+
 NUM = rand(1,1,4); DEN = rand(1,1,3);
 num = Polynomial(NUM[1,1,1:4]); den = Polynomial(DEN[1,1,1:3]);
 q, r = divrem(num,den)
