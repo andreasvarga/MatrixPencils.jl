@@ -5,6 +5,8 @@ using LinearAlgebra
 using MatrixPencils
 using Test
 
+
+
 function evsym!(ev) 
    ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0])
    return ev
@@ -109,6 +111,21 @@ a = [1 1 1;-1 1 0;0 0 2];  b = rand(3,5);  evals = [-1+im*0.5;-1-im*0.5;-2];
 @test SF.Z*SF.T*SF.Z' ≈ a+b*f && blkdims == [0, 3, 0] && 
       sort(real( evals)) ≈ sort(real(SF.values)) && sort(imag( evals)) ≈ sort(imag(SF.values)) 
 evals,eigvals(a+b*f)
+
+## simple cases 
+a = [1 1 0;-1 1 0;0 0 2];  b = [0 0; 0 0; 1 1];  evals = [-1+im*0.5;-1-im*0.5]; 
+@time f, SF, blkdims = saloc(a,b, evals =  evals)
+@test SF.Z*SF.T*SF.Z' ≈ a+b*f && blkdims == [0, 1, 2] 
+evals,eigvals(a+b*f)
+
+## simple cases # test
+a = [1 1; 0 1 ];  b = [0 0; 1 1];  evals = [-1+im*0.5;-1-im*0.5]; 
+@time f, SF, blkdims = saloc(a,b, evals =  evals)
+@test SF.Z*SF.T*SF.Z' ≈ a+b*f && blkdims == [0, 2, 0] 
+evals,eigvals(a+b*f)
+
+
+
 
 ## simple cases
 a = [1 1 1;-1 1 0;0 0 2];  b = rand(3,5);  evals = [-1;-0.5;-2]; 

@@ -258,6 +258,21 @@ end
 
 end
 
+# test to enforce the call with lanv2
+@testset "ordeigvals" begin
+a = rand(2,2);
+ev =  eigvals(a)
+evord = ordeigvals(a)
+@test sort(real(ev)) ≈ sort(real(evord)) && sort(imag(ev)) ≈ sort(imag(evord)) 
+
+a = rand(2,2); e = triu(rand(2,2))
+ev =  eigvals(a,e)
+evord = ordeigvals(a,e)[1]
+@test sort(real(ev)) ≈ sort(real(evord)) && sort(imag(ev)) ≈ sort(imag(evord)) 
+
+end # ordeigvals
+
+
 
 @testset "isregular" begin
 

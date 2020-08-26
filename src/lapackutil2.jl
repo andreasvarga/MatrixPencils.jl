@@ -18,13 +18,8 @@ function chkside(side::AbstractChar)
     side
 end
 function chklapackerror(ret::BlasInt)
-    if ret == 0
-        return
-    elseif ret < 0
-        throw(ArgumentError("invalid argument #$(-ret) to LAPACK call"))
-    else # ret > 0
-        throw(LAPACKException(ret))
-    end
+    ret == 0 ? (return) : 
+              (ret < 0 ? throw(ArgumentError("invalid argument #$(-ret) to LAPACK call")) : throw(LAPACKException(ret)))
 end
 
 for (fn, elty) in ((:dlanv2_, :Float64),
@@ -102,7 +97,7 @@ Interface to the LAPACK subroutines DLAG2/SLAG2.
 """
 lag2(A::StridedMatrix{BlasReal}, B::StridedMatrix{BlasReal}, SAFMIN::BlasReal) 
 
-lag2(A::StridedMatrix{T}, B::StridedMatrix{T}) where T <: BlasReal = lag2(A,B,safemin(T))
+#lag2(A::StridedMatrix{T}, B::StridedMatrix{T}) where T <: BlasReal = lag2(A,B,safemin(T))
 
 function safemin(::Type{T}) where T <: BlasReal
     SMLNUM = (T == Float64) ? reinterpret(Float64, 0x2000000000000000) : reinterpret(Float32, 0x20000000)
@@ -245,15 +240,9 @@ for (gghrd, elty) in
                         A::AbstractMatrix{$elty}, B::AbstractMatrix{$elty}, Q::AbstractMatrix{$elty}, Z::AbstractMatrix{$elty})
             chkstride1(A, B, Q, Z)
             n, nb, nq, nz = checksquare(A, B, Q, Z)
-            if n != nb
-                throw(DimensionMismatch("dimensions of A, ($n,$n), and B, ($nb,$nb), must match"))
-            end
-            if n != nq
-                throw(DimensionMismatch("dimensions of A, ($n,$n), and Q, ($nq,$nq), must match"))
-            end
-            if n != nz
-                throw(DimensionMismatch("dimensions of A, ($n,$n), and Z, ($nz,$nz), must match"))
-            end
+            n == nb || throw(DimensionMismatch("dimensions of A, ($n,$n), and B, ($nb,$nb), must match"))
+            n == nq || throw(DimensionMismatch("dimensions of A, ($n,$n), and Q, ($nq,$nq), must match"))
+            n == nz || throw(DimensionMismatch("dimensions of A, ($n,$n), and Z, ($nz,$nz), must match"))
             lda = max(1, stride(A, 2))
             ldb = max(1, stride(B, 2))
             ldq = max(1, stride(Q, 2))
@@ -299,15 +288,9 @@ for (hgeqz, elty) in
                         H::AbstractMatrix{$elty}, T::AbstractMatrix{$elty}, Q::AbstractMatrix{$elty}, Z::AbstractMatrix{$elty})
             chkstride1(H, T, Q, Z)
             n, nt, nq, nz = checksquare(H, T, Q, Z)
-            if n != nt
-                throw(DimensionMismatch("dimensions of H, ($n,$n), and T, ($nt,$nt), must match"))
-            end
-            if n != nq
-                throw(DimensionMismatch("dimensions of H, ($n,$n), and Q, ($nq,$nq), must match"))
-            end
-            if n != nz
-                throw(DimensionMismatch("dimensions of H, ($n,$n), and Z, ($nz,$nz), must match"))
-            end
+            n == nt || throw(DimensionMismatch("dimensions of H, ($n,$n), and T, ($nt,$nt), must match"))
+            n == nq || throw(DimensionMismatch("dimensions of H, ($n,$n), and Q, ($nq,$nq), must match"))
+            n == nz || throw(DimensionMismatch("dimensions of H, ($n,$n), and Z, ($nz,$nz), must match"))
             compq == 'N' || compq == 'V' || compq == 'I' ||
                   throw(ArgumentError("compq argument must be 'N', 'V' or 'I', got $compq"))
             compz == 'N' || compz == 'V' || compz == 'I' ||
@@ -368,15 +351,9 @@ for (hgeqz, elty, relty) in
                         H::AbstractMatrix{$elty}, T::AbstractMatrix{$elty}, Q::AbstractMatrix{$elty}, Z::AbstractMatrix{$elty})
             chkstride1(H, T, Q, Z)
             n, nt, nq, nz = checksquare(H, T, Q, Z)
-            if n != nt
-                throw(DimensionMismatch("dimensions of H, ($n,$n), and T, ($nt,$nt), must match"))
-            end
-            if n != nq
-                throw(DimensionMismatch("dimensions of H, ($n,$n), and Q, ($nq,$nq), must match"))
-            end
-            if n != nz
-                throw(DimensionMismatch("dimensions of H, ($n,$n), and Z, ($nz,$nz), must match"))
-            end
+            n == nt || throw(DimensionMismatch("dimensions of H, ($n,$n), and T, ($nt,$nt), must match"))
+            n == nq || throw(DimensionMismatch("dimensions of H, ($n,$n), and Q, ($nq,$nq), must match"))
+            n == nz || throw(DimensionMismatch("dimensions of H, ($n,$n), and Z, ($nz,$nz), must match"))
             compq == 'N' || compq == 'V' || compq == 'I' ||
                   throw(ArgumentError("compq argument must be 'N', 'V' or 'I', got $compq"))
             compz == 'N' || compz == 'V' || compz == 'I' ||
@@ -435,15 +412,9 @@ for (tgexc, elty) in ((:dtgexc_, :Float64), (:stgexc_, :Float32))
                         S::AbstractMatrix{$elty}, T::AbstractMatrix{$elty}, Q::AbstractMatrix{$elty}, Z::AbstractMatrix{$elty})
             chkstride1(S, T, Q, Z)
             n, nt, nq, nz = checksquare(S, T, Q, Z)
-            if n != nt
-                throw(DimensionMismatch("dimensions of S, ($n,$n), and T, ($nt,$nt), must match"))
-            end
-            if n != nq
-                throw(DimensionMismatch("dimensions of S, ($n,$n), and Q, ($nq,$nq), must match"))
-            end
-            if n != nz
-                throw(DimensionMismatch("dimensions of S, ($n,$n), and Z, ($nz,$nz), must match"))
-            end
+            n == nt || throw(DimensionMismatch("dimensions of S, ($n,$n), and T, ($nt,$nt), must match"))
+            n == nq || throw(DimensionMismatch("dimensions of S, ($n,$n), and Q, ($nq,$nq), must match"))
+            n == nz || throw(DimensionMismatch("dimensions of S, ($n,$n), and Z, ($nz,$nz), must match"))
             (ifst < 1 || ifst > n || ilst < 1 || ilst > n) && 
                     throw(ArgumentError("ifst and ilst arguments must satisfy 1 ≤ ifst, ilst ≤ $n, got ifst = $ifst and ilst = $ilst"))
             lds = max(1, stride(S, 2))
@@ -491,15 +462,9 @@ for (tgexc, elty) in ((:ztgexc_, :ComplexF64), (:ctgexc_, :ComplexF32))
                         S::AbstractMatrix{$elty}, T::AbstractMatrix{$elty}, Q::AbstractMatrix{$elty}, Z::AbstractMatrix{$elty})
             chkstride1(S, T, Q, Z)
             n, nt, nq, nz = checksquare(S, T, Q, Z)
-            if n != nt
-                throw(DimensionMismatch("dimensions of S, ($n,$n), and T, ($nt,$nt), must match"))
-            end
-            if n != nq
-                throw(DimensionMismatch("dimensions of S, ($n,$n), and Q, ($nq,$nq), must match"))
-            end
-            if n != nz
-                throw(DimensionMismatch("dimensions of S, ($n,$n), and Z, ($nz,$nz), must match"))
-            end
+            n == nt || throw(DimensionMismatch("dimensions of S, ($n,$n), and T, ($nt,$nt), must match"))
+            n == nq || throw(DimensionMismatch("dimensions of S, ($n,$n), and Q, ($nq,$nq), must match"))
+            n == nz || throw(DimensionMismatch("dimensions of S, ($n,$n), and Z, ($nz,$nz), must match"))
             (ifst < 1 || ifst > n || ilst < 1 || ilst > n) && 
                     throw(ArgumentError("ifst and ilst arguments must satisfy 1 ≤ ifst, ilst ≤ $n, got ifst = $ifst and ilst = $ilst"))
             lds = max(1, stride(S, 2))
@@ -530,7 +495,7 @@ so that the diagonal blocks of (S, T) with row index `ifst` are moved to row `il
 If `wantq = true`, the left Schur vectors `Q` are reordered, and if `wantq = false` they are not modified. 
 If `wantz = true`, the right Schur vectors `Z` are reordered, and if `wantz = false` they are not modified. 
 """
-tgexc!(wantq::Bool, wantz::Bool,  ifst::BlasInt, ilst::BlasInt, 
+tgexc!(wantq::Bool, wantz::Bool, ifst::BlasInt, ilst::BlasInt, 
        S::AbstractMatrix, T::AbstractMatrix, Q::AbstractMatrix, Z::AbstractMatrix)
 
 end

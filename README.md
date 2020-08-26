@@ -1,5 +1,5 @@
 # MatrixPencils.jl
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3894504.svg)](https://doi.org/10.5281/zenodo.3894504)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3894504.svg)](https://doi.org/10.5281/zenodo.3894503)
 [![Travis](https://travis-ci.com/andreasvarga/MatrixPencils.jl.svg?branch=master)](https://travis-ci.com/andreasvarga/MatrixPencils.jl)
 [![codecov.io](https://codecov.io/gh/andreasvarga/MatrixPencils.jl/coverage.svg?branch=master)](https://codecov.io/gh/andreasvarga/MatrixPencils.jl?branch=master)
 [![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://andreasvarga.github.io/MatrixPencils.jl/dev/)
@@ -138,6 +138,6 @@ A complete list of implemented functions is available [here](https://sites.googl
 
 The implementation of tools for the reduction of a regular pencil to various upper block triangular and block-diagonal structures is planned.
 
-## Supplimentary information
+## Supplementary information
 
 The mathematical background and the computational aspects which underly the implementation of functions for polynomial and rational matrices are presented in the eprint [arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).

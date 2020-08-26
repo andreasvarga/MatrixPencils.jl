@@ -245,11 +245,9 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
             evalsc = [transpose(tempc[:]); transpose(conj.(tempc[:]))][:]
          end
       end
-      if !ismissing(sdeg)
-         if (disc && any(abs.(evals1) .> sdeg) )  || (!disc && any(real.(evals1) .> sdeg)) 
+      # check that all eigenvalues are inside of the stability region
+      !ismissing(sdeg) && ((disc && any(abs.(evals1) .> sdeg) )  || (!disc && any(real.(evals1) .> sdeg)))  &&
             error("The elements of evals must lie in the stability region")
-         end
-      end
    end    
   
    # set default values of sdeg if evals = missing
@@ -310,7 +308,7 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
       evb = ordeigvals(a2)
       b2 = view(Z,ib,kk)'*view(B1,ib,:)
       if norm(b2,Inf) <= tolb
-         # deflate uncontrollable stable block
+         # deflate uncontrollable block
          nb = nb-k; nc = nc-k; nu = nu+k; noskip = false
       elseif k == 1 && nb > 1 && ismissing(evalsr) && !ismissing(evalsc)
          # form a 2x2 block if there are no real eigenvalues to assign
@@ -327,7 +325,7 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
          b2 = view(Z,ib,kk)'*view(B1,ib,:)
          if norm(b2,Inf) <= tolb
             # deflate uncontrollable block
-            nb = nb-k; nc = nc-k; nfu = nfu+k; noskip = false
+            nb = nb-k; nc = nc-k; nu = nu+k; noskip = false
          end
       end
       if noskip 
@@ -338,14 +336,8 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
                 # no real eigenvalue available, adjoin a new 1x1 block if possible
                 if nb == 1
                     # incompatible eigenvalues with the eigenvalue structure
-                    # assign the last real pole to sdeg or its default value
-                    if ismissing(sdeg)
-                       γ = disc ? real(T)(0.95) : real(T)(-0.05)
-                       # @warn("No real eigenvalue available for assignment: assigning instead $γ")
-                    else
-                       # @warn("No real eigenvalue available for assignment: assigning instead sdeg = $sdeg")
-                       γ = sdeg
-                    end
+                    # assign the last real pole to the default value of sdeg
+                    γ = disc ? real(T)(0.95) : real(T)(-0.05)
                     f2 = -b2\(a2-I*γ)
                 else
                     # adjoin a real block or interchange the last two blocks
@@ -576,11 +568,9 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
             evalsc = [transpose(tempc[:]); transpose(conj.(tempc[:]))][:]
          end
       end
-      if !ismissing(sdeg)
-         if (disc && any(abs.(evals1) .> sdeg) )  || (!disc && any(real.(evals1) .> sdeg)) 
+      # check that all eigenvalues are inside of the stability region
+      !ismissing(sdeg) && ((disc && any(abs.(evals1) .> sdeg) )  || (!disc && any(real.(evals1) .> sdeg)))  &&
             error("The elements of evals must lie in the stability region")
-         end
-      end
    end    
    
    # set default values of sdeg if evals = missing
@@ -705,14 +695,8 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
                 # no real pole available, adjoin a new 1x1 block if possible
                 if nb == 1
                     # incompatible eigenvalues with the eigenvalue structure
-                    # assign the last real pole to sdeg (if possible)
-                    if ismissing(sdeg)
-                       γ = disc ? real(T)(0.95) : real(T)(-0.05)
-                       # @warn("No real eigenvalue available for assignment: assigning instead $γ")
-                    else
-                       # @warn("No real eigenvalue available for assignment: assigning instead sdeg = $sdeg")
-                       γ = sdeg
-                    end
+                    # assign the last real pole to the default value of sdeg
+                    γ = disc ? real(T)(0.95) : real(T)(-0.05)
                     f2 = -b2\(a2-e2*γ)
                 else
                     # adjoin a real block or interchange the last two blocks
@@ -816,16 +800,18 @@ function ordeigvals(A::AbstractMatrix{T}) where T
       for i = 1:n-1
          if A[i+1,i] != ZERO
             if A[i,i] == A[i+1,i+1] 
+               # exploit LAPACK 2x2 block structure
                ei = sqrt(abs(A[i,i+1]))*sqrt(abs(A[i+1,i]))
                αi[i] = -ei
                αi[i+1] = ei
             else
+               # an arbitrary 2x2 block
                αr[i], αi[i+1], αr[i+1], αi[i] = lanv2(A[i,i], A[i,i+1], A[i+1,i], A[i+1,i+1])
             end
             i +=1
          end
       end
-      return Complex.(αr,αi)
+      return iszero(αi) ? αr : Complex.(αr,αi)
    end
 end
 """
@@ -839,7 +825,8 @@ in their order of appearance down the diagonals of `A` and `B`.
 function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
    (isqutriu(A) && istriu(B))|| error("The pair (A,B) must be in a generalized Schur form")
    n = size(A,1)
-   if T <: Complex
+   complx = T <: Complex
+   if complx
       α = Vector{T}(undef, n)
       β = Vector{T}(undef, n)
       for i = 1:n
@@ -868,9 +855,9 @@ function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
             i += 1
          end
       end 
-      α = Complex.(αr,αi)
+      α = iszero(αi) ? αr : Complex.(αr,αi)
       ev = α./β
-      ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0])
+      complx || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
       return ev, α, β
    end
 end
