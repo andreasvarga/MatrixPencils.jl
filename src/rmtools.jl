@@ -365,7 +365,7 @@ function ls2rm(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    emat = (typeof(E) <: AbstractMatrix)
    eident = !emat || isequal(E,I) 
    n = LinearAlgebra.checksquare(A)
-   emat && (n,n) !== size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
+   emat && (n,n) != size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
    p, m = size(D)
    (n,m) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
    (p,n) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))

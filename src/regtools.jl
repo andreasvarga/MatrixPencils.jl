@@ -318,7 +318,7 @@ following block upper-triangular forms:
 where the `ni x ni` subpencil `Ai-λEi` contains the infinite elementary 
 divisors and the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangular, contains the finite eigenvalues of the pencil `A-λE`.
 
-The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and `Ei` nilpotent. 
+The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and upper triangular and `Ei` nilpotent and upper triangular. 
 The `nb`-dimensional vector `ν` contains the dimensions of the diagonal blocks
 of the staircase form  `Ai-λEi` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
 The difference `ν[i]-ν[i+1]` for `i = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` 
@@ -335,7 +335,7 @@ where the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangu
 contains the finite eigenvalues of the pencil `A-λE` and the `ni x ni` subpencil `Ai-λEi` 
 contains the infinite elementary divisors.
 
-The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and `Ei` nilpotent. 
+The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and upper triangular  and `Ei` nilpotent and upper triangular. 
 The `nb`-dimensional vectors `ν` contains the dimensions of the diagonal blocks
 of the staircase form `Ai-λEi` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
 The difference `ν[nb-j+1]-ν[nb-j]` for `j = 1, 2, ..., nb` is the number of infinite elementary 
@@ -365,8 +365,8 @@ function fisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix,M
 
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
-   (!ismissing(B) && n !== size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
-   (!ismissing(C) && n !== size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
+   (!ismissing(B) && n != size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
+   (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
    T = promote_type(eltype(A), eltype(E))
    ismissing(B) || (T = promote_type(T,eltype(B)))
    ismissing(C) || (T = promote_type(T,eltype(C)))
@@ -389,7 +389,7 @@ function fisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix,M
    return A1, E1, B1, C1, Q, Z, ν, nf, ni                                             
 end
 """
-    fisplit!(A, E, B, C, Q, Z; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (ν, nf, ni)
+    fisplit!(A, E, Q, Z, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (ν, nf, ni)
 
 Reduce the regular matrix pencil `A - λE` to an equivalent form `At - λEt = Q1'*(A - λE)*Z1` using 
 orthogonal or unitary transformation matrices `Q1` and `Z1` such that the transformed matrices `At` and `Et` are in one of the
@@ -404,7 +404,7 @@ following block upper-triangular forms:
 where the `ni x ni` subpencil `Ai-λEi` contains the infinite elementary 
 divisors and the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangular, contains the finite eigenvalues of the pencil `A-λE`.
 
-The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and `Ei` nilpotent. 
+The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and upper triangular and `Ei` nilpotent and upper triangular. 
 The `nb`-dimensional vector `ν` contains the dimensions of the diagonal blocks
 of the staircase form  `Ai-λEi` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
 The difference `ν[i]-ν[i+1]` for `i = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` 
@@ -421,7 +421,7 @@ where the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangu
 contains the finite eigenvalues of the pencil `A-λE` and the `ni x ni` subpencil `Ai-λEi` 
 contains the infinite elementary divisors.
 
-The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and `Ei` nilpotent. 
+The subpencil `Ai-λEi` is in a staircase form, with `Ai` nonsingular and upper triangular and `Ei` nilpotent and upper triangular. 
 The `nb`-dimensional vectors `ν` contains the dimensions of the diagonal blocks
 of the staircase form `Ai-λEi` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
 The difference `ν[nb-j+1]-ν[nb-j]` for `j = 1, 2, ..., nb` is the number of infinite elementary 
@@ -458,7 +458,7 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
    if n == 0 
       return ν, 0, 0
    end
-   T = eltype(A)
+   eltype(A) <: Complex ? tran = 'C' : tran = 'T'
 
    # Step 0: Reduce to the standard form
    n1, m1, p1 = _preduceBF!(A, E, Q, Z, B, C; atol = atol2, rtol = rtol, fast = fast) 
@@ -490,6 +490,23 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
          p1 = ρ
          m1 -= τ 
       end
+      k1 = nf+1
+      for k = 1:i
+          nk = ν[k]
+          k2 = k1+nk-1
+          kk = k1:k2
+          if nk > 1
+             Ak = view(A,kk,kk)
+             tau = similar(A,nk)
+             LinearAlgebra.LAPACK.geqrf!(Ak,tau)
+             LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(A,kk,k2+1:n))
+             withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ak,tau,view(Q,:,kk))
+             LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(E,kk,k2+1:n))
+             ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(B,kk,:))
+             triu!(Ak)
+          end
+          k1 = k2+1
+      end        
       return reverse(ν[1:i]), nf, ni                                             
    else
 
@@ -516,6 +533,41 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
          m1 = ρ
          p1 -= τ 
       end
+
+      k2 = ni 
+      for k = i:-1:1
+          nk = ν[k]
+          k1 = k2-nk+1
+          kk = k1:k2
+          if nk > 1
+             Ak = view(A,kk,kk)
+             tau = similar(A,nk)
+             LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+             LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(A,1:k1-1,kk))
+             withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+             LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(E,1:k1-1,kk))
+             ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+             triu!(Ak)
+          end
+         #  the following code can be used to make the supradiagonal blocks of E upper triangular
+         #  but it is not necessary in this context
+         #  if k > 1 
+         #     nk1 = ν[k-1]
+         #     k1e = k1 - nk1
+         #     k2e = k1 - 1
+         #     kke = k1e:k2e
+         #     if nk1 > 1
+         #        Ek = view(E,kke,kk)
+         #        tau = similar(A,nk)
+         #        LinearAlgebra.LAPACK.geqrf!(Ek,tau)
+         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(A,kke,k1e:n))
+         #        withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ek,tau,view(Q,:,kke)) 
+         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(E,kke,k2+1:n))
+         #        ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(B,kke,:))
+         #        triu!(Ek)
+         #     end
+         k2 = k1-1
+      end        
    
       return ν[1:i], nf, ni                                             
    end

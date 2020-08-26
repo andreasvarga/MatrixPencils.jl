@@ -13,6 +13,7 @@ using Test, MatrixPencils
     include("test_pmapps.jl")
     include("test_rmtools.jl")
     include("test_rmapps.jl")
+    include("test_gsfstab.jl")
 end
 
 end

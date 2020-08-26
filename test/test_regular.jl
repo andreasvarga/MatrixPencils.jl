@@ -486,7 +486,7 @@ C2 = [
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
 @time A1, E1, B1, C1, Q, Z, ν, nf, ni  = fisplit(A,E,B,C, finite_infinite=false, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
-      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) && istriu(A1) &&
       (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
       (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
       ν == [2, 2, 2, 1, 1, 1] && nf == 0 && ni == 9  
@@ -494,7 +494,7 @@ A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
 @time A1, E1, B1, C1, Q, Z, ν, nf, ni  = fisplit(A,E,B,C, finite_infinite=true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
-      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) && istriu(A1) &&
       (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
       (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
       ν == [1, 1, 1, 2, 2, 2] && nf == 0 && ni == 9   
@@ -512,7 +512,7 @@ A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 
 @time A1, E1, B1, C1, Q, Z, ν, nf, ni  = fisplit(A,E,B,C,fast = fast, finite_infinite = finite_infinite)
 @test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
-      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) && istriu(A1) &&
       (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
       (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
       ν == [3] && nf == 0 && ni == 3   

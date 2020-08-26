@@ -517,7 +517,7 @@ function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMa
    return Q, Z, nc
 end
 """
-    sklf_left!(A, E, C, B, F, G, D, H; fast = true, atol1 = 0, atol2 = 0, atol3 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, no)
+    sklf_left!(A, E, C, G, B, F, D, H; fast = true, atol1 = 0, atol2 = 0, atol3 = 0, rtol, withQ = true, withZ = true) -> (Q, Z, no)
 
 Reduce the partitioned full row rank matrix pencil 
 
@@ -673,14 +673,14 @@ The performed orthogonal or unitary right transformations are accumulated in the
 Otherwise, `Z` is set to `nothing`.   
 """
 function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMatrix{T1}, C::Union{AbstractMatrix{T1},Missing}; fast::Bool = true, 
-   atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(E))), atol3::Real = zero(real(eltype(B))), 
+                   atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(E))), atol3::Real = zero(real(eltype(B))), 
                    rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
                    withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
-   (!ismissing(C) && n !== size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
+   (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
    
    maxmn = max(m,n)
    νr = Vector{Int}(undef,maxmn)
@@ -808,7 +808,7 @@ function sklf_rightfin!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::Abstrac
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
-   (!ismissing(C) && n !== size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
+   (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
    
    νr = Vector{Int}(undef,max(n,1))
    withQ ? Q = Matrix{eltype(A)}(I,n,n) : Q = nothing
@@ -902,7 +902,7 @@ function sklf_left!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMat
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    p, n1 = size(C)
    n == n1 || throw(DimensionMismatch("A and C must have the same number of columns"))
-   (!ismissing(B) && n !== size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
+   (!ismissing(B) && n != size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
    
    maxpn = max(p,n)
    μl = Vector{Int}(undef,maxpn)
@@ -1030,7 +1030,7 @@ function sklf_leftfin!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::Abstract
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    p, n1 = size(C)
    n == n1 || throw(DimensionMismatch("A and C must have the same number of columns"))
-   (!ismissing(B) && n !== size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
+   (!ismissing(B) && n != size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
 
    μl = Vector{Int}(undef,max(n,1))
    withQ ? Q = Matrix{eltype(A)}(I,n,n) : Q = nothing
@@ -1115,7 +1115,7 @@ function sklf_right!(A::AbstractMatrix{T1}, B::AbstractMatrix{T1}, C::Union{Abst
    n = LinearAlgebra.checksquare(A)
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
-   (!ismissing(C) && n !== size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
+   (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
    
    νr = Vector{Int}(undef,max(n,1))
    nu = 0
@@ -1204,7 +1204,7 @@ function sklf_left!(A::AbstractMatrix{T1}, C::AbstractMatrix{T1}, B::Union{Abstr
    n = LinearAlgebra.checksquare(A)
    p, n1 = size(C)
    n == n1 || throw(DimensionMismatch("A and C must have the same number of columns"))
-   (!ismissing(B) && n !== size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
+   (!ismissing(B) && n != size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
    
    μl = Vector{Int}(undef,max(n,p))
    nu = 0

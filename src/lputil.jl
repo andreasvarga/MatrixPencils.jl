@@ -452,7 +452,7 @@ function _preduce3!(n::Int, m::Int, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}
          else
             ρ += 1
          end
-         if ind !== j
+         if ind != j
             (jp[j], jp[ind]) = (jp[ind], jp[j])
             (B[:,j],B[:,ind]) = (B[:,ind],B[:,j])
          end
@@ -612,7 +612,7 @@ function _preduce4!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1},N::AbstractMat
          else
             ρ += 1
          end
-         if ind !== ii
+         if ind != ii
             (jp[ii], jp[ind]) = (jp[ind], jp[ii])
             (C[ii,:],C[ind,:]) = (C[ind,:],C[ii,:])
          end

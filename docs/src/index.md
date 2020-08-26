@@ -55,6 +55,9 @@ The current version of the package includes the following functions:
 | **[`isregular`](@ref)** | Checking the regularity of a pencil |
 | **[`isunimodular`](@ref)** | Checking the unimodularity of a pencil |  
 | **[`fisplit`](@ref)** | Finite-infinite eigenvalue splitting |
+| **[`saloc`](@ref)** | Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)` |
+| **[`salocd`](@ref)** | Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`  |
+| **[`ordeigvals`](@ref)** | Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.   |
 
 **Some applications of matrix pencil computations**
 
@@ -152,10 +155,13 @@ A complete list of implemented functions is available [here](https://sites.googl
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), building linearizations of polynomial matrices in other bases
-(e.g., orthogonal polynomial bases) or in sparse polynomial representations, applications of structured matrix pencils manipulations to rational matrix problems, etc.
+The implementation of tools for the reduction of a regular pencil to various upper block triangular and block-diagonal structures is planned.
 
 ## Release Notes
+
+### Version 1.2
+
+This minor release includes new implementations of computational procedures to allocate the spectrum of a matrix or of a regular matrix pencil. A new function is available to efficiently compute the eigenvalues of a Schur matrix or of a generalized (Schur, upper triangular) pair (and order-preserving version of `eigvals`). The function `fisplit` has been enhanced to compute the subpencil containing the infinite eigenvalues in an upper triangular form.
 
 ### Version 1.1
 

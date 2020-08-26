@@ -213,7 +213,7 @@ function pmzeros(P::AbstractArray{T,3}; CF1::Bool = size(P,1) <= size(P,2) ? fal
       kinfo.lki == [] || dm1 <= 0 || (kinfo.lki .-= dm1)
       kinfo.nrank > 0 && dm1 > 0 && (kinfo.nrank -= size(P,1)*dm1)
    end
-   if iz !== [] && dm1 > 0 
+   if iz != [] && dm1 > 0 
       iz = iz[iz .> dm1] .- (dm1)
       val = [val[1:kinfo.nf]; Inf*ones(real(T),sum(iz))]
    end 

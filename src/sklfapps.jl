@@ -381,11 +381,11 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
       end
    
    
-      (!ismissing(A) && eltype(A) !== T) && (A = convert(Matrix{T},A))
-      (!eident && !ismissing(E) && eltype(E) !== T) && (E = convert(Matrix{T},E))
-      (!ismissing(B) && eltype(B) !== T) && (B = convert(Matrix{T},B))
-      (!ismissing(C) && eltype(C) !== T) && (C = convert(Matrix{T},C))
-      (!ismissing(D) && eltype(D) !== T) && (D = convert(Matrix{T},D))
+      (!ismissing(A) && eltype(A) != T) && (A = convert(Matrix{T},A))
+      (!eident && !ismissing(E) && eltype(E) != T) && (E = convert(Matrix{T},E))
+      (!ismissing(B) && eltype(B) != T) && (B = convert(Matrix{T},B))
+      (!ismissing(C) && eltype(C) != T) && (C = convert(Matrix{T},C))
+      (!ismissing(D) && eltype(D) != T) && (D = convert(Matrix{T},D))
       if eident 
          scale = opnorm(A,1)*rand()
          return rank([A+scale*E B; C D], atol = atol1, rtol = rtol)

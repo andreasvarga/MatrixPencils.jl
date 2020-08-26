@@ -458,13 +458,13 @@ function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
          else
             ρ += 1
          end
-         if ind !== j
+         if ind != j
             (jp[j], jp[ind]) = (jp[ind], jp[j])
             (B1[:,j],B1[:,ind]) = (B1[:,ind],B1[:,j])
          end
          for ii = n:-1:j+1
              iim1 = ii-1
-             if B1[ii,j] !== ZERO
+             if B1[ii,j] != ZERO
                 G, B1[iim1,j] = givens(B1[iim1,j],B1[ii,j],iim1,ii)
                 B1[ii,j] = ZERO
                 lmul!(G,view(B1,:,j+1:m))
@@ -488,7 +488,7 @@ function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
          for j = 1:m
             for ii = n:-1:j+1
                iim1 = ii-1
-               if B1[ii,j] !== ZERO
+               if B1[ii,j] != ZERO
                   G, B1[iim1,j] = givens(B1[iim1,j],B1[ii,j],iim1,ii)
                   B1[ii,j] = ZERO
                   lmul!(G,view(B1,:,j+1:m))
@@ -616,13 +616,13 @@ function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
          else
             ρ += 1
          end
-         if ind !== ii
+         if ind != ii
             (jp[ii], jp[ind]) = (jp[ind], jp[ii])
             (C1[ii,:],C1[ind,:]) = (C1[ind,:],C1[ii,:])
          end
          for jj = 1:n-i
              jjp1 = jj+1
-             if C1[ii,jj] !== ZERO
+             if C1[ii,jj] != ZERO
                 G, r = givens(conj(C1[ii,jjp1]),conj(C1[ii,jj]),jjp1,jj)
                 C1[ii,jjp1] = conj(r)
                 C1[ii,jj] = ZERO
@@ -646,7 +646,7 @@ function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
              ii = p-i+1
              for jj = 1:n-i
                 jjp1 = jj+1
-                if C1[ii,jj] !== ZERO
+                if C1[ii,jj] != ZERO
                    G, r = givens(conj(C1[ii,jjp1]),conj(C1[ii,jj]),jjp1,jj)
                    C1[ii,jjp1] = conj(r)
                    C1[ii,jj] = ZERO

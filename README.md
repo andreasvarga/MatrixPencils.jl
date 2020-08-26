@@ -50,6 +50,9 @@ The current version of the package includes the following functions:
 * **isregular**   Checking the regularity of a pencil.
 * **isunimodular** Checking the unimodularity of a pencil.
 * **fisplit**  Finite-infinite eigenvalue splitting.
+* **saloc**  Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)`.
+* **salocd**  Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`.
+* **ordeigvals**  Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.
 
 **Some applications of matrix pencil computations**
 
@@ -80,6 +83,7 @@ The current version of the package includes the following functions:
 * **pmdeg**  Determination of the degree of a polynomial matrix.
 * **pmeval**  Evaluation of a polynomial matrix for a given value of its argument.
 * **pmreverse**  Building the reversal of a polynomial matrix.  
+* **pmdivrem**  Quotients and remainders of elementwise divisions of two polynomial matrices.  
 * **pm2lpCF1**  Building a linearization in the first companion Frobenius form.
 * **pm2lpCF2**  Building a linearization in the second companion Frobenius form.  
 * **pm2ls**  Building a structured linearization of a polynomial matrix.
@@ -132,7 +136,7 @@ A complete list of implemented functions is available [here](https://sites.googl
 
 ## Future plans
 
-The collection of tools will be extended by adding new functionality, such as new tools for the manipulation of regular pencils (e.g., reduction to a block-diagonal structure, eigenvalue assignment), building linearizations of polynomial matrices in other bases (e.g., orthogonal polynomial bases), etc.
+The implementation of tools for the reduction of a regular pencil to various upper block triangular and block-diagonal structures is planned.
 
 ## Supplimentary information
 
