@@ -480,6 +480,12 @@ e = rand(3,3); a = e*[1 1 1;-1 1 0;0 0 2]; b = rand(3,5); evals = [-3]; sdeg = -
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e && blkdims == [0, 0, 3, 0]
 sdeg, eigvals(a+b*f,e) 
 
+## simple cases # test
+e = rand(3,3); a = e*[1 1 0;-1 1 0;0 0 2];  b = e*[0 0; 0 0; 1 1];  evals = [-1+im*0.5;-1-im*0.5]; 
+@time f, SF, blkdims = saloc(a, e, b, evals =  evals)
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && blkdims == [0, 0, 1, 2] 
+evals,eigvals(a+b*f,e)
+
 
 ## SB01BD EXAMPLE PROGRAM DATA
 a = [
