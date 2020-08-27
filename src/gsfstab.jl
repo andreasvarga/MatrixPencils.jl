@@ -339,7 +339,7 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
                     # assign the last real pole to the default value of sdeg
                     γ = disc ? real(T)(0.95) : real(T)(-0.05)
                     f2 = -b2\(a2-I*γ)
-                else
+                 else
                     # adjoin a real block or interchange the last two blocks
                     k = 2; kk = nc-1:nc; 
                     a2 = view(A1,kk,kk)
@@ -362,23 +362,19 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
             # assign a pair of eigenvalues 
             γ, evalsr, evalsc = eigselect2(evalsr,evalsc,sdeg,evb[end],disc)
             f2, u = saloc2(a2,b2,γ,tola,tolb)   
-            if f2 === nothing
-               if isequal(u,I) 
-                  nb -= 2; nc -= 2; nu += 2; 
-               else
-                  irow = 1:nc; jcol = nc-1:n;
-                  A1[kk,jcol] = u'*view(A1,kk,jcol); A1[irow,kk] = view(A1,irow,kk)*u;
-                  A1[nc,nc-1] = ZERO
-                  Z[:,kk] = view(Z,:,kk)*u
-                  nb -= 1; nc -= 1; nu += 1; 
-               end
+            if f2 === nothing  # the case b2 = 0 can not occur
+               irow = 1:nc; jcol = nc-1:n;
+               A1[kk,jcol] = u'*view(A1,kk,jcol); A1[irow,kk] = view(A1,irow,kk)*u;
+               A1[nc,nc-1] = ZERO
+               Z[:,kk] = view(Z,:,kk)*u
+               nb -= 1; nc -= 1; nu += 1; 
                # recover the failed selection 
                imag(γ[1]) == 0 ? (ismissing(evalsr) ? evalsr = γ : evalsr = [γ; evalsr]) : (ismissing(evalsc) ? evalsc = γ : evalsc = [γ; evalsc])
             end
          end
          if f2 !== nothing
             # check for numerical stability
-            norm(f2,Inf) > fnrmtol && (ihb += 1)
+            norm(f2,Inf) > fnrmtol && (ihf += 1)
             X = view(B1,ib,:)*f2
             A1[1:nc,kk] += view(Z,ib,1:nc)'*X
             F += f2*view(Z,:,kk)'
@@ -479,7 +475,7 @@ References:
 
 """
 function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}, B::AbstractMatrix; 
-                  evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
+                  disc::Bool = false, evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
                   atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
                   fast::Bool = true, sepinf::Bool = true)
@@ -535,16 +531,7 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    # operate only on the nonzero rows of B
    ib = ilob:ihib
    nrmB = opnorm(view(B1,ib,:),1)
-   
-   if !ismissing(sdeg)
-      disc = (sdeg >= 0);
-      if disc && sdeg >= 1
-         error("Invalid value for sdeg")
-      end
-   else
-      disc = false;
-   end
-   
+    
    complx = (T <: Complex)
    
    # sort desired eigenvalues
@@ -562,9 +549,9 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
          if isempty(tempc)
             evalsc = missing
          else
-            if !isequal(tempc,conj(evals1[imag.(evals1) .< 0])) 
-               error("evals must be a self-conjugated complex vector")
-            end 
+            tempc1 = conj(evals1[imag.(evals1) .< 0])
+            isequal(tempc[sortperm(real(tempc))],tempc1[sortperm(real(tempc1))]) ||
+                    error("evals must be a self-conjugated complex vector")
             evalsc = [transpose(tempc[:]); transpose(conj.(tempc[:]))][:]
          end
       end
@@ -576,8 +563,8 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    # set default values of sdeg if evals = missing
    if ismissing(sdeg)
       if ismissing(evals1) 
-        sdeg = disc ? real(T)(0.95) : real(T)(-0.05)
-        smarg = sdeg;         
+         sdeg = disc ? real(T)(0.95) : real(T)(-0.05)
+         smarg = sdeg;   
       else
          smarg = disc ? real(T)(0) : real(T)(-Inf) 
       end
@@ -719,19 +706,15 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
             # assign a pair of eigenvalues 
             γ, evalsr, evalsc = eigselect2(evalsr,evalsc,sdeg,evb[end],disc)
             f2, u, v = saloc2(a2,e2,b2,γ,tola,tolb)
-            if f2 === nothing
-               if isequal(u,I) && isequal(v,I)
-                  nb -= 2; nc -= 2; nfu += 2
-               else
-                  irow = 1:nc; jcol = nc-1:n;
-                  A1[kk,jcol] = u'*view(A1,kk,jcol); A1[irow,kk] = view(A1,irow,kk)*v;
-                  A1[nc,nc-1] = ZERO
-                  E1[kk,jcol] = u'*view(E1,kk,jcol); E1[irow,kk] = view(E1,irow,kk)*v; 
-                  E1[nc,nc-1] = ZERO
-                  Q[:,kk] = view(Q,:,kk)*u;
-                  Z[:,kk] = view(Z,:,kk)*v;
-                  nb -= 1; nc -= 1; nfu += 1
-               end
+            if f2 === nothing  # the case b2 = 0 can not occur
+               irow = 1:nc; jcol = nc-1:n;
+               A1[kk,jcol] = u'*view(A1,kk,jcol); A1[irow,kk] = view(A1,irow,kk)*v;
+               A1[nc,nc-1] = ZERO
+               E1[kk,jcol] = u'*view(E1,kk,jcol); E1[irow,kk] = view(E1,irow,kk)*v; 
+               E1[nc,nc-1] = ZERO
+               Q[:,kk] = view(Q,:,kk)*u;
+               Z[:,kk] = view(Z,:,kk)*v;
+               nb -= 1; nc -= 1; nfu += 1
                # recover the failed selection 
                imag(γ[1]) == 0 ? (ismissing(evalsr) ? evalsr = γ : evalsr = [γ; evalsr]) : (ismissing(evalsc) ? evalsc = γ : evalsc = [γ; evalsc])
             end
@@ -893,10 +876,9 @@ function saloc2(A::AbstractMatrix{T},B::AbstractMatrix{T},evc::AbstractVector{T1
    rankB = 0
    s1 > tolb && (rankB += 1)
    s2 > tolb && (rankB += 1)
-   if rankB == 0
-      # return if norm(B) < tolb
-      return nothing, Matrix{T}(I,2,2)
-   end
+   # return if norm(B) < tolb
+   rankB == 0 && (return nothing, Matrix{T}(I,2,2))
+
    at = U'*A*U;  
    if s2 <= tolb && abs(at[2,1]) <= tola
          # return if rank(B) == 1 and (A-lambda*I,B) uncontrollable
@@ -953,33 +935,24 @@ function saloc2(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},e
     rankB = 0
     s1 > tolb && (rankB += 1)
     s2 > tolb && (rankB += 1)
-    if rankB == 0
-       # return if norm(B) < TOLB
-       return nothing, Matrix{T}(I,2,2), Matrix{T}(I,2,2)
+    # return if norm(B) < tolb
+    rankB == 0 && (return nothing, Matrix{T}(I,2,2), Matrix{T}(I,2,2))
+
+    at = U'*A; et = U'*E;
+    # determine V such that et = U'*E*V is upper triangular
+    # FQ = qr([et[2,2]; et[2,1]]); V = FQ.Q*Matrix{T}(I,2,2); V = V[2:-1:1,2:-1:1]';  
+    G,  = LinearAlgebra.givens(et[2,2], et[2,1],1,2)
+    # at = at*G; 
+    rmul!(at,G) 
+    if s2 <= tolb && abs(at[2,1]) <= tola
+       # return if rank(B) == 1 and (A-lambda*E,B) uncontrollable
+       # return nothing, U, V 
+       return nothing, U, [G.c G.s; -G.s G.c]
     end
-    if isequal(E,I)
-       at = U'*A*U;  
-       if  s2 <= tolb && abs(at[2,1]) <= tola
-          # return if rank(B) == 1 and (A-lambda*I,B) uncontrollable
-          return nothing, U, U
-      end
-    else
-       at = U'*A; et = U'*E;
-       # determine V such that et = U'*E*V is upper triangular
-       # FQ = qr([et[2,2]; et[2,1]]); V = FQ.Q*Matrix{T}(I,2,2); V = V[2:-1:1,2:-1:1]';  
-       G,  = LinearAlgebra.givens(et[2,2], et[2,1],1,2)
-       # at = at*G; 
-       rmul!(at,G) 
-       if s2 <= tolb && abs(at[2,1]) <= tola
-          # return if rank(B) == 1 and (A-lambda*E,B) uncontrollable
-          # return nothing, U, V 
-          return nothing, U, G*Matrix{T}(I,2,2)
-       end
-       # reduce to standard case
-       SF = svd(E\B; full=true);
-       s1 = SF.S[1]; U = SF.U; v1 = SF.V
-       at = U'*(E\A)*U;
-    end
+    # reduce to standard case
+    SF = svd(E\B; full=true);
+    s1 = SF.S[1]; U = SF.U; v1 = SF.V
+    at = U'*(E\A)*U;
     if rankB == 2
        # try with a direct solution, without inversion
        γ = [real(evc[1]) imag(evc[1]); imag(evc[2]) real(evc[2])]; 
@@ -1050,7 +1023,7 @@ If `evr = missing`, `evc = missing` and `disc = true`, then
 `γ[1] = sdeg/abs(evref))*evref[1]` and `γ[2] = sdeg/abs(evref))*evref[2]`. 
 """
 function eigselect2(evr::Union{AbstractVector,Missing},evc::Union{AbstractVector,Missing},sdeg::Union{Real,Missing},evref::Union{Real,Complex},disc::Bool)
-
+   
    evref = real(evref) + im*abs(imag(evref))
    if ismissing(evr) && ismissing(evc)
       if ismissing(sdeg)

@@ -118,14 +118,11 @@ a = [1 1 0;-1 1 0;0 0 2];  b = [0 0; 0 0; 1 1];  evals = [-1+im*0.5;-1-im*0.5];
 @test SF.Z*SF.T*SF.Z' ≈ a+b*f && blkdims == [0, 1, 2] 
 evals,eigvals(a+b*f)
 
-## simple cases # test
+## simple cases 
 a = [1 1; 0 1 ];  b = [0 0; 1 1];  evals = [-1+im*0.5;-1-im*0.5]; 
 @time f, SF, blkdims = saloc(a,b, evals =  evals)
 @test SF.Z*SF.T*SF.Z' ≈ a+b*f && blkdims == [0, 2, 0] 
 evals,eigvals(a+b*f)
-
-
-
 
 ## simple cases
 a = [1 1 1;-1 1 0;0 0 2];  b = rand(3,5);  evals = [-1;-0.5;-2]; 
@@ -261,6 +258,19 @@ a = randn(Ty,6,6); b = rand(Ty,6,3);
 @test SF.Z*SF.T*SF.Z' ≈ a+b*f  && sum(blkdims[1:2]) == 6 &&
       all(real(SF.values) .<= 0)
 
+# random example - stabilization  
+a = randn(Ty,6,6); b = rand(Ty,6,3);    
+@time f, SF, blkdims = saloc(a,b,evals = [-1, -2])
+@test SF.Z*SF.T*SF.Z' ≈ a+b*f  && sum(blkdims[1:2]) == 6 &&
+      all(real(SF.values) .<= 0)
+
+# random example - stabilization 
+a = randn(Ty,6,6); b = rand(Ty,6,3);    
+@time f, SF, blkdims = saloc(a,b,evals = [-1])
+@test SF.Z*SF.T*SF.Z' ≈ a+b*f  && sum(blkdims[1:2]) == 6 &&
+      all(real(SF.values) .<= 0)
+
+
 # random example - stabilization 
 a = rand(Ty,6,6); b = rand(Ty,6,3);  sdeg = 0.2 
 @time f, SF, blkdims = saloc(a,b, sdeg = sdeg, disc = true)
@@ -271,7 +281,7 @@ a = rand(Ty,6,6); b = rand(Ty,6,3);
 @time f, SF, blkdims = saloc(a,b, disc = true)
 @test SF.Z*SF.T*SF.Z' ≈ a+b*f  && sum(blkdims[1:2]) == 6 &&
       all(abs.(SF.values) .<= 1)
-
+      
 ##  uncontrollable system   
 n = 10; nc = 6; nu = n-nc; m = 4; 
 au = rand(Ty,nu,nu); ac = rand(Ty,nc,nc);  
@@ -401,6 +411,12 @@ a = [1 1;0 2]; e = rand(2,2); b = rand(2,5); evals = [-1+im*0.5;-1-im*0.5];
 @time f, SF, blkdims = saloc(a,e,b,evals = evals)
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e && blkdims == [0, 0, 2, 0] &&
       sort(real(evals)) ≈ sort(real(SF.α ./SF.β)) && sort(imag(evals)) ≈ sort(imag(SF.α ./SF.β)) 
+evals,eigvals(a+b*f,e)
+
+## simple cases 
+e = rand(3,3); a = e*[1 1 0;-1 1 0;0 0 2];  b = e*[0 0; 0 0; 1 1];  evals = [-1+im*0.5;-1-im*0.5]; 
+@time f, SF, blkdims = saloc(a, e, b, evals =  evals)
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e && blkdims == [0, 0, 1, 2] 
 evals,eigvals(a+b*f,e)
 
 
@@ -534,6 +550,28 @@ evals = complx ? eigvals(a,e) : evsym!(eigvals(a,e));
 @time f, SF, blkdims = saloc(a,e,b,evals = evals, fast = fast)
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && norm(f) < 1.e-10  && blkdims == [0, 0, 6, 0] && 
       sort(real(evals)) ≈ sort(real(SF.values)) && sort(imag(evals)) ≈ sort(imag(SF.values)) 
+
+# random example  - stabilization 
+a = randn(Ty,6,6); e = randn(Ty,6,6); b = rand(Ty,6,3);    
+@time f, SF, blkdims = saloc(a,e,b,evals = [-1, -2])
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && sum(blkdims[2:3]) == 6  &&
+      all(real(SF.values) .<= 0)  
+
+@time f, SF, blkdims = saloc(a,b,evals = [-1, -2])
+
+
+# random example  - stabilization 
+a = randn(Ty,6,6); e = randn(Ty,6,6); b = rand(Ty,6,3);    
+@time f, SF, blkdims = saloc(a,e,b,disc = true, sepinf = false)
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && sum(blkdims[2:3]) == 6  &&
+      all(abs.(SF.values) .<= 1)  
+
+# random example  - stabilization 
+a = randn(Ty,6,6); e = randn(Ty,6,6); b = rand(Ty,6,3);    
+@time f, SF, blkdims = saloc(a,e,b,disc = true, sepinf = true)
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && sum(blkdims[2:3]) == 6  &&
+      all(abs.(SF.values) .<= 1)  
+
 
 # random example  
 a = rand(Ty,6,6); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)]; e = rand(Ty,6,6); 
