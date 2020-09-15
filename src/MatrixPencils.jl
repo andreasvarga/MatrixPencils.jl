@@ -1,5 +1,5 @@
 module MatrixPencils
-# Release V0.6
+# Release V1.3
 
 const BlasFloat = Union{Float64,Float32,ComplexF64,ComplexF32}
 const BlasReal = Union{Float64,Float32}
@@ -10,7 +10,7 @@ using Polynomials
 using Random
 
 include("lapackutil2.jl")
-import .LapackUtil2: larfg!, larfgl!, larf!, gghrd!, hgeqz!, tgexc!, lanv2, lag2, safemin
+import .LapackUtil2: larfg!, larfgl!, larf!, gghrd!, hgeqz!, tgexc!, tgsen!, lanv2, lag2, safemin, tgsyl!
 
 export preduceBF, klf, klf_left, klf_right, klf_rlsplit
 export prank, pkstruct, peigvals, pzeros, KRInfo
@@ -26,14 +26,8 @@ export pmkstruct, pmeigvals, pmzeros, pmzeros1, pmzeros2, pmroots, pmpoles, pmpo
 export rmeval, rm2lspm, rm2ls, ls2rm, rm2lps, lps2rm
 export lpmfd2ls, rpmfd2ls, lpmfd2lps, rpmfd2lps, pminv2ls, pminv2lps
 export rmkstruct, rmzeros, rmzeros1, rmpoles, rmpoles1, rmrank 
-export saloc, salocd, ordeigvals
-#export polbascoeffs, polbasparams, polbas2mon, polmon2bas
-#export dss, ss, gnrank, gzero, gpole
-#export LTISystem, AbstractDescriptorStateSpace
-#export _preduceBF!, _preduce1!, _preduce2!, _preduce3!, _preduce4!
-
-#import Base: +, -, *
-#import LinearAlgebra: copy_oftype, require_one_based_indexing
+export saloc, salocd, ordeigvals, isqtriu
+export fihess, fischur, fischursep, fiblkdiag, gsblkdiag
 import LinearAlgebra: copy_oftype
 
 include("klftools.jl")
@@ -47,8 +41,8 @@ include("pmapps.jl")
 include("poltools.jl")
 include("rmtools.jl")
 include("rmapps.jl")
-#include("dstools.jl")
 include("lputil.jl")
 include("slputil.jl")
 include("gsfstab.jl")
+include("gsep.jl")
 end

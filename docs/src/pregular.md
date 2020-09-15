@@ -5,9 +5,14 @@ ordeigvals
 isregular
 isunimodular
 fisplit
+MatrixPencils.fisplit!
+fihess
+fischur
+fischursep
+fiblkdiag
+gsblkdiag
 saloc
 salocd
-MatrixPencils.fisplit!
 MatrixPencils._qrE!
 MatrixPencils._svdlikeAE!
 ```

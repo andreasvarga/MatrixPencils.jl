@@ -293,7 +293,7 @@ function rmpoles(N::AbstractArray{T1,3}, D::AbstractArray{T2,3};
       ip = Int[]
       id = Int[]
    end
-   return [eigvals(A[1:nfp,1:nfp]); Inf*ones(eltype(A),sum(ip))], ip, id
+   return [eigvals!(view(A,1:nfp,1:nfp)); Inf*ones(eltype(A),sum(ip))], ip, id
 end
 function rmpoles(N::AbstractArray{T,3}; kwargs...) where T 
    return pmpoles2(N; kwargs...) 
@@ -471,22 +471,17 @@ function rmpoles1(N::AbstractArray{T1,3}, D::AbstractArray{T2,3};
    A, E, _, F, _, G, _, H, blkdims = rm2lps(N,D; obs = true, contr = true, fast = fast, atol = atol, rtol = rtol) 
    n = size(A,1)                               
    nfp = blkdims[1]
-   if nfp < n
-      p, m = size(H)
-      ii = nfp+1:n
-      ni = n-nfp
-      T = promote_type(T1,T2)
-      M = [A[ii,ii] zeros(T,ni,p+m); zeros(T,p,ni+m) I; zeros(T,m,ni) I zeros(T,m,p)]
-      N = [E[ii,ii] F[ii,:] zeros(T,ni,p); G[:,ii] H zeros(T,p,p); zeros(T,m,ni+m+p)]
-      infop = pkstruct(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
-      ip = infop.id .- 1
-      ip = ip[ip .> 0]
-      id = infop.id
-   else
-      ip = Int[]
-      id = Int[]
-   end
-   return [eigvals(A[1:nfp,1:nfp]); Inf*ones(eltype(A),sum(ip))], ip, id   
+   p, m = size(H)
+   ii = nfp+1:n
+   ni = n-nfp
+   T = promote_type(T1,T2)
+   M = [A[ii,ii] zeros(T,ni,p+m); zeros(T,p,ni+m) I; zeros(T,m,ni) I zeros(T,m,p)]
+   N = [E[ii,ii] F[ii,:] zeros(T,ni,p); G[:,ii] H zeros(T,p,p); zeros(T,m,ni+m+p)]
+   infop = pkstruct(M, N, fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
+   ip = infop.id .- 1
+   ip = ip[ip .> 0]
+   id = infop.id
+   return [eigvals!(view(A,1:nfp,1:nfp)); Inf*ones(eltype(A),sum(ip))], ip, id   
    # p, m = size(D)
    # n = size(A,1)     
    # T = eltype(A)  

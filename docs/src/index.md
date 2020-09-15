@@ -55,6 +55,11 @@ The current version of the package includes the following functions:
 | **[`isregular`](@ref)** | Checking the regularity of a pencil |
 | **[`isunimodular`](@ref)** | Checking the unimodularity of a pencil |  
 | **[`fisplit`](@ref)** | Finite-infinite eigenvalue splitting |
+| **[`fihess`](@ref)** | Finite-infinite eigenvalue splitting in a generalized Hessenberg form|
+| **[`fischur`](@ref)** | Finite-infinite eigenvalue splitting in a generalized Schur form|
+| **[`fischursep`](@ref)** | Finite-infinite eigenvalue splitting in an ordered generalized Schur form|
+| **[`fiblkdiag`](@ref)** | Finite-infinite eigenvalue splitting based block diagonalization |
+| **[`gsblkdiag`](@ref)** | Finite-infinite and stable-unstable eigenvalue splitting based block diagonalization|
 | **[`saloc`](@ref)** | Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)` |
 | **[`salocd`](@ref)** | Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`  |
 | **[`ordeigvals`](@ref)** | Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.   |
@@ -151,17 +156,21 @@ The current version of the package includes the following functions:
 | **[`rmpoles1`](@ref)** | Computation of the (infinite) poles using pencil based structured linearization |
 | **[`rmrank`](@ref)** | Determination of the normal rank |
 
-A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
+A complete list of implemented functions is available [here](https://sites.google.com/view/andreasvarga/home/software/matrix-pencils-in-julia).
 
 ## Future plans
 
-The implementation of tools for the reduction of a regular pencil to various upper block triangular and block-diagonal structures is planned.
+Functional enhancements of some functions will be performed. Also, some new functions will be implemented addressing special decompositions to be used in a forthcoming package for handling descriptor system representations.
 
 ## Release Notes
 
+### Version 1.3
+
+This minor release includes new functions which implement computational procedures for spectrum separation of a regular matrix pencil. For a given pair of matrices, new functions are available to compute the separation of finite and infinite eigenvalues using orthogonal or unitary transformations, with the resulting pair in generalized Hessenberg form, generalized Schur form or in an ordered generalized Schur form. Furthermore, functions have been implemented for the block diagonalization of matrix pairs for various ordering of finite and infinite eigenvalues using the method of [14]. 
+
 ### Version 1.2
 
-This minor release includes new implementations of computational procedures to allocate the spectrum of a matrix or of a regular matrix pencil. A new function is available to efficiently compute the eigenvalues of a Schur matrix or of a generalized (Schur, upper triangular) pair (and order-preserving version of `eigvals`). The function `fisplit` has been enhanced to compute the subpencil containing the infinite eigenvalues in an upper triangular form.
+This minor release includes new functions which implement computational procedures to allocate the spectrum of a matrix or of a regular matrix pencil based on methods proposed in [12] and [13]. A new function is available to efficiently compute the eigenvalues of a Schur matrix or of a generalized (Schur, upper triangular) pair (and order-preserving version of `eigvals`). The function `fisplit` has been enhanced to compute the subpencil containing the infinite eigenvalues in an upper triangular form.
 
 ### Version 1.1
 
@@ -237,5 +246,14 @@ Int. J. Control, Vol.31(5) (1980) 1007–1009.
 [10] F. De Terán, F. M. Dopico, D. S. Mackey, Spectral equivalence of polynomial matrices and
 the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-333, 2014.
 
-[11] A. Varga, On computing the Kronecker structure of polynomial matrices using Julia, June 2020,
+[11] A. Varga, On computing the Kronecker structure of polynomial and rational matrices using Julia, 2020,
 [arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).
+
+[12] A. Varga. A Schur method for pole assignment. IEEE Trans. on Automatic Control, vol. 26, pp. 517-519, 1981.
+
+[13] A. Varga. On stabilization methods of descriptor systems. Systems & Control Letters, vol. 24, pp.133-138, 1995.
+
+[14] B. Kågström and P. Van Dooren. Additive decomposition of a transfer function with respect
+to a specified region. In M. A. Kaashoek, J. H. van Schuppen, and A. C. M. Ran (Eds.),
+Signal Processing, Scattering and Operator Theory, and Numerical Methods, Proc. of MTNS 1989,
+Amsterdam, The Netherlands, vol. 3, pp. 469–477. Birhhäuser, Boston, 1990.

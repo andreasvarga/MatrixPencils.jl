@@ -605,7 +605,8 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    end
 
    if sepinf 
-      _, nf, ninf = fisplit!(A1, E1, Q, Z, missing, missing; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = true) 
+      _, blkdims = fisplit!(A1, E1, Q, Z, missing, missing; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = true) 
+      ninf = blkdims[1]
       ilo = ninf+1; 
       gghrd!('V','V',ilo, n, A1, E1, Q, Z)
       _, _, α, β, _, _ = hgeqz!('V','V',ilo, n, A1, E1, Q, Z)
@@ -633,7 +634,7 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    nb = length(select[select .== 0]) 
 
    nfg = n-nb-ninf
-   fnrmtol = 1000*nrmA/nrmB
+   fnrmtol = 1000*max(nrmA,1)/nrmB
    
    nfu = 0; nfa = 0
    nc = n  
@@ -765,7 +766,7 @@ Compute the vector `ev` of eigenvalues of a Schur matrix `A` in their order of a
 `ordeigvals` is an order-preserving version of `eigvals` for triangular/quasitriangular matrices.
 """
 function ordeigvals(A::AbstractMatrix{T}) where T
-   isqutriu(A) || error("A must be in Schur form")
+   isqtriu(A) || error("A must be in Schur form")
    n = size(A,1)
    ZERO = zero(T)
    if T <: Complex
@@ -806,7 +807,7 @@ in their order of appearance down the diagonals of `A` and `B`.
 `α` is a complex vector and `β` is a real vector such that the generalized eigenvalues `ev` can be alternatively obtained with `α./β`.
 """
 function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
-   (isqutriu(A) && istriu(B))|| error("The pair (A,B) must be in a generalized Schur form")
+   (isqtriu(A) && istriu(B))|| error("The pair (A,B) must be in a generalized Schur form")
    n = size(A,1)
    complx = T <: Complex
    if complx
@@ -816,7 +817,10 @@ function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
          α[i] = A[i,i]
          β[i] = B[i,i]
       end
-      return α./β, α, β
+      ev = α./β
+      ev[iszero.(β)] .= Inf
+      ev[iszero.(α) .& iszero.(β)] .= NaN + NaN*im
+      return ev, α, β
    else
       αr = Vector{T}(undef, n)
       αi = Vector{T}(undef, n)
@@ -841,6 +845,8 @@ function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
       α = iszero(αi) ? αr : Complex.(αr,αi)
       ev = α./β
       complx || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+      ev[iszero.(β)] .= Inf
+      ev[iszero.(α) .& iszero.(β)] .= NaN
       return ev, α, β
    end
 end
@@ -1073,14 +1079,14 @@ function eigselect2(evr::Union{AbstractVector,Missing},evc::Union{AbstractVector
 # end eigselect2
 end
 """
-    isqutriu(A::AbstractMatrix) -> Bool
+    isqtriu(A::AbstractMatrix) -> Bool
 
 Test whether `A` is a square matrix in a quasi upper triangular form 
 (e.g., in real or complex Schur form). In the real case, `A` may have 2x2 
 diagonal blocks, which however must not correspond to complex conjugate eigenvalues. 
 In the complex case, it is tested if `A` is upper triangular.
 """
-function isqutriu(A)
+function isqtriu(A)
    @assert !Base.has_offset_axes(A)
    m, n = size(A)
    m == n || (return false)

@@ -50,6 +50,11 @@ The current version of the package includes the following functions:
 * **isregular**   Checking the regularity of a pencil.
 * **isunimodular** Checking the unimodularity of a pencil.
 * **fisplit**  Finite-infinite eigenvalue splitting.
+* **fihess**  Finite-infinite eigenvalue splitting in a generalized Hessenberg form
+* **fischur**  Finite-infinite eigenvalue splitting in a generalized Schur form
+* **fischursep**  Finite-infinite eigenvalue splitting in an ordered generalized Schur form
+* **fiblkdiag**  Finite-infinite eigenvalue splitting based block diagonalization
+* **gsblkdiag**  Finite-infinite and stable-unstable eigenvalue splitting based block diagonalization
 * **saloc**  Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)`.
 * **salocd**  Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`.
 * **ordeigvals**  Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.
@@ -132,7 +137,8 @@ The current version of the package includes the following functions:
 * **rmpoles1**  Computation of the infinite poles using linear pencil based structured linearization.
 * **rmrank**  Determination of the normal rank.
 
-A complete list of implemented functions is available [here](https://sites.google.com/site/andreasvargacontact/home/software/matrix-pencils-in-julia).
+A complete list of implemented functions is available
+[here](https://sites.google.com/view/andreasvarga/home/software/matrix-pencils-in-julia).
 
 ## Future plans
 

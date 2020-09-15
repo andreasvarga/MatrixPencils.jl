@@ -89,7 +89,7 @@ function spzeros(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifo
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),niz) ], minf(id[2:i]), 
+   return [eigvals!(view(M,if1,jf1),view(N,if1,jf1)); Inf*ones(real(T),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """
@@ -179,7 +179,7 @@ function speigvals(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals(M[if1,jf1],N[if1,jf1]); Inf*ones(real(T),ni) ], 
+   return [eigvals!(view(M,if1,jf1),view(N,if1,jf1)); Inf*ones(real(T),ni) ], 
           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """

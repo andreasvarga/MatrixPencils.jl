@@ -303,7 +303,7 @@ function isunimodular(A::AbstractMatrix, E::Union{AbstractMatrix,Nothing}; atol1
    return n == 0                                           
 end
 """
-    fisplit(A, E, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (At, Et, Bt, Ct, Q, Z, ν, nf, ni)
+    fisplit(A, E, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (At, Et, Bt, Ct, Q, Z, ν, blkdims)
 
 Reduce the regular matrix pencil `A - λE` to an equivalent form `At - λEt = Q'*(A - λE)*Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `At` and `Et` are in one of the
@@ -324,6 +324,7 @@ of the staircase form  `Ai-λEi` such that `i`-th block has dimensions `ν[i] x 
 The difference `ν[i]-ν[i+1]` for `i = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` 
 (with `ν[nb+1] = 0`).
 
+The dimensions of the diagonal blocks are returned in `blkdims = (ni, nf)`.   
 
 (2) if `finite_infinite = true`, then
  
@@ -340,6 +341,8 @@ The `nb`-dimensional vectors `ν` contains the dimensions of the diagonal blocks
 of the staircase form `Ai-λEi` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
 The difference `ν[nb-j+1]-ν[nb-j]` for `j = 1, 2, ..., nb` is the number of infinite elementary 
 divisors of degree `j` (with `ν[0] = 0`).
+
+The dimensions of the diagonal blocks are returned in `blkdims = (nf, ni)`.   
 
 The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`,  and the relative tolerance 
@@ -380,16 +383,16 @@ function fisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix,M
    withQ ? (Q = Matrix{T}(I,n,n)) : (Q = nothing)
    withZ ? (Z = Matrix{T}(I,n,n)) : (Z = nothing)
 
-   ν, nf, ni = fisplit!(A1, E1, Q, Z, B1, C1; 
+   ν, blkdims = fisplit!(A1, E1, Q, Z, B1, C1; 
                         fast  = fast, finite_infinite = finite_infinite, 
                         atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = withQ, withZ = withZ)
 
 
    
-   return A1, E1, B1, C1, Q, Z, ν, nf, ni                                             
+   return A1, E1, B1, C1, Q, Z, ν, blkdims                                             
 end
 """
-    fisplit!(A, E, Q, Z, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (ν, nf, ni)
+    fisplit!(A, E, Q, Z, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (ν, blkdims)
 
 Reduce the regular matrix pencil `A - λE` to an equivalent form `At - λEt = Q1'*(A - λE)*Z1` using 
 orthogonal or unitary transformation matrices `Q1` and `Z1` such that the transformed matrices `At` and `Et` are in one of the
@@ -410,6 +413,7 @@ of the staircase form  `Ai-λEi` such that `i`-th block has dimensions `ν[i] x 
 The difference `ν[i]-ν[i+1]` for `i = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` 
 (with `ν[nb+1] = 0`).
 
+The dimensions of the diagonal blocks are returned in `blkdims = (ni, nf)`.   
 
 (2) if `finite_infinite = true`, then
  
@@ -426,6 +430,8 @@ The `nb`-dimensional vectors `ν` contains the dimensions of the diagonal blocks
 of the staircase form `Ai-λEi` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
 The difference `ν[nb-j+1]-ν[nb-j]` for `j = 1, 2, ..., nb` is the number of infinite elementary 
 divisors of degree `j` (with `ν[0] = 0`).
+
+The dimensions of the diagonal blocks are returned in `blkdims = (nf, ni)`.   
 
 The reduced matrices `At` and `Et` are returned in `A` and `E`, respectively, 
 while `Q1'*B` is returned in `B`, unless `B = missing`, and `C*Z1`, is returned in `C`, 
@@ -456,7 +462,7 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
    n = size(A,1)
    ν = Vector{Int}(undef,n)
    if n == 0 
-      return ν, 0, 0
+      return ν, (0, 0)
    end
    eltype(A) <: Complex ? tran = 'C' : tran = 'T'
 
@@ -507,7 +513,7 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
           end
           k1 = k2+1
       end        
-      return reverse(ν[1:i]), nf, ni                                             
+      return reverse(ν[1:i]), (nf, ni)                                             
    else
 
       # Reduce A-λE to the Kronecker-like form by splitting the infinite-finite structures
@@ -569,6 +575,6 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
          k2 = k1-1
       end        
    
-      return ν[1:i], nf, ni                                             
+      return ν[1:i], (ni, nf)                                             
    end
 end

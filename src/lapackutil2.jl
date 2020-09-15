@@ -498,4 +498,213 @@ If `wantz = true`, the right Schur vectors `Z` are reordered, and if `wantz = fa
 tgexc!(wantq::Bool, wantz::Bool, ifst::BlasInt, ilst::BlasInt, 
        S::AbstractMatrix, T::AbstractMatrix, Q::AbstractMatrix, Z::AbstractMatrix)
 
+for (tgsen, elty) in
+    ((:dtgsen_, :Float64),
+     (:stgsen_, :Float32))
+    @eval begin
+        #        .. Scalar Arguments ..
+        #        LOGICAL            WANTQ, WANTZ
+        #        INTEGER            IJOB, INFO, LDA, LDB, LDQ, LDZ, LIWORK, LWORK,
+        #       $                   M, N
+        #        DOUBLE PRECISION   PL, PR
+        #        ..
+        #        .. Array Arguments ..
+        #        LOGICAL            SELECT( * )
+        #        INTEGER            IWORK( * )
+        #        DOUBLE PRECISION   A( LDA, * ), ALPHAI( * ), ALPHAR( * ),
+        #       $                   B( LDB, * ), BETA( * ), DIF( * ), Q( LDQ, * ),
+        #       $                   WORK( * ), Z( LDZ, * )
+        #        ..
+        function tgsen!(wantq::Bool, wantz::Bool, select::AbstractVector{BlasInt}, S::AbstractMatrix{$elty}, T::AbstractMatrix{$elty},
+                        Q::AbstractMatrix{$elty}, Z::AbstractMatrix{$elty})
+            chkstride1(select, S, T, Q, Z)
+            n, nt, nq, nz = checksquare(S, T, Q, Z)
+            n == nt || throw(DimensionMismatch("dimensions of S, ($n,$n), and T, ($nt,$nt), must match"))
+            n == nq || throw(DimensionMismatch("dimensions of S, ($n,$n), and Q, ($nq,$nq), must match"))
+            n == nz || throw(DimensionMismatch("dimensions of S, ($n,$n), and Z, ($nz,$nz), must match"))
+            lds = max(1, stride(S, 2))
+            ldt = max(1, stride(T, 2))
+            ldq = max(1, stride(Q, 2))
+            ldz = max(1, stride(Z, 2))
+            m = sum(select)
+            alphai = similar(T, $elty, n)
+            alphar = similar(T, $elty, n)
+            beta = similar(T, $elty, n)
+            lwork = BlasInt(-1)
+            work = Vector{$elty}(undef, 1)
+            liwork = BlasInt(-1)
+            iwork = Vector{BlasInt}(undef, 1)
+            info = Ref{BlasInt}()
+            select = convert(Array{BlasInt}, select)
+            for i = 1:2  # first call returns lwork as work[1] and liwork as iwork[1]
+                ccall((@blasfunc($tgsen), liblapack), Cvoid,
+                       (Ref{BlasInt}, Ref{BlasInt}, Ref{BlasInt}, Ptr{BlasInt},
+                        Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty},
+                        Ref{BlasInt}, Ptr{$elty}, Ptr{$elty}, Ptr{$elty},
+                        Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt},
+                        Ref{BlasInt}, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid},
+                        Ptr{$elty}, Ref{BlasInt}, Ptr{BlasInt}, Ref{BlasInt},
+                        Ptr{BlasInt}),
+                    0, BlasInt(wantq), BlasInt(wantz), select,
+                    n, S, lds, T,
+                    ldt, alphar, alphai, beta,
+                    Q, ldq, Z, ldz,
+                    m, C_NULL, C_NULL, C_NULL,
+                    work, lwork, iwork, liwork,
+                    info)
+                chklapackerror(info[])
+                if i == 1 # only estimated optimal lwork, liwork
+                    lwork  = BlasInt(real(work[1]))
+                    resize!(work, lwork)
+                    liwork = BlasInt(real(iwork[1]))
+                    resize!(iwork, liwork)
+                end
+            end
+            S, T, complex.(alphar, alphai), beta, Q, Z
+        end
+    end
 end
+for (tgsen, elty, relty) in
+    ((:ztgsen_, :ComplexF64, :Float64),
+     (:ctgsen_, :ComplexF32, :Float32))
+    @eval begin
+        function tgsen!(wantq::Bool, wantz::Bool, select::AbstractVector{BlasInt}, S::AbstractMatrix{$elty}, T::AbstractMatrix{$elty},
+                        Q::AbstractMatrix{$elty}, Z::AbstractMatrix{$elty})
+            chkstride1(select, S, T, Q, Z)
+            n, nt, nq, nz = checksquare(S, T, Q, Z)
+            n == nt || throw(DimensionMismatch("dimensions of S, ($n,$n), and T, ($nt,$nt), must match"))
+            n == nq || throw(DimensionMismatch("dimensions of S, ($n,$n), and Q, ($nq,$nq), must match"))
+            n == nz || throw(DimensionMismatch("dimensions of S, ($n,$n), and Z, ($nz,$nz), must match"))
+            lds = max(1, stride(S, 2))
+            ldt = max(1, stride(T, 2))
+            ldq = max(1, stride(Q, 2))
+            ldz = max(1, stride(Z, 2))
+            m = sum(select)
+            alpha = similar(T, $elty, n)
+            beta = similar(T, $elty, n)
+            lwork = BlasInt(-1)
+            work = Vector{$elty}(undef, 1)
+            liwork = BlasInt(-1)
+            iwork = Vector{BlasInt}(undef, 1)
+            info = Ref{BlasInt}()
+            select = convert(Array{BlasInt}, select)
+            for i = 1:2  # first call returns lwork as work[1] and liwork as iwork[1]
+                ccall((@blasfunc($tgsen), liblapack), Cvoid,
+                       (Ref{BlasInt}, Ref{BlasInt}, Ref{BlasInt}, Ptr{BlasInt},
+                        Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty},
+                        Ref{BlasInt}, Ptr{$elty}, Ptr{$elty},
+                        Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt},
+                        Ref{BlasInt}, Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid},
+                        Ptr{$elty}, Ref{BlasInt}, Ptr{BlasInt}, Ref{BlasInt},
+                        Ptr{BlasInt}),
+                    0, BlasInt(wantq), BlasInt(wantz), select,
+                    n, S, lds, T,
+                    ldt, alpha, beta,
+                    Q, ldq, Z, ldz,
+                    m, C_NULL, C_NULL, C_NULL,
+                    work, lwork, iwork, liwork,
+                    info)
+                chklapackerror(info[])
+                if i == 1 # only estimated optimal lwork, liwork
+                    lwork  = BlasInt(real(work[1]))
+                    resize!(work, lwork)
+                    liwork = BlasInt(real(iwork[1]))
+                    resize!(iwork, liwork)
+                end
+            end
+            S, T, alpha, beta, Q, Z
+        end
+    end
+end
+"""
+    tgsen!(wantq, wantz, select, S, T, Q, Z) -> (S, T, Q, Z)
+
+Reorder the diagonal 1x1 and 2x2 blocks of a matrix pair (S,T) in generalized Schur form, such that 
+their eigenvalues correspond to the cluster specified in `select`.
+If `wantq = true`, the left Schur vectors `Q` are reordered, and if `wantq = false` they are not modified. 
+If `wantz = true`, the right Schur vectors `Z` are reordered, and if `wantz = false` they are not modified. 
+"""
+tgsen!(wantq::Bool, wantz::Bool, select::AbstractVector, S::AbstractMatrix, T::AbstractMatrix, Q::AbstractMatrix, Z::AbstractMatrix)
+
+
+for (fn, elty, relty) in ((:dtgsyl_, :Float64, :Float64),
+                   (:stgsyl_, :Float32, :Float32),
+                   (:ztgsyl_, :ComplexF64, :Float64),
+                   (:ctgsyl_, :ComplexF32, :Float32))
+    @eval begin
+        function tgsyl!(trans::AbstractChar, A::AbstractMatrix{$elty}, B::AbstractMatrix{$elty}, C::AbstractMatrix{$elty},
+                        D::AbstractMatrix{$elty}, E::AbstractMatrix{$elty}, F::AbstractMatrix{$elty})
+            @assert !has_offset_axes(A, B, C, D, E, F)
+            chkstride1(A, B, C, D, E, F)
+            m, n = checksquare(A, B)
+            lda = max(1, stride(A, 2))
+            ldb = max(1, stride(B, 2))
+            ldc = max(1, stride(C, 2))
+            m1, n1 = size(C)
+            (m == m1 && n == n1) ||
+                throw(DimensionMismatch("dimensions of A($m,$m),  B($n,$n), and C($m1,$n1) must match"))
+            m2, n2 = checksquare(D, E)
+            m == m2 || throw(DimensionMismatch("dimensions of A($m,$m) and D($m2,$m2) must match"))
+            n == n2 || throw(DimensionMismatch("dimensions of B($n,$n) and E($n2,$n2), must match"))
+            ldd = max(1, stride(D, 2))
+            lde = max(1, stride(E, 2))
+            ldf = max(1, stride(F, 2))
+            m3, n3 = size(F)
+            (m2 == m3 && n2 == n3) ||
+                throw(DimensionMismatch("dimensions of D($m,$m),  E($n,$n), and F($m3,$n3) must match"))
+            dif = Vector{$relty}(undef, 1)
+            scale = Vector{$relty}(undef, 1)
+            info  = Ref{BlasInt}()
+            ijob = 0
+            work = Vector{$elty}(undef, 1)
+            lwork = 1
+            iwork = Vector{BlasInt}(undef,m+n+6)
+            #SUBROUTINE DTGSYL( TRANS, IJOB, M, N, A, LDA, B, LDB, C, LDC, D,
+            #       LDD, E, LDE, F, LDF, SCALE, DIF, WORK, LWORK,
+            #       IWORK, INFO )
+            ccall((@blasfunc($fn), liblapack), Cvoid,
+                (Ref{UInt8}, Ref{BlasInt}, Ref{BlasInt}, Ref{BlasInt},
+                 Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt},
+                 Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt},
+                 Ptr{$relty}, Ptr{$relty}, Ptr{$relty}, Ref{BlasInt}, Ptr{BlasInt}, Ptr{BlasInt}),
+                 trans, ijob, m, n,
+                 A, lda, B, ldb, C, ldc, D, ldd, E, lde, F, ldf,
+                 scale, dif, work, lwork, iwork, info)
+            chklapackerror(info[])
+            C, F, scale[1]
+        end
+    end
+end
+
+"""
+    tgsyl!(A, B, C, D, E, F) -> (C, F, scale)
+
+Solve the Sylvester system of matrix equations
+
+      AX - YB = scale*C
+      DX - YE = scale*F ,
+
+where `X` and `Y` are unknown matrices, the pairs `(A, D)`, `(B, E)` and  `(C, F)`
+have the same sizes, and the pairs `(A, D)` and `(B, E)` are in
+generalized (real) Schur canonical form, i.e. `A`, `B` are upper quasi
+triangular and `D`, `E` are upper triangular.
+Returns `X` (overwriting `C`), `Y` (overwriting `F`) and `scale`.
+
+    tgsyl!(trans, A, B, C, D, E, F) -> (C, F, scale)
+
+Solve for `trans = 'T'` and real matrices or for `trans = 'C'` and complex
+matrices,  the (adjoint) Sylvester system of matrix equations
+
+      A'X + D'Y = scale*C
+      XB' + YE' = scale*(-F) .
+
+`tgsyl!('N', A, B, C, D, E, F)` corresponds to the call `tgsyl!(A, B, C, D, E, F)`.
+
+Interface to the LAPACK subroutines DTGSYL/STGSYL/ZTGSYL/CTGSYL.
+"""
+tgsyl!(trans::AbstractChar,A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix, E::AbstractMatrix, F::AbstractMatrix)
+
+tgsyl!(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix, E::AbstractMatrix, F::AbstractMatrix) =
+tgsyl!('N',A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix, E::AbstractMatrix, F::AbstractMatrix)
+
+end # Module
