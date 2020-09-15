@@ -392,7 +392,7 @@ function fiblkdiag(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix
     i2 = n1+1:size(A,1)
     X = view(E1,i1,i2)
     Y = view(A1,i1,i2)
-    _, _, scale = tgsyl!('N', view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
+    _, _, scale = tgsyl!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
     
     ONE = one(T)
     ZERO = zero(T)
@@ -519,7 +519,7 @@ function gsblkdiag(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix
     i2 = n1+1:size(A,1)
     X = view(E1,i1,i2)
     Y = view(A1,i1,i2)
-    _, _, scale = tgsyl!('N', view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
+    _, _, scale = tgsyl!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
     
     ONE = one(T)
     ZERO = zero(T)

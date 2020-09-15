@@ -142,7 +142,7 @@ A complete list of implemented functions is available
 
 ## Future plans
 
-The implementation of tools for the reduction of a regular pencil to various upper block triangular and block-diagonal structures is planned.
+Functional enhancements of some functions will be performed. Also, some new functions will be implemented addressing special decompositions to be used in a forthcoming package for handling descriptor system representations.
 
 ## Supplementary information
 
