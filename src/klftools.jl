@@ -85,7 +85,7 @@ respectively.
           F - λG = |----------|------------|, 
                    |    O     | Mil-λNil   |
  
-where the subpencil `Mrf-λNrf` contains the right Kronecker and finite Kronecker structure and 
+where the subpencil `Mrf-λNrf` contains the right Kronecker and finite Kronecker structures and 
 the subpencil `Mil-λNil` contains the left Kronecker structures and infinite elementary 
 divisors of the pencil `M-λN`. 
 
@@ -95,7 +95,7 @@ The full row rank subpencil `Mrf-λNrf` is in the standard form
           Mrf-λNrf = |----|------| ,        
                      | D  |  C   |
                      
-where `E` is an nxn non-singular upper triangular matrix, and `A`, `B`, `C`, `D` are `nxn`-, `nxm`-, `pxn`- and `pxm`-dimensional matrices,
+where `E` is an `nxn` non-singular upper triangular matrix, and `A`, `B`, `C`, `D` are `nxn`-, `nxm`-, `pxn`- and `pxm`-dimensional matrices,
 respectively.  
 
 The full column rank sub pencil `Mil-λNil` is in a staircase form. 
@@ -146,7 +146,7 @@ function klf_rlsplit(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, fi
          return M1, N1, Q, Z, ν[1:1], μ[1:1], n, m, p
       end
 
-      # Reduce M-λN to a KLF which exhibits the splitting the right-finite and infinite-left structures
+      # Reduce M-λN to a KLF which exhibits the splitting of the right-finite and infinite-left structures
       #
       #                  | Mrf - λ Nrf |     *        |
       #      M1 - λ N1 = |-------------|--------------|
@@ -408,7 +408,7 @@ function klf_right(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
 
 end
 """
-    klf_left(M, N; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, nf, νl, μl)
+    klf_left(M, N; fast = true, finite = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, nf, νl, μl)
 
 Reduce the matrix pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
 orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `F` and `G` are in the
@@ -465,14 +465,84 @@ function klf_left(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true,
                   atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
                   rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
                   withQ::Bool = true, withZ::Bool = true)
-  
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast) 
 
    ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M1, N1, Q, Z, atol = atol1, rtol = rtol,  
                                       withQ = withQ, withZ = withZ, fast = fast)
-
    return M1, N1, Q, Z, ν, μ, nf, νl, μl
+end
+"""
+    klf_leftinf(M, N; fast = true, finite = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) 
+                -> (F, G, Q, Z, n, m, p, νi, νl, μl)
+
+Reduce the matrix pencil `M - λN` to an equivalent form `F - λG = Q'(M - λN)Z` using 
+orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `F` and `G` are in the
+following Kronecker-like form exhibiting the infinite and left Kronecker structures:
+ 
+                   |  Mrf-λNrf  |     *      |    *    |
+                   |------------|------------|---------|
+         F - λG =  |    O       |   Mi-λNi   |    *    |
+                   |------------|------------|---------|
+                   |    O       |     0      |  Ml-λNl |
+               
+ 
+The full row rank pencil `Mrf-λNrf` contains the right Kronecker  
+and finite Kronecker structures of the pencil `M-λN` and is in the standard form 
+ 
+                     | B  | A-λE | 
+          Mrf-λNrf = |----|------| ,        
+                     | D  |  C   |
+                     
+where `E` is an `nxn` non-singular upper triangular matrix, and `A`, `B`, `C`, `D` are `nxn`-, `nxm`-, `pxn`- and `pxm`-dimensional matrices,
+respectively.  
+
+The regular pencil `Mi-λNi` is in a staircase form, contains the infinite elementary divisors of `M-λN` 
+and `Ni` is upper triangular and nilpotent. The `ni`-dimensional vector `νi` contains the dimensions of the 
+square diagonal blocks of the staircase form  `Mi-λNi` such that the `i`-th block has dimensions `νi[i] x νi[i]`. 
+The difference `νi[i]-νi[i-1] = ν[ni-i+1]-μ[ni-i+1]` for `i = 1, 2, ..., ni` is the number of infinite elementary 
+divisors of degree `i` (with `νi[0] = 0` and `μ[nb+1] = 0`).
+
+The full column rank pencil `Ml-λNl`, in a staircase form, contains the left Kronecker indices of `M-λN` and has the form
+
+                   | Al-λEl |
+         Ml-λNl  = |--------|,
+                   |   Cl   |
+
+where `El` is upper triangular and nonsingular. 
+
+The `nl`-dimensional vectors `νl` and `μl` contain the row and, respectively, column dimensions of the blocks
+of the staircase form  `Ml-λNl` such that the `j`-th block has dimensions `νl[j] x μl[j]` and has full column rank. 
+The difference `νl[nl-j+1]-μl[nl-j+1]` for `j = 1, 2, ..., nl` is the number of elementary Kronecker blocks of size 
+`j x (j-1)`.
+
+The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,  and the relative tolerance 
+for the nonzero elements of `M` and `N`. 
+The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
+if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
+Otherwise, `Q` is set to `nothing`.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
+Otherwise, `Z` is set to `nothing`.  
+"""
+function klf_leftinf(M::AbstractMatrix, N::AbstractMatrix; fast::Bool = true, 
+                  atol1::Real = zero(real(eltype(M))), atol2::Real = zero(real(eltype(M))), 
+                  rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(max(atol1,atol2)), 
+                  withQ::Bool = true, withZ::Bool = true)
+   M1, N1, Q, Z, ν, μ, n, m, p = klf_rlsplit(M, N; fast = fast, finite_infinite = true, 
+            atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = true) 
+   mr = n+p
+   nr = n+m
+   jM2 = nr+1:nr+sum(μ)
+   M2 = view(M1,:,jM2)
+   N2 = view(N1,:,jM2)
+   withZ ? (Z2 = view(Z,:,jM2)) : (Z2 = nothing)
+   tol1 = max(atol1, rtol*opnorm(M2,1))     
+   νi, νl, μl = klf_left_refine!(ν, μ, M2, N2, Q, Z2, tol1, roff = mr,    
+                                 withQ = withQ, withZ = withZ, fast = fast)
+   return M1, N1, Q, Z, n, m, p, νi, νl, μl
 end
 """
     klf_right!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol = 0, rtol, withQ = true, withZ = true) -> (Q, Z, νr, μr, nf, ν, μ, tol)
@@ -882,7 +952,7 @@ contain the row and, respectively, column dimensions of the blocks of the stairc
 the `i`-th block has dimensions `ν[i] x μ[i]` and has full column rank. The matrix Mli has full column rank and 
 the leading `μ[1]+...+μ[nb-1]` columns of `Nli` form a full row rank submatrix. 
 
-The regular pencil `Mi-λNi`is in a staircase form, contains the infinite elementary divisors of `Mli-λNli` 
+The regular pencil `Mi-λNi` is in a staircase form, contains the infinite elementary divisors of `Mli-λNli` 
 and `Ni` is upper triangular and nilpotent. The `ni`-dimensional vector `νi` contains the dimensions of the 
 square diagonal blocks of the staircase form  `Mi-λNi` such that the `i`-th block has dimensions `νi[i] x νi[i]`. 
 The difference `νi[i]-νi[i-1] = ν[ni-i+1]-μ[ni-i+1]` for `i = 1, 2, ..., ni` is the number of infinite elementary 

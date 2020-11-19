@@ -34,7 +34,8 @@ The current version of the package includes the following functions:
 
 * **preduceBF**  Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
 * **klf**   Computation of the Kronecker-like form exhibiting the full Kronecker structure.
-* **klf_left**  Computation of the Kronecker-like form exhibiting the left Kronecker structure.
+* **klf_left**  Computation of the Kronecker-like form exhibiting the left and finite Kronecker structures.
+* **klf_leftinf**  Computation of the Kronecker-like form exhibiting the left and infinite Kronecker structures.
 * **klf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure.
 * **klf_rlsplit**  Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures.
 
@@ -44,17 +45,20 @@ The current version of the package includes the following functions:
 * **sklf**  Computation of the Kronecker-like form exhibiting the full Kronecker structure.
 * **sklf_left** Computation of the Kronecker-like form exhibiting the left Kronecker structure.
 * **sklf_right**  Computation of the Kronecker-like form exhibiting the right Kronecker structure.
+* **gsklf**  Computation of several row partition preserving special Kronecker-like forms.
 
 **Manipulation of regular linear matrix pencils**
 
 * **isregular**   Checking the regularity of a pencil.
 * **isunimodular** Checking the unimodularity of a pencil.
 * **fisplit**  Finite-infinite eigenvalue splitting.
-* **fihess**  Finite-infinite eigenvalue splitting in a generalized Hessenberg form
-* **fischur**  Finite-infinite eigenvalue splitting in a generalized Schur form
-* **fischursep**  Finite-infinite eigenvalue splitting in an ordered generalized Schur form
-* **fiblkdiag**  Finite-infinite eigenvalue splitting based block diagonalization
-* **gsblkdiag**  Finite-infinite and stable-unstable eigenvalue splitting based block diagonalization
+* **sfisplit**  Special finite-infinite eigenvalue splitting.
+* **fihess**  Finite-infinite eigenvalue splitting in a generalized Hessenberg form.
+* **fischur**  Finite-infinite eigenvalue splitting in a generalized Schur form.
+* **fischursep**  Finite-infinite eigenvalue splitting in an ordered generalized Schur form.
+* **sfischursep**  Special finite-infinite eigenvalue splitting in an ordered generalized Schur form.
+* **fiblkdiag**  Finite-infinite eigenvalue splitting based block diagonalization.
+* **gsblkdiag**  Finite-infinite and stable-unstable eigenvalue splitting based block diagonalization.
 * **saloc**  Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)`.
 * **salocd**  Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`.
 * **ordeigvals**  Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.
@@ -142,7 +146,7 @@ A complete list of implemented functions is available
 
 ## Future plans
 
-Functional enhancements of some functions will be performed. Also, some new functions will be implemented addressing special decompositions to be used in a forthcoming package for handling descriptor system representations.
+Functional extensions and performance enhancements of some functions will be performed as needs arise.
 
 ## Supplementary information
 

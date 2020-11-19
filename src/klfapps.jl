@@ -36,7 +36,7 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScalin
 
    if isequal(N,I)
       mM == nM || error("M must be a square matrix")
-      return eigvals(M), Int[], KRInfo(Int[], Int[], Int[], mM, mM)
+      return eigvalsnosort(M), Int[], KRInfo(Int[], Int[], Int[], mM, mM)
    end
 
    # Step 0: Reduce to the standard form
@@ -88,7 +88,7 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScalin
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals!(view(M1,if1,jf1),view(N1,if1,jf1)); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
+   return [eigvalsnosort!(view(M1,if1,jf1),view(N1,if1,jf1)); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """
@@ -174,7 +174,7 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvals!(view(M1,if1,jf1),view(N1,if1,jf1)); Inf*ones(real(eltype(M1)),ni) ], 
+   return [eigvalsnosort!(view(M1,if1,jf1),view(N1,if1,jf1)); Inf*ones(real(eltype(M1)),ni) ], 
           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """

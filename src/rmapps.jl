@@ -293,7 +293,7 @@ function rmpoles(N::AbstractArray{T1,3}, D::AbstractArray{T2,3};
       ip = Int[]
       id = Int[]
    end
-   return [eigvals!(view(A,1:nfp,1:nfp)); Inf*ones(eltype(A),sum(ip))], ip, id
+   return [eigvalsnosort!(view(A,1:nfp,1:nfp)); Inf*ones(eltype(A),sum(ip))], ip, id
 end
 function rmpoles(N::AbstractArray{T,3}; kwargs...) where T 
    return pmpoles2(N; kwargs...) 
@@ -481,7 +481,7 @@ function rmpoles1(N::AbstractArray{T1,3}, D::AbstractArray{T2,3};
    ip = infop.id .- 1
    ip = ip[ip .> 0]
    id = infop.id
-   return [eigvals!(view(A,1:nfp,1:nfp)); Inf*ones(eltype(A),sum(ip))], ip, id   
+   return [eigvalsnosort!(view(A,1:nfp,1:nfp)); Inf*ones(eltype(A),sum(ip))], ip, id   
    # p, m = size(D)
    # n = size(A,1)     
    # T = eltype(A)  

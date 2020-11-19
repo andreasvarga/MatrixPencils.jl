@@ -433,7 +433,7 @@ If the number of specified eigenvalues in `evals` is less than the number of con
 on the boundary of `Cs`. If `sdeg = missing` and `evals = missing`, the default value used for `sdeg` is -0.05 
 if  `disc = false` and 0.95 if `disc = true`. 
 
-The keyword arguments `atol1`, `atol2`, , `atol3`, and `rtol`, specify, respectively, the absolute tolerance for the 
+The keyword arguments `atol1`, `atol2`, `atol3`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`, the absolute tolerance for the nonzero elements of `B`,  
 and the relative tolerance for the nonzero elements of `A`, `E` and `B`.  
 The default relative tolerance is `n*ϵ`, where `ϵ` is the machine epsilon of the element type of `A`. 
@@ -786,11 +786,11 @@ function ordeigvals(A::AbstractMatrix{T}) where T
             if A[i,i] == A[i+1,i+1] 
                # exploit LAPACK 2x2 block structure
                ei = sqrt(abs(A[i,i+1]))*sqrt(abs(A[i+1,i]))
-               αi[i] = -ei
-               αi[i+1] = ei
+               αi[i] = ei
+               αi[i+1] = -ei
             else
                # an arbitrary 2x2 block
-               αr[i], αi[i+1], αr[i+1], αi[i] = lanv2(A[i,i], A[i,i+1], A[i+1,i], A[i+1,i+1])
+               αr[i], αi[i], αr[i+1], αi[i+1] = lanv2(A[i,i], A[i,i+1], A[i+1,i], A[i+1,i+1])
             end
             i +=1
          end
@@ -807,7 +807,9 @@ in their order of appearance down the diagonals of `A` and `B`.
 `α` is a complex vector and `β` is a real vector such that the generalized eigenvalues `ev` can be alternatively obtained with `α./β`.
 """
 function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
-   (isqtriu(A) && istriu(B))|| error("The pair (A,B) must be in a generalized Schur form")
+   na, nb = LinearAlgebra.checksquare(A,B)
+   na == nb ||  throw(DimensionMismatch("A and B must have the same size"))
+   (isqtriu(A) && istriu(B)) || error("The pair (A,B) must be in a generalized Schur form")
    n = size(A,1)
    complx = T <: Complex
    if complx
@@ -832,8 +834,8 @@ function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
          pair = (i < n && A[i+1,i] != ZERO) 
          if pair
             ii = i:i+1
-            β[i], β[i+1], αr[i], αr[i+1], αi[i] = lag2(A[ii,ii],B[ii,ii],small)
-            αi[i+1] = -αi[i]
+            β[i], β[i+1], αr[i], αr[i+1], wi  = lag2(A[ii,ii],B[ii,ii],small)
+            iszero(wi) ? (αi[i] = wi; αi[i+1] = wi) : (αi[i] = wi; αi[i+1] = -wi; β[i+1] = β[i])
             i += 2
          else
             αr[i] = A[i,i]
@@ -1098,6 +1100,45 @@ function isqtriu(A)
        !iszero(A[i,i-1]) && !iszero(A[i+1,i]) && (return false)
    end
    return true
+end
+@static if VERSION < v"1.2"
+   function eigvalsnosort(M; kwargs...)
+      return eigvals(M; kwargs...)
+   end
+   function eigvalsnosort(M, N; kwargs...)
+      ev = eigvals(M, N; kwargs...)
+      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+      return ev
+   end
+   function eigvalsnosort!(M; kwargs...)
+      return eigvals!(M; kwargs...)
+   end
+   function eigvalsnosort!(M, N; kwargs...)
+      ev = eigvals!(M, N; kwargs...)
+      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+      return ev
+   end
+else
+   function eigvalsnosort(M; kwargs...)
+      return eigvals(M; sortby=nothing, kwargs...)
+   end
+   function eigvalsnosort(M, N; kwargs...)
+      ev = eigvals(M, N; sortby=nothing, kwargs...)
+      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+      return ev
+   end
+   function eigvalsnosort!(M; kwargs...)
+      return eigvals!(M; sortby=nothing, kwargs...)
+   end
+   function eigvalsnosort!(M, N; kwargs...)
+      ev = eigvals!(M, N; sortby=nothing, kwargs...)
+      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+      return ev
+   end
+end
+@static if VERSION < v"1.1"
+   isnothing(::Any) = false
+   isnothing(::Nothing) = true
 end
 
 

@@ -35,8 +35,9 @@ The current version of the package includes the following functions:
 | :--- | :--- |
 | **[`preduceBF`](@ref)** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
 | **[`klf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
-| **[`klf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
-| **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
+| **[`klf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left and finite Kronecker structures |
+| **[`klf_leftinf`](@ref)** |  Computation of the Kronecker-like form exhibiting the left and infinite Kronecker structures |
+| **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and finite Kronecker structures |
 | **[`klf_rlsplit`](@ref)** | Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures |
 
 **Manipulation of structured matrix pencils of the form [A-λE B; C D]**
@@ -47,6 +48,7 @@ The current version of the package includes the following functions:
 | **[`sklf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
 | **[`sklf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
 | **[`sklf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
+| **[`gsklf`](@ref)** | Computation of several row partition preserving special Kronecker-like forms |
 
 **Manipulation of regular matrix pencils**
 
@@ -55,11 +57,14 @@ The current version of the package includes the following functions:
 | **[`isregular`](@ref)** | Checking the regularity of a pencil |
 | **[`isunimodular`](@ref)** | Checking the unimodularity of a pencil |  
 | **[`fisplit`](@ref)** | Finite-infinite eigenvalue splitting |
+| **[`sfisplit`](@ref)** | Special finite-infinite eigenvalue splitting |
 | **[`fihess`](@ref)** | Finite-infinite eigenvalue splitting in a generalized Hessenberg form|
 | **[`fischur`](@ref)** | Finite-infinite eigenvalue splitting in a generalized Schur form|
 | **[`fischursep`](@ref)** | Finite-infinite eigenvalue splitting in an ordered generalized Schur form|
+| **[`sfischursep`](@ref)** | Special finite-infinite eigenvalue splitting in an ordered generalized Schur form|
 | **[`fiblkdiag`](@ref)** | Finite-infinite eigenvalue splitting based block diagonalization |
-| **[`gsblkdiag`](@ref)** | Finite-infinite and stable-unstable eigenvalue splitting based block diagonalization|
+| **[`gsblkdiag`](@ref)** | Finite-infinite and stable-unstable eigenvalue splitting based block diagonalization |
+| **[`ssblkdiag`](@ref)** | Stable-unstable eigenvalue splitting based block diagonalization |
 | **[`saloc`](@ref)** | Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)` |
 | **[`salocd`](@ref)** | Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`  |
 | **[`ordeigvals`](@ref)** | Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.   |
@@ -160,13 +165,17 @@ A complete list of implemented functions is available [here](https://sites.googl
 
 ## Future plans
 
-Functional enhancements of some functions will be performed. Also, some new functions will be implemented addressing special decompositions to be used in a forthcoming package for handling descriptor system representations.
+Functional enhancements of some functions will be performed if the need arises. 
 
 ## Release Notes
 
+### Version 1.4
+
+This minor release includes several new functions which primarily serve for the implementation of the new [DescriptorSystems](https://github.com/andreasvarga/DescriptorSystems.jl) package. The new functions cover the following topics: the block diagonalization of a matrix for various ordering of eigenvalues; the computation of a special finite-infinite eigenvalue splitting ot a regular pencil;  the computation of a special spectrum separation of finite, infinite, stable and unstable eigenvalues of a regular matrix pencil using orthogonal or unitary transformations; the computation of several row partition preserving special Kronecker-like forms of structured (system) pencils; the computation of a Kronecker-like form exhibiting the left and infinite Kronecker structures; the computation of special Kronecker-like forms of structured full row rank pencils (special controllability staircase forms).
+
 ### Version 1.3
 
-This minor release includes new functions which implement computational procedures for spectrum separation of a regular matrix pencil. For a given pair of matrices, new functions are available to compute the separation of finite and infinite eigenvalues using orthogonal or unitary transformations, with the resulting pair in generalized Hessenberg form, generalized Schur form or in an ordered generalized Schur form. Furthermore, functions have been implemented for the block diagonalization of matrix pairs for various ordering of finite and infinite eigenvalues using the method of [14]. 
+This minor release includes new functions which implement computational procedures for spectrum separation of a regular matrix pencil. For a given pair of matrices, new functions are available to compute the separation of finite and infinite eigenvalues using orthogonal or unitary transformations, with the resulting pair in generalized Hessenberg form, generalized Schur form or in an ordered generalized Schur form. Furthermore, functions have been implemented for the block diagonalization of matrix pairs for various ordering of finite and infinite eigenvalues using the method of [14].
 
 ### Version 1.2
 

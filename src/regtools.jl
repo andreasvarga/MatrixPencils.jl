@@ -10,12 +10,11 @@ if `withQ = true`. Otherwise, `Q` is unchanged.
 
 `Q1'*B` is returned in `B` unless `B = missing`.              
 """
-function _qrE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, Q::Union{AbstractMatrix{T1},Nothing}, 
-               B::Union{AbstractMatrix{T1},Missing} = missing; withQ::Bool = true) where T1 <: BlasFloat
+function _qrE!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, Q::Union{AbstractMatrix{T},Nothing}, 
+               B::Union{AbstractMatrix{T},Missing} = missing; withQ::Bool = true) where T <: BlasFloat
    
    # fast return for dimensions 0 or 1
    size(A,1) <= 1 && return
-   T = eltype(A)
    T <: Complex ? tran = 'C' : tran = 'T'
    # compute in-place the QR-decomposition E = Q1*E1 
    _, τ = LinearAlgebra.LAPACK.geqrf!(E) 
@@ -28,20 +27,30 @@ function _qrE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, Q::Union{AbstractMa
    triu!(E)
 end
 """
-    _svdlikeAE!(A, E, Q, Z, B, C; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (rE, rA22)
+    _svdlikeAE!(A, E, Q, Z, B, C; svdA = true, fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (rE, rA22)
 
 Reduce the regular matrix pencil `A - λE` to an equivalent form `A1 - λE1 = Q1'*(A - λE)*Z1` using 
 orthogonal or unitary transformation matrices `Q1` and `Z1` such that the transformed matrices `A1` and `E1` 
-are in the following SVD-like coordinate form
+are, for `svdA = true`, in the following SVD-like coordinate form
 
                    | A11-λE11 |  A12  |  A13  |
-                   |----------|-------|-------|, 
-        A1 - λE1 = |    A21   |  A22  |   0   |
+                   |----------|-------|-------|
+        A1 - λE1 = |    A21   |  A22  |   0   | ,
                    |----------|-------|-------|
                    |    A31   |   0   |   0   |
 
 where the `rE x rE` matrix `E11` and `rA22 x rA22` matrix `A22` are nosingular, and `E11` and `A22` are upper triangular, 
 if `fast = true`, and diagonal, if `fast = false`. 
+
+If `svdA = false`, only `E` is reduced to SVD-like form and `A1 - λE1` has the form
+
+                   | A11-λE11 |  A12  |
+        A1 - λE1 = |----------|-------| , 
+                   |    A21   |  A22  |
+
+where the `rE x rE` matrix `E11` is nonsingular upper triangular, if `fast = true`, 
+and diagonal, if `fast = false`, and `A22` is unreduced and has rank `rA22`.
+
 The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`,  and the relative tolerance 
 for the nonzero elements of `A` and `E`. 
@@ -57,19 +66,18 @@ Otherwise, `Z` is unchanged.
 `Q1'*B` is returned in `B` unless `B = missing` and `C*Z1` is returned in `C` unless `C = missing` .              
 
 """
-function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, 
-                     Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing},
-                     B::Union{AbstractMatrix{T1},Missing} = missing, C::Union{AbstractMatrix{T1},Missing} = missing; 
-                     fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), 
-                     rtol::Real = (size(A,1)*eps(real(float(one(T1)))))*iszero(min(atol1,atol2)), 
-                     withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
+                     Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
+                     B::Union{AbstractMatrix{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                     svdA::Bool = true, fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                     rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
+                     withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
 
    # fast returns for null dimensions
    n = size(A,1)
    if n == 0 
       return 0, 0
    end
-   T = eltype(A)
    T <: Complex ? tran = 'C' : tran = 'T'
    
    if fast
@@ -104,14 +112,15 @@ function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
       ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,C); 
       E1[:,:] = [ triu(E[i1,i1]) zeros(T,rE,n2)  ] 
       n2 == 0 && (return rE, 0)
+      i22 = rE+1:n
+      tolA = max(atol1, rtol*opnorm(A,1))
+      svdA || (return rE, rank(view(A,i22,i22), atol = tolA))
       # assume 
       #    A = [A11 A12]
       #        [A21 A22]
       # compute in-place the QR-decomposition A22*P2 = Q2*[R2;0] with column pivoting 
-      i22 = rE+1:n
       A22 = view(A,i22,i22)
       _, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(A22)
-      tolA = max(atol2, rtol*opnorm(A,1))
       rA22 = count(x -> x > tolA, abs.(diag(A22))) 
       n3 = n2-rA22
       i2 = rE+1:rE+rA22
@@ -160,14 +169,15 @@ function _svdlikeAE!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
       ismissing(C) || (C[:,:] = C[:,:]*Vt')
       E[:,:] = [ Diagonal(S[1:rE]) zeros(T,rE,n2) ; zeros(T,n2,n) ]
       n2 == 0 && (return rE, 0)
+      i22 = rE+1:n
+      tolA = max(atol1, rtol*opnorm(A,1))
+      svdA || (return rE, rank(view(A,i22,i22), atol = tolA))
       # assume 
       #    A = [A11 A12]
       #        [A21 A22]
       # compute the complete orthogonal decomposition of A22 using the SVD-decomposition
-      i22 = rE+1:n
       A22 = view(A,i22,i22)
       U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',A22)
-      tolA = max(atol2, rtol*opnorm(A,1))
       rA22 = count(x -> x > tolA, S) 
       n3 = n2-rA22
       i1 = 1:rE
@@ -450,13 +460,13 @@ The performed right orthogonal or unitary transformations Z1 are accumulated in 
 if `withZ = true`. Otherwise, `Z` is unchanged.            
 
 """
-function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, 
-                  Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing},
-                  B::Union{AbstractMatrix{T1},Missing} = missing, C::Union{AbstractMatrix{T1},Missing} = missing; 
+function fisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
+                  Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
+                  B::Union{AbstractMatrix{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
                   fast::Bool = true, finite_infinite::Bool = false, 
-                  atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), 
-                  rtol::Real = (size(A,1)*eps(real(float(one(T1)))))*iszero(min(atol1,atol2)), 
-                  withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+                  atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                  rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
+                  withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
 
    # fast returns for null dimensions
    n = size(A,1)
@@ -464,10 +474,10 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
    if n == 0 
       return ν, (0, 0)
    end
-   eltype(A) <: Complex ? tran = 'C' : tran = 'T'
+   T <: Complex ? tran = 'C' : tran = 'T'
 
    # Step 0: Reduce to the standard form
-   n1, m1, p1 = _preduceBF!(A, E, Q, Z, B, C; atol = atol2, rtol = rtol, fast = fast) 
+   nf, m1, p1 = _preduceBF!(A, E, Q, Z, B, C; atol = atol2, rtol = rtol, fast = fast) 
         
    tolA = max(atol1, rtol*opnorm(A,1))     
    
@@ -483,7 +493,6 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
 
       i = 0
       ni = 0
-      nf = n1
       while p1 > 0
          # Step 1 & 2: Dual algorithm PREDUCE
          τ, ρ  = _preduce2!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
@@ -497,6 +506,7 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
          m1 -= τ 
       end
       k1 = nf+1
+      reverse!(view(ν,1:i))
       for k = 1:i
           nk = ν[k]
           k2 = k1+nk-1
@@ -513,7 +523,7 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
           end
           k1 = k2+1
       end        
-      return reverse(ν[1:i]), (nf, ni)                                             
+      return ν[1:i], (nf, ni)                                             
    else
 
       # Reduce A-λE to the Kronecker-like form by splitting the infinite-finite structures
@@ -526,7 +536,6 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
 
       i = 0
       ni = 0
-      nf = n1
       while m1 > 0
          # Steps 1 & 2: Standard algorithm PREDUCE
          τ, ρ = _preduce1!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
@@ -576,5 +585,328 @@ function fisplit!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1},
       end        
    
       return ν[1:i], (ni, nf)                                             
+   end
+end
+"""
+    sfisplit(A, E, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (At, Et, Bt, Ct, Q, Z, ν, blkdims)
+
+Reduce the regular matrix pencil `A - λE` to an equivalent form `At - λEt = Q'*(A - λE)*Z` using 
+orthogonal or unitary transformation matrices `Q` and `Z` such that the transformed matrices `At` and `Et` are in one of the
+following block upper-triangular forms:
+
+(1) if `finite_infinite = true`, then
+ 
+                   | Ai1    *        *     |
+        At - λEt = | O    Af-λEf     *     |
+                   | O      0     Ai2-λEi2 |
+ 
+where the `ni1 x ni1` upper triangular nonsingular matrix `Ai1` and the `ni2 x ni2` subpencil `Ai2-λEi2` contain the infinite elementary 
+divisors and the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangular, contains the finite eigenvalues of the pencil `A-λE`.
+
+The subpencil `Ai2-λEi2` is in a staircase form, with `Ai2` nonsingular and upper triangular and `Ei2` nilpotent and upper triangular. 
+The `nb`-dimensional vector `ν` contains the dimensions of the diagonal blocks
+of the staircase form  `Ai2-λEi2` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
+The difference `ν[nb-j+2]-ν[nb-j+1]` for `j = 1, 2, ..., nb+1` is the number of infinite elementary 
+divisors of degree `j` (with `ν[0] := 0` and `ν[nb+1] := ni1`).
+
+The dimensions of the diagonal blocks are returned in `blkdims = (ni1, nf, ni2)`.   
+
+(2) if `finite_infinite = false`, then
+ 
+                   | Ai1-λEi1    *      *  |
+        At - λEt = | O         Af-λEf   *  |
+                   | O           0     Ai2 |
+
+where the `ni1 x ni1` subpencil `Ai1-λEi1` and the upper triangular nonsingular matrix `Ai2` contain the infinite elementary 
+divisors and the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangular, contains the finite eigenvalues of the pencil `A-λE`.
+
+The subpencil `Ai1-λEi1` is in a staircase form, with `Ai1` nonsingular and upper triangular and `Ei1` nilpotent and upper triangular. 
+The `nb`-dimensional vectors `ν` contains the dimensions of the diagonal blocks
+of the staircase form `Ai1-λEi1` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
+The difference `ν[i]-ν[i+1]` for `i = 0, 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` 
+(with `ν[nb+1] = 0` and `ν[0] = ni2`).
+
+The dimensions of the diagonal blocks are returned in `blkdims = (ni1, nf, ni2)`.   
+
+The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`,  and the relative tolerance 
+for the nonzero elements of `A` and `E`. 
+
+The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
+if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
+The performed left orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
+Otherwise, `Q` is set to `nothing`.   
+The performed right orthogonal or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
+Otherwise, `Z` is set to `nothing`.  
+
+`Bt = Q'*B`, unless `B = missing`, in which case `Bt = missing` is returned, and `Ct = C*Z`, 
+unless `C = missing`, in which case `Ct = missing` is returned .              
+"""
+function sfisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}; 
+   fast::Bool = true, finite_infinite::Bool = false, 
+   atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(E))), 
+   rtol::Real = (size(A,1)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2)), 
+   withQ::Bool = true, withZ::Bool = true)
+
+   n = LinearAlgebra.checksquare(A)
+   n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
+   (!ismissing(B) && n != size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
+   (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
+   T = promote_type(eltype(A), eltype(E))
+   ismissing(B) || (T = promote_type(T,eltype(B)))
+   ismissing(C) || (T = promote_type(T,eltype(C)))
+   T <: BlasFloat || (T = promote_type(Float64,T))
+
+   A1 = copy_oftype(A,T)   
+   E1 = copy_oftype(E,T)
+   ismissing(B) ? B1 = missing : B1 = copy_oftype(B,T)
+   ismissing(C) ? C1 = missing : C1 = copy_oftype(C,T)
+
+   withQ ? (Q = Matrix{T}(I,n,n)) : (Q = nothing)
+   withZ ? (Z = Matrix{T}(I,n,n)) : (Z = nothing)
+
+   ν, blkdims = sfisplit!(A1, E1, Q, Z, B1, C1; 
+                        fast  = fast, finite_infinite = finite_infinite, 
+                        atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = withQ, withZ = withZ)
+
+
+   
+   return A1, E1, B1, C1, Q, Z, ν, blkdims                                             
+end
+"""
+    sfisplit!(A, E, Q, Z, B, C; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (ν, blkdims)
+
+Reduce the regular matrix pencil `A - λE` to an equivalent form `At - λEt = Q1'*(A - λE)*Z1` using 
+orthogonal or unitary transformation matrices `Q1` and `Z1` such that the transformed matrices `At` and `Et` are in one of the
+following block upper-triangular forms:
+
+(1) if `finite_infinite = true`, then
+ 
+                   | Ai1    *        *     |
+        At - λEt = | O    Af-λEf     *     |
+                   | O      0     Ai2-λEi2 |
+ 
+where the `ni1 x ni1` upper triangular nonsingular matrix `Ai1` and the `ni2 x ni2` subpencil `Ai2-λEi2` contain the infinite elementary 
+divisors and the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangular, contains the finite eigenvalues of the pencil `A-λE`.
+
+The subpencil `Ai2-λEi2` is in a staircase form, with `Ai2` nonsingular and upper triangular and `Ei2` nilpotent and upper triangular. 
+The `nb`-dimensional vector `ν` contains the dimensions of the diagonal blocks
+of the staircase form  `Ai2-λEi2` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
+The difference `ν[nb-j+2]-ν[nb-j+1]` for `j = 1, 2, ..., nb+1` is the number of infinite elementary 
+divisors of degree `j` (with `ν[0] := 0` and `ν[nb+1] := ni1`).
+
+The dimensions of the diagonal blocks are returned in `blkdims = (ni1, nf, ni2)`.   
+
+(2) if `finite_infinite = false`, then
+ 
+                   | Ai1-λEi1    *      *  |
+        At - λEt = | O         Af-λEf   *  |
+                   | O           0     Ai2 |
+
+where the `ni1 x ni1` subpencil `Ai1-λEi1` and the upper triangular nonsingular matrix `Ai2` contain the infinite elementary 
+divisors and the `nf x nf` subpencil `Af-λEf`, with `Ef` nonsingular and upper triangular, contains the finite eigenvalues of the pencil `A-λE`.
+
+The subpencil `Ai1-λEi1` is in a staircase form, with `Ai1` nonsingular and upper triangular and `Ei1` nilpotent and upper triangular. 
+The `nb`-dimensional vectors `ν` contains the dimensions of the diagonal blocks
+of the staircase form `Ai1-λEi1` such that `i`-th block has dimensions `ν[i] x ν[i]`. 
+The difference `ν[i]-ν[i+1]` for `i = 0, 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` 
+(with `ν[nb+1] = 0` and `ν[0] = ni2`).
+
+The dimensions of the diagonal blocks are returned in `blkdims = (ni1, nf, ni2)`.   
+
+The reduced matrices `At` and `Et` are returned in `A` and `E`, respectively, 
+while `Q1'*B` is returned in `B`, unless `B = missing`, and `C*Z1`, is returned in `C`, 
+unless `C = missing`.   
+
+The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`,  and the relative tolerance 
+for the nonzero elements of `A` and `E`. 
+
+The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
+if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
+The performed left orthogonal or unitary transformations Q1 are accumulated in the matrix `Q <- Q*Q1` 
+if `withQ = true`. Otherwise, `Q` is unchanged.   
+The performed right orthogonal or unitary transformations Z1 are accumulated in the matrix `Z <- Z*Z1` 
+if `withZ = true`. Otherwise, `Z` is unchanged.            
+"""
+function sfisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
+                  Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
+                  B::Union{AbstractMatrix{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                  fast::Bool = true, finite_infinite::Bool = false, 
+                  atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                  rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
+                  withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+
+   # fast returns for null dimensions
+   n = size(A,1)
+   ν = Vector{Int}(undef,n)
+   if n == 0 
+      return ν, (0, 0, 0)
+   end
+   T <: Complex ? tran = 'C' : tran = 'T'
+
+   # Step 0: Reduce to the standard form
+   nf, m1, p1 = _preduceBF!(A, E, Q, Z, B, C; atol = atol2, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ) 
+        
+   tolA = max(atol1, rtol*opnorm(A,1))     
+   Q === nothing && (withQ = false)
+   Z === nothing && (withZ = false)
+   
+   if finite_infinite
+      # Reduce A-λE to the form 
+      #
+      #                  | Ai1  |    *      |
+      #      At - λ Et = |------|-----------|
+      #                  |  0   | A2 - λ E2 |
+      #
+      # where Ai1 is upper triangular and nonsingular and E2 upper triangular.  
+      τ, ρ = _preduce1!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                        roff = 0, coff = 0, withQ = withQ, withZ = withZ)
+      ρ+τ == m1 || error("A-λE is not regular")
+      nf -= ρ
+      ni1 = m1
+      m1 = ρ
+      p1 -= τ 
+      if ni1 > 1
+         kk = 1:ni1
+         Ak = view(A,kk,kk)
+         tau = similar(A,ni1)
+         LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+         ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+         triu!(Ak)
+      end
+
+      # Reduce A2-λE2 to the Kronecker-like form by splitting the finite-infinite structures
+      #
+      #                  | Af - λ Ef |     *       |
+      #      A2 - λ E2 = |-----------|-------------|,
+      #                  |    0      | Ai2 - λ Ei2 |
+      # 
+      # where Ai2 - λ Ei2 is in a staircase form with Ai2 nonsingular and upper triangular and
+      # Ei2 upper triangular and nilpotent.   
+
+      i = 0
+      ni = 0
+      while p1 > 0
+         # Step 1 & 2: Dual algorithm PREDUCE
+         τ, ρ  = _preduce2!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                            roff = ni1, coff = ni1, rtrail = ni, ctrail = ni, withQ = withQ, withZ = withZ)
+         ρ+τ == p1 || error("A-λE is not regular")
+         ni += p1
+         nf -= ρ
+         i += 1
+         ν[i] = p1
+         p1 = ρ
+         m1 -= τ 
+      end
+      k1 = ni1+nf+1
+      reverse!(view(ν,1:i))
+      for k = 1:i
+          nk = ν[k]
+          k2 = k1+nk-1
+          kk = k1:k2
+          if nk > 1
+             Ak = view(A,kk,kk)
+             tau = similar(A,nk)
+             LinearAlgebra.LAPACK.geqrf!(Ak,tau)
+             LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(A,kk,k2+1:n))
+             withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ak,tau,view(Q,:,kk))
+             LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(E,kk,k2+1:n))
+             ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(B,kk,:))
+             triu!(Ak)
+          end
+          k1 = k2+1
+      end        
+      return ν[1:i], (ni1, nf, ni)                                             
+   else
+      # Reduce A-λE to the form 
+      #
+      #                  | A1 - λ E1 |  *   |
+      #      At - λ Et = |-----------|------|,
+      #                  |    0      | Ai2  |
+      # 
+      # where Ai2 is upper triangular and nonsingular and E1 is upper triangular.
+      τ, ρ  = _preduce2!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                         rtrail = 0, ctrail = 0, withQ = withQ, withZ = withZ)
+      ρ+τ == p1 || error("A-λE is not regular")
+      ni2 = p1
+      nf -= ρ
+      p1 = ρ
+      m1 -= τ 
+      if ni2 > 1
+         kk = n-ni2+1:n
+         Ak = view(A,kk,kk)
+         tau = similar(A,ni2)
+         LinearAlgebra.LAPACK.geqrf!(Ak,tau)
+         #LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(A,kk,k2+1:n))
+         withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ak,tau,view(Q,:,kk))
+         #LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(E,kk,k2+1:n))
+         ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(B,kk,:))
+         triu!(Ak)
+      end
+
+      # Reduce A1-λE1 to the Kronecker-like form by splitting the infinite-finite structures
+      #
+      #                  | Ai1 - λ Ei1 |    *      |
+      #      A1 - λ E1 = |-------------|-----------|
+      #                  |    0        | Af - λ Ef |
+      #
+      # where Ai1 - λ Ei1 is in a staircase form with Ai1 nonsingular and upper triangular and
+      # Ei1 upper triangular and nilpotent.   
+
+      i = 0
+      ni = 0
+      while m1 > 0
+         # Steps 1 & 2: Standard algorithm PREDUCE
+         τ, ρ = _preduce1!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                           roff = ni, coff = ni, rtrail = ni2, ctrail = ni2, withQ = withQ, withZ = withZ)
+         ρ+τ == m1 || error("A-λE is not regular")
+         ni += m1
+         nf -= ρ
+         i += 1
+         ν[i] = m1
+         m1 = ρ
+         p1 -= τ 
+      end
+
+      k2 = ni 
+      for k = i:-1:1
+          nk = ν[k]
+          k1 = k2-nk+1
+          kk = k1:k2
+          if nk > 1
+             Ak = view(A,kk,kk)
+             tau = similar(A,nk)
+             LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+             LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(A,1:k1-1,kk))
+             withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+             LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(E,1:k1-1,kk))
+             ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+             triu!(Ak)
+          end
+         #  the following code can be used to make the supradiagonal blocks of E upper triangular
+         #  but it is not necessary in this context
+         #  if k > 1 
+         #     nk1 = ν[k-1]
+         #     k1e = k1 - nk1
+         #     k2e = k1 - 1
+         #     kke = k1e:k2e
+         #     if nk1 > 1
+         #        Ek = view(E,kke,kk)
+         #        tau = similar(A,nk)
+         #        LinearAlgebra.LAPACK.geqrf!(Ek,tau)
+         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(A,kke,k1e:n))
+         #        withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ek,tau,view(Q,:,kke)) 
+         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(E,kke,k2+1:n))
+         #        ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(B,kke,:))
+         #        triu!(Ek)
+         #     end
+         k2 = k1-1
+      end        
+   
+      return ν[1:i], (ni, nf, ni2)                                             
    end
 end

@@ -15,6 +15,7 @@ using Test, MatrixPencils
     include("test_rmapps.jl")
     include("test_gsfstab.jl")
     include("test_gsep.jl")
+    include("test_gsklf.jl")
 end
 
 end

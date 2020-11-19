@@ -1,7 +1,7 @@
 
 """
-    _sreduceB!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},B::AbstractMatrix{T1},Q::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
-                fast = true, withQ = true)
+    _sreduceB!(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                fast = true, withQ = true) -> ρ
 
 Reduce the `n x m` matrix `B` using an orthogonal or unitary similarity transformation `Q1` to the row 
 compressed form 
@@ -14,13 +14,12 @@ where `B11` has full row rank `ρ`. `Q1'*A`, `Q1'*E` and `BT` are returned in `A
 The performed orthogonal or unitary transformations are accumulated in `Q` if `withQ = true`. 
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `B`.
 """
-function _sreduceB!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},B::AbstractMatrix{T1},
-                    Q::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
-                    fast::Bool = true, withQ::Bool = true) where T1 <: BlasFloat
+function _sreduceB!(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},
+                    Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                    fast::Bool = true, withQ::Bool = true) where T <: BlasFloat
    n, m = size(B)                
    (m == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
-   T = eltype(A)
    ZERO = zero(T)
    if m == 1 
       b = view(B,:,1)
@@ -69,8 +68,8 @@ end
    return ρ 
 end
 """
-    _sreduceC!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},C::AbstractMatrix{T1},Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
-                fast = true, withZ = true)
+    _sreduceC!(A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{T},Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                fast = true, withZ = true) -> ρ
 
 Reduce the `p x n` matrix `C` using an orthogonal or unitary similarity transformation `Z1` to the column 
 compressed form 
@@ -82,13 +81,12 @@ where `C11` has full column rank `ρ`. `A*Z1`, `E*Z1` and `CT` are returned in `
 The performed orthogonal or unitary transformations are accumulated in `Z` if `withZ = true`. 
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `C`.
 """
-function _sreduceC!(A::AbstractMatrix{T1},E::AbstractMatrix{T1},C::AbstractMatrix{T1},
-                    Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
-                    fast::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+function _sreduceC!(A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{T},
+                    Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                    fast::Bool = true, withZ::Bool = true) where T <: BlasFloat
    p, n = size(C)                
    (p == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
-   T = eltype(A)
    ZERO = zero(T)
    ia = 1:n
    if p == 1 
@@ -149,7 +147,7 @@ end
    return ρ 
 end
 """
-    _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T1},B::AbstractMatrix{T1},C::Union{AbstractMatrix{T1},Missing},Q::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
+    _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                 fast = true, init = true, roff = 0, coff = 0, withQ = true) -> ρ 
 
 Reduce for `init = true`, the pair `(A,B)` using an orthogonal or unitary similarity transformation on the matrices `A` and `B` of the form 
@@ -181,12 +179,11 @@ where `B11` has full row rank `ρ`. `H` and `C*diag(I,Q1)` are returned in `A` a
 and `B` is unchanged. The performed orthogonal or unitary transformations are accumulated in `Q` if `withQ = true`. 
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T1},B::AbstractMatrix{T1},C::Union{AbstractMatrix{T1},Missing},
-                     Q::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
-                     fast::Bool = true, init::Bool = true, roff::Int = 0, coff::Int = 0, withQ::Bool = true) where T1 <: BlasFloat
+function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+                     Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                     fast::Bool = true, init::Bool = true, roff::Int = 0, coff::Int = 0, withQ::Bool = true) where T <: BlasFloat
    (m == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
-   T = eltype(A)
    ZERO = zero(T)
    ib = roff+1:roff+n
    ia = 1:roff+n
@@ -257,8 +254,107 @@ function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T1},B::AbstractMatrix{T1},C
    return ρ 
 end
 """
-    _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B::Union{AbstractMatrix{T1},Missing},
-                Q::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
+    _sreduceBA2!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+                 Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                 fast = true, coff = 0, withQ = true) -> ρ 
+
+Reduce the matrices `B` and `A` of the form
+
+
+    B = [ *  *  ]       A = [ *    *   A12 ] 
+        [ B1 B2 ] n         [ *   A21  A22 ] n
+          m  k               coff       n
+
+using an orthogonal or unitary transformation of the form `B <- G = diag(I,Q1')*B`, 
+such that `G` has the form
+
+         [  *   *  ]    
+     G = [ B11 B12 ] ρ      ,
+         [  0  B22 ] n-ρ    
+            m  k                
+
+where `B11` has full row rank `ρ` and the blocks `A12`, `A21` and `A22` of `A` are
+updated such that `A12 <- A12*Q1`, `A21 <- Q1'*A21` and `A22 <- Q1'*A22`. 
+Update  `C <- C*diag(I,Q1)` and `Q <- Q*diag(I,Q1)` if `withQ = true`.  
+The rank decisions use the absolute tolerance `tol` for the nonzero elements of `B`.
+"""
+function _sreduceBA2!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+                     Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                     fast::Bool = true, coff::Int = 0, withQ::Bool = true) where T <: BlasFloat
+   (m == 0 || n == 0) && (return 0)
+   nA, mB = size(B) 
+   roff = nA - n 
+   ZERO = zero(T)
+   ib = roff+1:nA    # row range of [B1, B2] and [A21 A22]
+   ia = 1:nA         # row range of [A12; A22]
+   ja = ib           # column rabge of A2 = [A12; A22]
+   ja1 = coff+1:nA   # column range of A1 = [A21 A22]
+   B1 = view(B,ib,1:m)
+   B2mat = (m < mB)  # B2 is present if B has more columns than m
+   B2mat && (B2 = view(B,ib,m+1:mB))
+   A1 = view(A,ib,ja1)  
+   A2 = view(A,ia,ja)
+   if m == 1 
+      b = view(B1,:,1)
+      n == 1 && (abs(b[1]) > tol ? (return 1) : (b[1] = ZERO; return 0))
+      τ, β = larfg!(b)
+      if abs(β) <= tol
+         b[:] = zeros(T,n)
+         return 0
+      else
+         larf!('L', b, conj(τ), A1)  
+         B2mat &&  larf!('L', b, conj(τ), B2)  
+         larf!('R', b, τ, A2)  
+         ismissing(C) || larf!('R', b, τ, view(C,:,ja))  
+         withQ && larf!('R', b, τ, view(Q,:,ib)) 
+         b[:] = [ β; zeros(T,n-1)] 
+         return 1
+      end
+   end
+   if fast
+      B1, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(B1)
+      ρ = count(x -> x > tol, abs.(diag(B1))) 
+      T <: Complex ? tran = 'C' : tran = 'T'
+      LinearAlgebra.LAPACK.ormqr!('L',tran,B1,τ,A1)
+      B2mat &&  LinearAlgebra.LAPACK.ormqr!('L', tran, B1, τ, B2)  
+      LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,A2)
+      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(Q,:,ib)) 
+      ismissing(C) || LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(C,:,ja)) 
+      B1[:,:] = [ triu(B1[1:ρ,:])[:,invperm(jpvt)]; zeros(T,n-ρ,m) ]
+   else
+      if n > m
+         B1, τ = LinearAlgebra.LAPACK.geqrf!(B1)
+         T <: Complex ? tran = 'C' : tran = 'T'
+         LinearAlgebra.LAPACK.ormqr!('L',tran,B1,τ,A1)
+         B2mat && LinearAlgebra.LAPACK.ormqr!('L',tran,B1,τ,B2)
+         LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,A2)
+         withQ && LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(Q,:,ib)) 
+         ismissing(C) || LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(C,:,ja)) 
+         B1[:,:] = [ triu(B1[1:m,:]); zeros(T,n-m,m) ]
+      end
+      mn = min(n,m)
+      ics = 1:mn
+      jcs = 1:m
+      SVD = svd(B1[ics,jcs], full = true)
+      ρ = count(x -> x > tol, SVD.S) 
+      ρ == mn && (return ρ)
+      B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
+      ρ == 0 && (return ρ)
+      ibt = roff+1:roff+mn
+      withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
+      A[ibt,ja1] = SVD.U'*A[ibt,ja1]
+      B2mat &&  (B2[ics,:] = SVD.U'*B2[ics,:])  
+      #jt = coff+1:coff+mn
+      #A[ia,jt] = A[ia,jt]*SVD.U
+      A[ia,ibt] = A[ia,ibt]*SVD.U
+      #ismissing(C) || (C[:,jt] = C[:,jt]*SVD.U) 
+      ismissing(C) || (C[:,ibt] = C[:,ibt]*SVD.U) 
+   end
+   return ρ 
+end
+"""
+    _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractMatrix{T},Missing},
+                Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                 fast = true, init = true, rtrail = 0, ctrail = 0, withQ = true) -> ρ
 
 Reduce for `init = true`, the pair `(A,C)` using an orthogonal or unitary similarity transformation on the matrices `A` and `C` of the form 
@@ -292,12 +388,11 @@ where `C11` has full column rank `ρ`. `H` and `diag(Q1',I)*B` are returned in `
 and `C` is unchanged. The performed orthogonal or unitary transformations are accumulated in `Q` if `withQ = true`. 
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B::Union{AbstractMatrix{T1},Missing},
-                     Q::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
-                     fast::Bool = true, init::Bool = true, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true) where T1 <: BlasFloat
+function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractMatrix{T},Missing},
+                     Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                     fast::Bool = true, init::Bool = true, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true) where T <: BlasFloat
    (p == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
-   T = eltype(A)
    ZERO = zero(T)
    ia = 1:n
    if init 
@@ -374,11 +469,11 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T1},C::AbstractMatrix{T1},B
    return ρ 
 end
 """
-    _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},B::AbstractMatrix{T1},C::Union{AbstractMatrix{T1},Missing},
-                 Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
+    _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+                 Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                  fast = true, init = true, roff = 0, coff = 0, withQ = true, withZ = true)
 
-Reduce for `init = true`, the pair `(A-λE,B)`, with E upper-triangular, using an orthogonal or unitary 
+Reduce for `init = true`, the pair `(A-λE,B)`, with `E` upper-triangular, using an orthogonal or unitary 
 similarity transformations on the matrices `A`, `E` and `B` of the form `At =  Q1'*A*Z1`, `Et =  Q1'*E*Z1`, 
 `Bt = Q1'*B`, to the form
 
@@ -418,13 +513,12 @@ The performed orthogonal or unitary transformations are accumulated in `Q` as `Q
 and in `Z` as `Z <- Z*diag(I,Z1)` if `withZ = true`.
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},B::AbstractMatrix{T1},C::Union{AbstractMatrix{T1},Missing},
-                      Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
+function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+                      Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                       fast::Bool = true, init::Bool = true, roff::Int = 0, coff::Int = 0, 
-                      withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+                      withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    (m == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
-   T = eltype(A)
    ZERO = zero(T)
    ib = roff+1:roff+n
    ia = 1:roff+n
@@ -523,7 +617,7 @@ function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
       init ? (jt1 = 1:mn) : (jt1 = coff+m+1:coff+m+mn)
       E11 = view(E,ibt,jt1)
       LinearAlgebra.LAPACK.gerqf!(E11,tau)
-      eltype(A) <: Complex ? tran = 'C' : tran = 'T'
+      T <: Complex ? tran = 'C' : tran = 'T'
       LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
       withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
       LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
@@ -533,8 +627,148 @@ function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
    return ρ 
 end
 """
-    _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},C::AbstractMatrix{T1},B::Union{AbstractMatrix{T1},Missing},
-                Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
+    _sreduceBAE2!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},
+                  C::Union{AbstractMatrix{T},Missing}, Q::Union{AbstractMatrix{T},Nothing}, 
+                  Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                  fast = true, coff = 0, withQ = true, withZ = true) -> ρ 
+
+Reduce the matrices `B`, `A` and the upper-triangular `E` of the form 
+
+
+    B = [ *  *  ]       A - λE = [ *    *        A12-λE12 ] 
+        [ B1 B2 ] n              [ *   A21-λE21  A22-λE22 ] n
+          m  k               coff       n
+
+using orthogonal or unitary transformations `Q1` and `Z1` such that `B <- G = diag(I,Q1')*B`, 
+`G` has the form
+
+         [  *   *  ]    
+     G = [ B11 B12 ] ρ      ,
+         [  0  B22 ] n-ρ    
+            m  k                
+
+where `B11` has full row rank `ρ`, and the blocks `A12-λE12`, `A21-λE21` and `A22-λE22` 
+of `A-λE` are updated such that `A12-λE12 <- (A12-λE12)*Z1`, `A21-λE21 <- Q1'*(A21-λE21)` 
+and `A22-λE22 <- Q1'*(A22-λE22)`. 
+Update  `C <- C*diag(I,Q1)`, `Q <- Q*diag(I,Q1)` if `withQ = true` and  
+`Z <- Z*diag(I,Z1)` if `withZ = true`. 
+The rank decisions use the absolute tolerance `tol` for the nonzero elements of `B`.
+"""
+function _sreduceBAE2!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+                      Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                      fast::Bool = true, coff::Int = 0, withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+   (m == 0 || n == 0) && (return 0)
+   nA, mB = size(B) 
+   roff = nA - n 
+   ZERO = zero(T)
+   ib = roff+1:nA    # row range of [B1, B2] and [A21 A22]
+   ia = 1:nA         # row range of [A12; A22]
+   ja = ib           # column rabge of A2 = [A12; A22]
+   ja1 = coff+1:nA   # column range of A1 = [A21 A22]
+   B1 = view(B,ib,1:m)
+   B2mat = (m < mB)  # B2 is present if B has more columns than m
+   B2mat && (B2 = view(B,ib,m+1:mB))
+   A1 = view(A,ib,ja1)  
+   #E1 = view(E,ib,ja1)  
+   E1 = view(E,ib,ib)
+   A2 = view(A,ia,ja)
+   E2 = view(E,ia,ja)
+   if fast
+      ρ = 0
+      nrm = similar(real(A),m)
+      jp = Vector(1:m)
+      nm = min(n,m)
+      for j = 1:nm
+         for l = j:m
+            nrm[l] = norm(B1[j:n,l])
+         end
+         nrmax, ind = findmax(nrm[j:m]) 
+         ind += j-1
+         if nrmax <= tol
+            break
+         else
+            ρ += 1
+         end
+         if ind != j
+            (jp[j], jp[ind]) = (jp[ind], jp[j])
+            (B1[:,j],B1[:,ind]) = (B1[:,ind],B1[:,j])
+         end
+         for ii = n:-1:j+1
+             iim1 = ii-1
+             if B1[ii,j] != ZERO
+                G, B1[iim1,j] = givens(B1[iim1,j],B1[ii,j],iim1,ii)
+                B1[ii,j] = ZERO
+                lmul!(G,view(B1,:,j+1:m))
+                lmul!(G,A1)
+                B2mat && lmul!(G,B2)
+                lmul!(G,view(E,ib,roff+iim1:nA))
+                withQ && rmul!(view(Q,:,ib),G') 
+                G, r = givens(conj(E1[ii,ii]),conj(E1[ii,iim1]),ii,iim1)
+                E1[ii,ii] = conj(r)
+                E1[ii,iim1] = ZERO 
+                rmul!(view(E,1:roff+iim1,ja),G')
+                withZ && rmul!(view(Z,:,ja),G') 
+                rmul!(view(A,:,ja),G')
+                ismissing(C) || rmul!(view(C,:,ja),G') 
+             end
+         end
+      end
+      B1[:,:] = [ B1[1:ρ,invperm(jp)]; zeros(T,n-ρ,m) ]
+      return ρ
+   else
+      if n > m
+         for j = 1:m
+            for ii = n:-1:j+1
+               iim1 = ii-1
+               if B1[ii,j] != ZERO
+                  G, B1[iim1,j] = givens(B1[iim1,j],B1[ii,j],iim1,ii)
+                  B1[ii,j] = ZERO
+                  lmul!(G,view(B1,:,j+1:m))
+                  lmul!(G,A1)
+                  B2mat && lmul!(G,B2)
+                  lmul!(G,view(E,ib,roff+iim1:nA))
+                  withQ && rmul!(view(Q,:,ib),G') 
+                  G, r = givens(conj(E1[ii,ii]),conj(E1[ii,iim1]),ii,iim1)
+                  E1[ii,ii] = conj(r)
+                  E1[ii,iim1] = ZERO 
+                  rmul!(view(E,1:roff+iim1,ja),G')
+                  withZ && rmul!(view(Z,:,ja),G') 
+                  rmul!(view(A,:,ja),G')
+                  ismissing(C) || rmul!(view(C,:,ja),G') 
+               end
+            end
+         end
+      end
+      mn = min(n,m)
+      mn == 0 && (return 0)
+      ics = 1:mn
+      jcs = 1:m
+      SVD = svd(B1[ics,jcs], full = true)
+      ρ = count(x -> x > tol, SVD.S) 
+      ρ == mn && (return ρ)
+      B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
+      ρ == 0 && (return ρ)
+      ibt = roff+1:roff+mn
+      withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
+      E[ibt,ja1] = SVD.U'*view(E,ibt,ja1)
+      A[ibt,ja1] = SVD.U'*view(A,ibt,ja1)
+      B2mat &&  (B2[ibt,:] = SVD.U'*B2[ibt,:])  
+      tau = similar(E,mn)
+      jt1 = coff+1:coff+mn
+      E11 = view(E,ibt,jt1)
+      LinearAlgebra.LAPACK.gerqf!(E11,tau)
+      T <: Complex ? tran = 'C' : tran = 'T'
+      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
+      withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
+      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
+      ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
+      triu!(E11)
+   end
+   return ρ 
+end
+"""
+    _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractMatrix{T},Missing},
+                Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                 fast = true, init = true, rtrail = 0, ctrail = 0, withQ = true, withZ = true) -> ρ
 
 Reduce for `init = true`, the pair `(A-λE,C)`, with E upper-triangular, using an orthogonal or unitary 
@@ -580,13 +814,12 @@ The performed orthogonal or unitary transformations are accumulated in `Q` as `Q
 and in `Z` as `Z <- Z*diag(I,Z1)` if `withZ = true`.
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},C::AbstractMatrix{T1},B::Union{AbstractMatrix{T1},Missing},
-                      Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; 
+function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractMatrix{T},Missing},
+                      Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                       fast::Bool = true, init::Bool = true, rtrail::Int = 0, ctrail::Int = 0, 
-                      withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+                      withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    (p == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
-   T = eltype(A)
    ZERO = zero(T)
    ia = 1:n
    ja = 1:nA
@@ -683,7 +916,7 @@ function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T1},E::AbstractMatrix{T1},
       tau = similar(E,pn)
       E22 = view(E,jt,jt)
       LinearAlgebra.LAPACK.geqrf!(E22,tau)
-      eltype(A) <: Complex ? tran = 'C' : tran = 'T'
+      T <: Complex ? tran = 'C' : tran = 'T'
       LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(A,jt,ja))
       withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E22,tau,view(Q,:,jt)) 
       LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(E,jt,jt1))

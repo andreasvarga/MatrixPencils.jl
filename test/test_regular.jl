@@ -594,5 +594,84 @@ end
 end
 end # fisplit
 
+fast = true; finite_infinite = true; Ty = Float64      
+
+for fast in (true, false)
+
+for Ty in (Float64, Complex{Float64})
+
+A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = zeros(Ty,3,2); C2 = zeros(4,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time A1, E1, B1, C1, Q, Z, ν, blkdims  = sfisplit(A,E,B,C,fast = fast, finite_infinite = true)
+@test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) && istriu(A1) &&
+      (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
+      ν == Int64[] && blkdims == (3, 0, 0)   
+      
+@time A1, E1, B1, C1, Q, Z, ν, blkdims  = sfisplit(A,E,B,C,fast = fast, finite_infinite = false)
+@test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) && istriu(A1) &&
+      (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
+      ν == Int64[] && blkdims == (0,0,3)   
+      
+A2 = rand(3,3); E2 = triu(rand(Ty,3,3),1); B2 = zeros(3,2); C2 = zeros(4,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time A1, E1, B1, C1, Q, Z, ν, blkdims  = sfisplit(A,E,B,C,fast = fast, finite_infinite = true)
+@test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
+      ν == Int64[] && blkdims == (1,2,0)    
+      
+@time A1, E1, B1, C1, Q, Z, ν, blkdims  = sfisplit(A,E,B,C,fast = fast, finite_infinite = false)
+@test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
+      ν == Int64[] && blkdims == (0, 2, 1)    
+      
+
+A2 = zeros(3,3); E2 = rand(3,3); B2 = zeros(Ty,3,2); C2 = zeros(4,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time A1, E1, B1, C1, Q, Z, ν, blkdims  = sfisplit(A,E,B,C,fast = fast, finite_infinite = true)
+@test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
+      ν == [] && blkdims == (0,3,0)   
+      
+@time A1, E1, B1, C1, Q, Z, ν, blkdims  = sfisplit(A,E,B,C,fast = fast, finite_infinite = false)
+@test norm(Q'*A2*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E1) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(Q'*B2-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(C2*Z-C1)  < sqrt(eps(1.))) && 
+      ν == [] && blkdims == (0,3,0)    
+      
+A2 = rand(3,3); E2 = rand(3,3); B2 = zeros(Ty,3,2); C2 = zeros(4,3);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
+
+@time A1, E1, C1, B1, Q, Z, ν, blkdims  = sfisplit(A',E',C',B',fast = fast, finite_infinite = true)
+@test norm(Q'*A2'*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2'*Z-E1) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(B2'*Z-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(Q'*C2'-C1)   < sqrt(eps(1.))) && 
+      ν == [] && blkdims == (0,3,0)      
+      
+@time A1, E1, C1, B1, Q, Z, ν, blkdims  = sfisplit(A',E',C',B',fast = fast, finite_infinite = false)
+@test norm(Q'*A2'*Z-A1) < sqrt(eps(1.)) &&
+      norm(Q'*E2'*Z-E1) < sqrt(eps(1.)) &&
+      (ismissing(B) || norm(B2'*Z-B1) < sqrt(eps(1.))) && 
+      (ismissing(C) || norm(Q'*C2'-C1)   < sqrt(eps(1.))) && 
+      ν == [] && blkdims == (0,3,0)     
+      
+end
+
+end # sfisplit
+
 end # regular testset
 end # module
