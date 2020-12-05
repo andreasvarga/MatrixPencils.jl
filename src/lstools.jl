@@ -729,7 +729,7 @@ function lpsminreal(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, F::
     ir = 1:n
     nr = n
     if contr  
-      m == 0 && (ir = 1:0; return A1[ir,ir], E1[ir,ir], B1[ir,;], F1[ir,:], C1[:,ir], G1[:,ir], D1, H1, I, I, n, 0)
+      m == 0 && (ir = 1:0; return A1[ir,ir], E1[ir,ir], B1[ir,:], F1[ir,:], C1[:,ir], G1[:,ir], D1, H1, I, I, n, 0)
       _, W, nr = sklf_right!(Ar, Er, Br, Fr, Cr, Gr, Dr, Hr; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
       nuc = n-nr
       if nuc > 0
@@ -761,7 +761,7 @@ function lpsminreal(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, F::
       nuc = 0
    end
    if obs 
-      p == 0 && (ir = 1:0; return A1[ir,ir], E1[ir,ir], B1[ir,;], F1[ir,:], C1[:,ir], G1[:,ir], D1, H1, I, I, nuc, nr)
+      p == 0 && (ir = 1:0; return A1[ir,ir], E1[ir,ir], B1[ir,:], F1[ir,:], C1[:,ir], G1[:,ir], D1, H1, I, I, nuc, nr)
       V, _, no = sklf_left!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Gr,:,ir), view(Br,ir,:), view(Fr,ir,:), Dr, Hr; 
                                          fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
        nuo = nr-no
