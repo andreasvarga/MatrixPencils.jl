@@ -238,7 +238,7 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
    C1 = copy_oftype(C,T)
    D1 = copy_oftype(D,T)  
 
-   (n == 0 || m == 0 || p == 0) && (return A1, E1, B1, C1, D1, 0, 0, 0)
+   n == 0 && (return A1, E1, B1, C1, D1, 0, 0, 0)
 
    if eident
       A1, B1, C1, nuc, nuo  = lsminreal(A1, B1, C1, contr = contr, obs = obs, fast = fast, atol = atol1, rtol = rtol)
@@ -253,6 +253,7 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
       ir = 1:n
       if finite
          if contr  
+            m == 0 &&  (ir = 1:0; return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, n, 0, 0)
             _, _, _, nr, nfuc = sklf_rightfin!(Ar, Er, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
             if nfuc > 0
                ir = 1:nr
@@ -270,8 +271,10 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
             end
          else
             nfuc = 0
+            nr = n
          end
          if obs 
+            p == 0 &&  (ir = 1:0; return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nfuc, nr, 0)
             _, _, _, no, nfuo = sklf_leftfin!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
                                               fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
             if nfuo > 0
@@ -297,6 +300,7 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
       end
       if infinite
          if contr  
+            m == 0 &&  (ir = 1:0; return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, n, 0, 0)
             _, _, _, nr, niuc = sklf_rightfin!(view(Er,ir,ir), view(Ar,ir,ir), view(Br,ir,:), view(Cr,:,ir); 
                                               fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, 
                                               withQ = false, withZ = false) 
@@ -318,7 +322,8 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
             niuc = 0
          end
          if obs 
-             _, _, _, no, niuo = sklf_leftfin!(view(Er,ir,ir), view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
+            p == 0 &&  (ir = 1:0; return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, niuc, nr, 0)
+            _, _, _, no, niuo = sklf_leftfin!(view(Er,ir,ir), view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
                                               fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, 
                                               withQ = false, withZ = false) 
             if niuo > 0
@@ -428,13 +433,15 @@ function lsminreal(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix;
    B1 = copy_oftype(B,T)
    C1 = copy_oftype(C,T)
 
-   (n == 0 || m == 0 || p == 0) && (return A1, B1, C1, 0, 0)
+   n == 0 && (return A1, B1, C1, 0, 0)
+
    # save system matrices
    Ar = copy(A1)
    Br = copy(B1)
    Cr = copy(C1)
    ir = 1:n
    if contr
+      m == 0 &&  (ir = 1:0; return Ar[ir,ir], Br[ir,:], Cr[:,ir], n, 0)
       _, _, nr, nuc = sklf_right!(Ar, Br, Cr; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false)
       if nuc > 0
          ir = 1:nr
@@ -450,8 +457,10 @@ function lsminreal(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix;
       end
    else
       nuc = 0
+      nr = n
    end
    if obs
+      p == 0 &&  (ir = 1:0; return Ar[ir,ir], Br[ir,:], Cr[:,ir], nuc, nr)
       _, _, no, nuo = sklf_left!(view(Ar,ir,ir), view(Cr,:,ir), view(Br,ir,:); fast = fast, atol1 = atol, atol2 = atol, rtol = rtol, withQ = false) 
       if nuo > 0
          ir = ir[end-no+1:end]
@@ -545,7 +554,7 @@ function lsminreal(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Boo
    C1 = copy_oftype(C,T)
    D1 = copy_oftype(D,T)  
 
-   (n == 0 || m == 0 || p == 0) && (return A1, E1, B1, C1, D1, 0, 0, 0)
+   n == 0 && (return A1, E1, B1, C1, D1, 0, 0, 0)
 
    if eident
       A1, B1, C1, nuc, nuo  = lsminreal(A1, B1, C1, contr = contr, obs = obs, fast = fast, atol = atol1, rtol = rtol)
@@ -559,6 +568,7 @@ function lsminreal(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Boo
       Er = copy(E1)
       ir = 1:n
       if contr  
+         m == 0 &&  (ir = 1:0; return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, n, 0, 0)
          _, _, _, nr, nfuc, niuc = sklf_right!(Ar, Er, Br, Cr; fast = fast, atol1 = atol1, atol2 = atol2, atol3 = atol1, rtol = rtol, withQ = false, withZ = false) 
          nuc = nfuc+niuc
          if nuc > 0
@@ -577,8 +587,10 @@ function lsminreal(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Boo
          end
       else
          nuc = 0
+         nr = n
       end
       if obs 
+         p == 0 &&  (ir = 1:0; return Ar[ir,ir], Er[ir,ir], Br[ir,:], Cr[:,ir], Dr, nuc, nr, 0)
          _, _, _, no, nfuo, niuo = sklf_left!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Br,ir,:); 
                                             fast = fast, atol1 = atol1, atol2 = atol2, atol3 = atol1, 
                                             rtol = rtol, withQ = false, withZ = false) 
@@ -704,7 +716,7 @@ function lpsminreal(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, F::
     G1 = copy_oftype(G,T)
     H1 = copy_oftype(H,T)  
 
-    (n == 0 || m == 0 || p == 0) && (return A1, E1, B1, F1, C1, G1, D1, H1, I, I, 0, 0)
+    n == 0 && (return A1, E1, B1, F1, C1, G1, D1, H1, I, I, 0, 0)
     # save system matrices
     Ar = copy(A1)
     Br = copy(B1)
@@ -717,6 +729,7 @@ function lpsminreal(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, F::
     ir = 1:n
     nr = n
     if contr  
+      m == 0 && (ir = 1:0; return A1[ir,ir], E1[ir,ir], B1[ir,;], F1[ir,:], C1[:,ir], G1[:,ir], D1, H1, I, I, n, 0)
       _, W, nr = sklf_right!(Ar, Er, Br, Fr, Cr, Gr, Dr, Hr; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
       nuc = n-nr
       if nuc > 0
@@ -748,6 +761,7 @@ function lpsminreal(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, F::
       nuc = 0
    end
    if obs 
+      p == 0 && (ir = 1:0; return A1[ir,ir], E1[ir,ir], B1[ir,;], F1[ir,:], C1[:,ir], G1[:,ir], D1, H1, I, I, nuc, nr)
       V, _, no = sklf_left!(view(Ar,ir,ir), view(Er,ir,ir), view(Cr,:,ir), view(Gr,:,ir), view(Br,ir,:), view(Fr,ir,:), Dr, Hr; 
                                          fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = false, withZ = false) 
        nuo = nr-no

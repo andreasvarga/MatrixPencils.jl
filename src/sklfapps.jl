@@ -366,7 +366,7 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
          isa(E,Adjoint) && (E = copy(E))
          ndx, nx = size(A)
          T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
-         eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and M must have the same dimensions"))
+         eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
          ny, nu = size(D)
          (ndx,nu) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
          (ny,nx) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
@@ -379,8 +379,9 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
       if eident 
          ndx == nx || throw(DimensionMismatch("A must be a square matrix"))
       end
-   
-   
+      # fast finishing if possible
+      max(ndx,nx,nu,ny) == 0 && (return 0)
+     
       (!ismissing(A) && eltype(A) != T) && (A = convert(Matrix{T},A))
       (!eident && !ismissing(E) && eltype(E) != T) && (E = convert(Matrix{T},E))
       (!ismissing(B) && eltype(B) != T) && (B = convert(Matrix{T},B))

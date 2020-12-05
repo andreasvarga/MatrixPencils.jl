@@ -505,24 +505,8 @@ function fisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
          p1 = ρ
          m1 -= τ 
       end
-      k1 = nf+1
       reverse!(view(ν,1:i))
-      for k = 1:i
-          nk = ν[k]
-          k2 = k1+nk-1
-          kk = k1:k2
-          if nk > 1
-             Ak = view(A,kk,kk)
-             tau = similar(A,nk)
-             LinearAlgebra.LAPACK.geqrf!(Ak,tau)
-             LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(A,kk,k2+1:n))
-             withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ak,tau,view(Q,:,kk))
-             LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(E,kk,k2+1:n))
-             ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(B,kk,:))
-             triu!(Ak)
-          end
-          k1 = k2+1
-      end        
+      klf_left_refineinf!(view(ν,1:i), A, E, Q, B; roff = nf, coff = nf, withQ = withQ)
       return ν[1:i], (nf, ni)                                             
    else
 
@@ -549,40 +533,42 @@ function fisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
          p1 -= τ 
       end
 
-      k2 = ni 
-      for k = i:-1:1
-          nk = ν[k]
-          k1 = k2-nk+1
-          kk = k1:k2
-          if nk > 1
-             Ak = view(A,kk,kk)
-             tau = similar(A,nk)
-             LinearAlgebra.LAPACK.gerqf!(Ak,tau)
-             LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(A,1:k1-1,kk))
-             withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
-             LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(E,1:k1-1,kk))
-             ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
-             triu!(Ak)
-          end
-         #  the following code can be used to make the supradiagonal blocks of E upper triangular
-         #  but it is not necessary in this context
-         #  if k > 1 
-         #     nk1 = ν[k-1]
-         #     k1e = k1 - nk1
-         #     k2e = k1 - 1
-         #     kke = k1e:k2e
-         #     if nk1 > 1
-         #        Ek = view(E,kke,kk)
-         #        tau = similar(A,nk)
-         #        LinearAlgebra.LAPACK.geqrf!(Ek,tau)
-         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(A,kke,k1e:n))
-         #        withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ek,tau,view(Q,:,kke)) 
-         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(E,kke,k2+1:n))
-         #        ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(B,kke,:))
-         #        triu!(Ek)
-         #     end
-         k2 = k1-1
-      end        
+      klf_right_refineinf!(view(ν,1:i), A, E, Z, C; withZ = withZ)
+      # the following code can be used to make the supradiagonal blocks of E upper triangular
+      # but it is not necessary in this context
+      # k2 = ni 
+      # for k = i:-1:1
+      #     nk = ν[k]
+      #     k1 = k2-nk+1
+      #     kk = k1:k2
+      #     if nk > 1
+      #        Ak = view(A,kk,kk)
+      #        tau = similar(A,nk)
+      #        LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+      #        LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(A,1:k1-1,kk))
+      #        withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+      #        LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(E,1:k1-1,kk))
+      #        ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+      #        triu!(Ak)
+      #     end
+      #     if k > 1 
+      #        nk1 = ν[k-1]
+      #        k1e = k1 - nk1
+      #        k2e = k1 - 1
+      #        kke = k1e:k2e
+      #        if nk1 > 1
+      #           Ek = view(E,kke,kk)
+      #           tau = similar(A,nk)
+      #           LinearAlgebra.LAPACK.geqrf!(Ek,tau)
+      #           LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(A,kke,k1e:n))
+      #           withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ek,tau,view(Q,:,kke)) 
+      #           LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(E,kke,k2+1:n))
+      #           ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(B,kke,:))
+      #           triu!(Ek)
+      #        end
+      #     end
+      #     k2 = k1-1
+      # end        
    
       return ν[1:i], (ni, nf)                                             
    end

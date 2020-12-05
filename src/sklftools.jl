@@ -163,7 +163,7 @@ The pencil `Mreg-λNreg` is regular, contains the infinite and finite elementary
          Mreg-λNreg  = |--------|---------|, if `finite_infinite = true`, 
                        |   0    |  Mi-λNi |
      
-where: (1) `Mi-λNi`, in staircase form, contains the infinite elementary divisors of `M-λN` and 
+where: (1) `Mi-λNi`, in staircase form, contains the infinite elementary divisors of `M-λN`, `Mi` is upper triangular and nonsingular, and 
 `Ni` is upper triangular and nilpotent; 
 (2) `Mf-λNf` contains the infinite elementary divisors of `M-λN` and 
 `Nf` is upper triangular and nonsingular.

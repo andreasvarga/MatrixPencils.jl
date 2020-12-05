@@ -248,8 +248,8 @@ The pencil `Mreg-λNreg` is regular, contains the infinite and finite elementary
          Mreg-λNreg  = |--------|---------|, if `finite_infinite = true`, 
                        |   0    |  Mi-λNi |
      
-where: (1) `Mi-λNi`, in staircase form, contains the infinite elementary divisors of `M-λN` and 
-`Ni` is upper triangular and nilpotent; 
+where: (1) `Mi-λNi`, in staircase form, contains the infinite elementary divisors of `M-λN`, 
+`Mi` is upper triangular and `Ni` is upper triangular and nilpotent; 
 (2) `Mf-λNf` contains the infinite elementary divisors of `M-λN` and 
 `Nf` is upper triangular and nonsingular.
 The `ni`-dimensional vector `νi` contains the dimensions of the square blocks of the staircase form  `Mi-λNi` 
@@ -498,7 +498,7 @@ where `E` is an `nxn` non-singular upper triangular matrix, and `A`, `B`, `C`, `
 respectively.  
 
 The regular pencil `Mi-λNi` is in a staircase form, contains the infinite elementary divisors of `M-λN` 
-and `Ni` is upper triangular and nilpotent. The `ni`-dimensional vector `νi` contains the dimensions of the 
+and `Mi` is upper triangular and `Ni` is upper triangular and nilpotent. The `ni`-dimensional vector `νi` contains the dimensions of the 
 square diagonal blocks of the staircase form  `Mi-λNi` such that the `i`-th block has dimensions `νi[i] x νi[i]`. 
 The difference `νi[i]-νi[i-1] = ν[ni-i+1]-μ[ni-i+1]` for `i = 1, 2, ..., ni` is the number of infinite elementary 
 divisors of degree `i` (with `νi[0] = 0` and `μ[nb+1] = 0`).
@@ -710,8 +710,8 @@ of the staircase form  `Mr-λNr` such that the `i`-th block has dimensions `νr[
 has full row rank. The difference `μr[i]-νr[i] = μ[i]-ν[i]` for `i = 1, 2, ..., nr` is the number of 
 elementary Kronecker blocks of size `(i-1) x i`.
 
-The regular pencil `Mi-λNi`is in a staircase form, contains the infinite elementary divisors of `Mri-λNri` 
-and `Ni` is upper triangular and nilpotent. The `ni`-dimensional vector `νi` contains the dimensions of the 
+The regular pencil `Mi-λNi`is in a staircase form, contains the infinite elementary divisors of `Mri-λNri`, 
+`Mi` is upper triangular and `Ni` is upper triangular and nilpotent. The `ni`-dimensional vector `νi` contains the dimensions of the 
 square diagonal blocks of the staircase form  `Mi-λNi` such that the `i`-th block has dimensions `νi[i] x νi[i]`. 
 The difference `νi[ni-i+1]-νi[ni-i] = ν[i]-μ[i+1]` for `i = 1, 2, ..., ni` is the number of infinite elementary 
 divisors of degree `i` (with `νi[0] = 0` and `μ[nb+1] = 0`).
@@ -735,6 +735,9 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
    nri = sum(μ)
    mM = roff + mri + rtrail
    nM = coff + nri + ctrail
+
+   rtrail0 = rtrail
+   ctrail0 = ctrail
 
    m = μ[1]
    n = nri-m
@@ -762,6 +765,7 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
    mrinf = 0
    nrinf = 0
    j = 0
+   ni = 0
 
    while p > 0
       # Steps 1 & 2: Dual algorithm PREDUCE to separate right-finite and infinite-left parts.
@@ -774,12 +778,17 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
       ρ+τ == p || error("The reduced pencil must not have left structure: try to adjust the tolerances")
       j += 1
       νi[j] = p
+      ni += p
       ctrail += p
       rtrail += p
       n -= ρ
       p = ρ
       m -= τ 
    end
+
+   # make Mi upper triangular 
+   reverse!(view(νi,1:j))
+   j > 0 && klf_right_refineinf!(view(νi,1:j), M, N, Z, missing; roff = mM-rtrail0-ni, coff = nM-ctrail0-ni, withZ = withZ) 
 
    i = 0
    if m > 0
@@ -800,7 +809,7 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
       m = ρ
    end
    
-   return νr[1:i], μr[1:i], reverse(νi[1:j])
+   return νr[1:i], μr[1:i], νi[1:j]
 end
 """
     klf_left!(M, N; fast = true, roff = 0, coff = 0, rtrail = 0, ctrail = 0, atol = 0, rtol, withQ = true, withZ = true) -> (Q, Z, ν, μ, nf, νl, μl, tol)
@@ -935,12 +944,12 @@ end
 Reduce the partitioned matrix pencil `M - λN` (`*` stands for a not relevant subpencil)
 
              [   *         *        *  ] roff
-    M - λN = [   0      Mli-λNli    *  ] mli
+    M - λN = [   0      Mil-λNil    *  ] mli
              [   0         0        *  ] rtrail
                coff      nli     ctrail
 
 to an equivalent form `F - λG = Q1'*(M - λN)*Z1` using orthogonal or unitary transformation matrices `Q1` and `Z1` 
-such that the full column rank subpencil `Mli-λNli`is transformed into the 
+such that the full column rank subpencil `Mil-λNil` is transformed into the 
 following Kronecker-like form  exhibiting its infinite and left Kronecker structures:
 
                   |  Mi-λNi    |     *      |
@@ -948,17 +957,17 @@ following Kronecker-like form  exhibiting its infinite and left Kronecker struct
                   |    O       |   Ml-λNl   |
 
 The full column rank pencil `Mli-λNli` is in a staircase form and the `nb`-dimensional vectors `ν` and `μ` 
-contain the row and, respectively, column dimensions of the blocks of the staircase form  `Mli-λNli` such that 
+contain the row and, respectively, column dimensions of the blocks of the staircase form  `Mil-λNil` such that 
 the `i`-th block has dimensions `ν[i] x μ[i]` and has full column rank. The matrix Mli has full column rank and 
 the leading `μ[1]+...+μ[nb-1]` columns of `Nli` form a full row rank submatrix. 
 
-The regular pencil `Mi-λNi` is in a staircase form, contains the infinite elementary divisors of `Mli-λNli` 
-and `Ni` is upper triangular and nilpotent. The `ni`-dimensional vector `νi` contains the dimensions of the 
+The regular pencil `Mi-λNi` is in a staircase form, contains the infinite elementary divisors of `Mil-λNil`,  
+`Mi` is upper triangular and `Ni` is upper triangular and nilpotent. The `nbi`-dimensional vector `νi` contains the dimensions of the 
 square diagonal blocks of the staircase form  `Mi-λNi` such that the `i`-th block has dimensions `νi[i] x νi[i]`. 
-The difference `νi[i]-νi[i-1] = ν[ni-i+1]-μ[ni-i+1]` for `i = 1, 2, ..., ni` is the number of infinite elementary 
-divisors of degree `i` (with `νi[0] = 0` and `μ[nb+1] = 0`).
+The difference `νi[i]-νi[i-1] = ν[nbi-i+1]-μ[nbi-i+1]` for `i = 1, 2, ..., nbi` is the number of infinite elementary 
+divisors of degree `i` (with `νi[0] = 0` and `μ[nbi+1] = 0`).
 
-The full column rank pencil `Mli-λNli` is in a staircase form, and contains the  left Kronecker indices 
+The full column rank pencil `Mil-λNil` is in a staircase form, and contains the  left Kronecker indices 
 and infinite elementary divisors of the subpencil `M22 - λN22`. 
 The `nb`-dimensional vectors `ν` and `μ` contain the row and, respectively, column dimensions of the blocks
 of the staircase form  `Mli-λNli` such that the `i`-th block has dimensions `ν[nb-i+1] x μ[nb-i+1]` and has full column rank. 
@@ -1019,6 +1028,9 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
    μl = Vector{Int}(undef,nb)
    νl = Vector{Int}(undef,nb)
    νi = Vector{Int}(undef,nb)
+
+   roff0 = roff
+   coff0 = coff
  
    i = 0
    while m > 0
@@ -1035,6 +1047,9 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
       m = ρ
       p -= τ 
    end
+   # make Mi upper triangular
+   i > 0 && klf_left_refineinf!(view(νi,1:i), M, N, Q, missing; roff = roff0, coff = coff0, withQ = withQ) 
+
    j = 0
    while p > 0
       # Step 3: Dual algorithm
@@ -1049,6 +1064,111 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
       n -= ρ
       p = ρ
    end
+
  
    return νi[1:i], reverse(νl[1:j]), reverse(μl[1:j])
+end
+"""
+    klf_right_refineinf!(νi, M, N, Z, R; roff = 0, coff = 0, withZ = true) 
+
+Reduce the partitioned matrix pencil `M - λN` (`*` stands for a not relevant subpencil)
+
+             [   *         *        *  ] roff
+    M - λN = [   0       Mi-λNi     *  ] ni
+             [   0         0        *  ] rtrail
+               coff       ni     ctrail
+
+to an equivalent form `F - λG = (M - λN)*Z1` using an orthogonal or unitary transformation 
+matrix `Z1`, such that the regular subpencil `Mi-λNi`, in staircase form , 
+with `Mi` nonsingular and `Ni` nillpotent and upper triangular, is transformed to obtain 
+`Mi` is upper-triangular and preserve `Ni` upper triangular. 
+It is assumed that `Mi-λNi` has `nb` diagonal blocks and the `i`-th diagonal block has dimensions 
+`νi[i] x νi[i]`.
+
+The performed orthogonal or unitary transformations are accumulated in `Z` (i.e., `Z <- Z*Z1`), 
+if `withZ = true`. 
+
+The  matrix `R` is overwritten by `R*Z1` unless `R = missing`. 
+"""
+function klf_right_refineinf!(νi::AbstractVector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Z::Union{AbstractMatrix{T1},Nothing},
+   R::Union{AbstractMatrix{T1},Missing}; roff::Int = 0, coff::Int = 0, withZ::Bool = true) where T1 <: BlasFloat
+   nb = length(νi)
+   nb == 0 && return 
+   T1 <: Complex ? tran = 'C' : tran = 'T'
+   ni = sum(νi)
+
+   ki2 = roff+ni
+   kj2 = coff+ni
+   for k = nb:-1:1
+       nk = νi[k]
+       ki1 = ki2-nk+1
+       kj1 = kj2-nk+1
+       kki = ki1:ki2
+       kkj = kj1:kj2
+       if nk > 1
+          Mk = view(M,kki,kkj)
+          tau = similar(M,nk)
+          LinearAlgebra.LAPACK.gerqf!(Mk,tau)
+          LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(M,1:ki1-1,kkj))
+          withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(Z,:,kkj)) 
+          LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(N,1:ki1-1,kkj))
+          ismissing(R) || LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(R,:,kkj)) 
+          triu!(Mk)
+       end
+       ki2 = ki1-1
+       kj2 = kj1-1
+   end        
+   return 
+end
+"""
+    klf_left_refineinf!(νi, M, N, Q, L; roff = 0, coff = 0, withQ = true) 
+
+Reduce the partitioned matrix pencil `M - λN` (`*` stands for a not relevant subpencil)
+
+             [   *         *        *  ] roff
+    M - λN = [   0       Mi-λNi     *  ] ni
+             [   0         0        *  ] rtrail
+               coff       ni     ctrail
+
+to an equivalent form `F - λG = Q1'*(M - λN)` using an orthogonal or unitary transformation 
+matrix `Q1`, such that the regular subpencil `Mi-λNi`, in staircase form, 
+with `Mi` nonsingular and `Ni` nillpotent and upper triangular, is transformed to obtain 
+`Mi` upper-triangular and preserve `Ni` upper triangular. 
+It is assumed that `Mi-λNi` has `nb` diagonal blocks and the `i`-th diagonal block has dimensions 
+`νi[i] x νi[i]`.
+
+The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), 
+if `withQ = true`. 
+
+The  matrix `L` is overwritten by `Q1'*L` unless `L = missing`. 
+"""
+function klf_left_refineinf!(νi::AbstractVector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Q::Union{AbstractMatrix{T1},Nothing},
+   L::Union{AbstractMatrix{T1},Missing}; roff::Int = 0, coff::Int = 0, withQ::Bool = true) where T1 <: BlasFloat
+   nb = length(νi)
+   nb == 0 && return 
+   T1 <: Complex ? tran = 'C' : tran = 'T'
+   n = size(M,2)
+
+   ki1 = roff+1
+   kj1 = coff+1
+   for k = 1:nb
+       nk = νi[k]
+       ki2 = ki1+nk-1
+       kj2 = kj1+nk-1
+       kki = ki1:ki2
+       kkj = kj1:kj2
+       if nk > 1
+          Mk = view(M,kki,kkj)
+          tau = similar(M,nk)
+          LinearAlgebra.LAPACK.geqrf!(Mk,tau)
+          LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(M,kki,kj2+1:n))
+          withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Mk,tau,view(Q,:,kki))
+          ismissing(L) || LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(L,kki,:))
+          LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(N,kki,kj2+1:n))
+          triu!(Mk)
+       end
+       ki1 = ki2+1
+       kj1 = kj2+1
+   end        
+   return 
 end

@@ -165,9 +165,14 @@ A complete list of implemented functions is available [here](https://sites.googl
 
 ## Future plans
 
-Functional enhancements of some functions will be performed if the need arises. 
+Functional enhancements of some functions will be performed if the need arises.
 
 ## Release Notes
+
+### Version 1.4.1
+
+This patch release contains minor enhancements to ensure the upper triangular shape of subpencils with infinite eigenvalues in the computed
+ Kronecker like forms and corrects the handling of null dimensions in the functions for the computation of reduced order linearizations.
 
 ### Version 1.4
 

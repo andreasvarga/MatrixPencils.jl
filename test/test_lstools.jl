@@ -37,6 +37,20 @@ sys1 = lsminreal(sys..., fast = fast)
 sys1 = lsminreal2(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)
 
+A2 = rand(3,3); E2 = zeros(3,3); C2 = zeros(0,3); B2 = zeros(3,0); D2 = zeros(0,0);
+sys = (A2,E2,B2,C2,D2);
+
+sys1 = lsminreal(sys..., fast = fast)
+@test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (3,0,0)
+
+sys1 = lsminreal(sys..., fast = fast, contr = false)
+@test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,3,0)
+
+sys1 = lsminreal2(sys..., fast = fast)
+@test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (3,0,0)
+
+sys1 = lsminreal2(sys..., fast = fast, contr = false)
+@test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,3,0)
 
 # Example 1: DeTeran, Dopico, Mackey, ELA 2009
 
