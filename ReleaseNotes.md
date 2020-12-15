@@ -1,9 +1,12 @@
 # Release Notes
 
+## Version 1.5
+
+This minor release includes a new function for infinite spectrum assignment of a regular pencil, two new functions to refine the computed Kronecker-like forms such that the diagonal and supradiagonal blocks have upper triangular forms, and, accordingly, enhancements of several functions to compute Kronecker-like forms with the staircase form having upper triangular blocks.
+
 ## Version 1.4.1
 
-This patch release contains minor enhancements to ensure the upper triangular shape of subpencils with infinite eigenvalues in the computed
- Kronecker like forms and corrects the handling of null dimensions in the functions for the computation of reduced order linearizations.
+This patch release contains minor enhancements to ensure the upper triangular shape of subpencils with infinite eigenvalues in the computed Kronecker like forms and corrects the handling of null dimensions in the functions for the computation of reduced order linearizations.
 
 ## Version 1.4
 

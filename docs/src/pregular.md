@@ -17,6 +17,7 @@ gsblkdiag
 ssblkdiag
 saloc
 salocd
+salocinf
 MatrixPencils._qrE!
 MatrixPencils._svdlikeAE!
 ```

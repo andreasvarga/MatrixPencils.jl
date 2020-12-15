@@ -760,6 +760,202 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
 end
 
 """
+    salocinf(A, E, B; atol1 = 0, atol2 = 0, atol3 = 0, rtol, fast = true) -> (F, G, Scl, blkdims)
+
+Compute for the controllable pair `(A-λE,B)`, with `A-λE` a regular pencil, two matrices `F` and `G` such that all eigenvalues of the 
+pencil `A+B*F-λ(E+B*G)` are infinite. For a pair `(A-λE,B)` with fixed (uncontrollable) finite eigenvalues, only the assignable (controllable)
+ finite eigenvalues are moved to infinity. 
+
+For a pair `(A-λE,B)` with `A` of order `n`, the number of assignable infinite eigenvalues is `nia := n-ninf-nfu`,  
+where `ninf` is the number of infinite eigenvalues of `A-λE` and `nfu` is the number of fixed finite eigenvalues of `A-λE`. 
+The assignable finite eigenvalues are called the _controllable finite eigenvalues_, 
+while the fixed finite eigenvalues are called the _uncontrollable finite eigenvalues_ (these are the finite zeros of the pencil `[A-λE B]`). 
+The spectrum allocation is achieved by successively replacing the controllable finite eigenvalues of `A-λE` with infinite eigenvalues.
+ All infinite eigenvalues of `A-λE` are kept unalterred.
+
+The keyword arguments `atol1`, `atol2`, `atol3`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`, the absolute tolerance for the nonzero elements of `B`,  
+and the relative tolerance for the nonzero elements of `A`, `E` and `B`.  
+The default relative tolerance is `n*ϵ`, where `ϵ` is the machine epsilon of the element type of `A`. 
+
+The preliminary separation of finite and infinite eigenvalues is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
+if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
+
+The resulting pencil `Acl-λEcl := Q'*(A+B*F-λ(E+λB*G))*Z`,  where `Q` and `Z` are the  
+orthogonal/unitary matrices used to obtain the pair `(Acl,Ecl)` in a generalized Schur form (GSF), has the form
+
+                ( Aig-λEig    *        *     )     
+     Acl-λEcl = (   0      Aia-λEia    *     )  
+                (   0         0     Afu-λEfu )    
+
+where: `Aig-λEig` with `Aig` upper triangular and invertible and `Eig` upper triangular and nilpotent, contains the `ninf` infinite eigenvalues of `A-λE`; 
+`Aia-λEia` with `Aia` upper triangular and invertible and `Eia` upper triangular and nilpotent, contains `nia` assigned infinite generalized eigenvalues; 
+and `Afu-λEfu`, with the pair `(Afu,Efu)` in a generalized Schur form,  contains `nfu` fixed (uncontrollable) finite eigenvalues of `A-λE`. 
+The matrices `Acl`, `Ecl`, `Q`, `Z` and the vectors `α` and `β` such that `α./β` are the generalized eigenvalues of 
+the pair `(Acl,Ecl)` are returned in the `GeneralizeSchur` object `Scl`. 
+The values of `ninf`, `nia` and `nfu` are returned in the 3-dimensional vector `blkdims = [ninf, nia, nfu]`.
+
+Method:  For a general pair `(A-λE,B)` the modified generalized Schur method of [1] is used to determine `F` and `G` such that the pair
+`(A+B*F,E+B*G)` have only infinite eigenvalues.
+
+References:
+
+[1] A. Varga. 
+    On stabilization methods of descriptor systems.
+    Systems & Control Letters, vol. 24, pp.133-138, 1995.
+
+"""
+function salocinf(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix; 
+                  atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
+                  rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
+                  fast::Bool = true)
+
+   n = LinearAlgebra.checksquare(A)
+   
+   LinearAlgebra.checksquare(E) == n || throw(DimensionMismatch("E must be a $n x $n matrix"))
+
+   n1, m = size(B)
+   n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
+   
+   T = promote_type( eltype(A), eltype(B), eltype(E) )
+   T <: BlasFloat || (T = promote_type(Float64,T))
+
+   A1 = copy_oftype(A,T)   
+   E1 = copy_oftype(E,T)
+   B1 = copy_oftype(B,T)
+   
+   # quick exit for n = 0 or B = 0
+
+   # the following is not working for 0 dimensions
+   # n == 0 || (return zeros(T,m,n), schur(zeros(T,n,n), ones(T,n,n)), zeros(T,n,m), zeros(Int,4)) 
+   n == 0 && (return zeros(T,m,n), zeros(T,m,n), GeneralizedSchur(zeros(T,n,n),zeros(T,n,n),zeros(T,n),zeros(T,n),zeros(T,n,n),zeros(T,n,n)), zeros(Int,3)) 
+
+   ZERO = zero(T)
+
+   # check for zero rows in the leading positions
+   ilob = n+1
+   for i = 1:n
+       !iszero(view(B1,i,:)) && (ilob = i; break)
+   end
+
+   # return if B = 0
+   ilob > n && (return zeros(T,m,n), zeros(T,m,n), schur(A1,E1), [0, 0, n] )
+
+   # check for zero rows in the trailing positions
+   ihib = ilob
+   for i = n:-1:ilob+1
+       !iszero(view(B1,i,:)) && (ihib = i; break)
+   end
+   
+   # operate only on the nonzero rows of B
+   ib = ilob:ihib
+   nrmB = opnorm(view(B1,ib,:),1)
+    
+   complx = (T <: Complex)
+   
+       
+   nrmA = opnorm(A1,1)
+   nrmE = opnorm(E1,1)
+   tola = max(atol1, rtol*nrmA)
+   tole = max(atol2, rtol*nrmE)
+   tolb = max(atol3, rtol*nrmB)
+
+   Q = Matrix{T}(I,n,n)
+   Z = Matrix{T}(I,n,n) 
+   
+   _, blkdims = fisplit!(A1, E1, Q, Z, missing, missing; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = true) 
+   ninf = blkdims[1]
+   ilo = ninf+1; 
+   gghrd!('V','V',ilo, n, A1, E1, Q, Z)
+   _, _, α, β, _, _ = hgeqz!('V','V',ilo, n, A1, E1, Q, Z)
+   i2 = ilo:n
+
+   nb = n-ninf
+   fnrmtol = 1000*max(nrmA,nrmE,1)/nrmB
+   scale = max(nrmA,1)/10
+
+   nfu = 0; nia = 0
+   nc = n  
+   F = zeros(T,m,n); 
+   G = zeros(T,m,n); 
+   ia = ninf+1
+   ihf = 0
+
+   while nb > 0
+      noskip = true
+      if nb == 1 || complx || A1[nc,nc-1] == 0
+         k = 1
+      else
+         k = 2
+      end
+      kk = nc-k+1:nc
+      a2 = view(A1,kk,kk)
+      e2 = view(E1,kk,kk)
+      b2 = view(Q,ib,kk)'*view(B1,ib,:)
+      if norm(b2,Inf) <= tolb
+         # deflate uncontrollable block
+         nb = nb-k; nc = nc-k; nfu = nfu+k; noskip = false
+      else 
+         # perturb a2 such that a2+b2*f2 is sufficiently nonzero 
+         if maximum(abs.(a2)) < maximum(abs.(e2)) /10000 || rank(a2,atol=tola) < k
+            f2 = lmul!(scale/nrmB,rand(T,m,k).+1)
+            # update A and F
+            X = view(B1,ib,:)*f2
+            A1[1:nc,kk] += view(Q,ib,1:nc)'*X
+            F += f2*view(Z,:,kk)'
+         end
+         if k == 1
+            # assign a single infinite eigenvalue 
+            g2 = -b2\e2
+            X = view(B1,ib,:)*g2
+            E1[1:nc,kk] += view(Q,ib,1:nc)'*X
+            G += g2*view(Z,:,kk)'
+            # reorder eigenvalues 
+            if nb > k
+               tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
+            end
+            E1[ia,ia] = ZERO
+         else
+            # assign two infinite eigenvalues 
+            g2,  = saloc2(e2,a2,b2,zeros(T,2),tole,tolb)  
+            # update E and G
+            X = view(B1,ib,:)*g2
+            E1[1:nc,kk] += view(Q,ib,1:nc)'*X
+            G += g2*view(Z,:,kk)'
+            # perform standardization step to form two 1x1 blocks
+            Q2, e2[1,1] = givens(e2[1,1],e2[2,1],1,2)
+            e2[2,1] = ZERO; 
+            lmul!(Q2,view(E1,kk,nc:n))
+            e2[2,2] = ZERO
+            lmul!(Q2,view(A1,kk,nc-1:n))            
+            rmul!(view(Q,:,kk),Q2') 
+            Z2, r = givens(conj(a2[2,2]),conj(a2[2,1]),2,1)
+            a2[2,2] = conj(r)
+            a2[2,1] = ZERO
+            rmul!(view(E1,1:nc-1,kk),Z2')
+            rmul!(view(A1,1:nc-1,kk),Z2')
+            rmul!(view(Z,:,kk),Z2') 
+            # reorder eigenvalues 
+            if nb > k
+               tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
+               tgexc!(true, true, nc, ia+1, A1, E1, Q, Z) 
+            end
+            E1[ia,ia] = ZERO
+            E1[ia+1,ia+1] = ZERO
+         end
+         nb -= k
+         ia += k 
+         nia += k
+      end
+   end
+   ihf > 0 && @warn("Possible loss of numerical reliability due to high feedback gain")
+   blkdims = [ninf, nia, nfu]
+   _, α, β = ordeigvals(A1,E1)
+   return F, G, GeneralizedSchur(A1, E1, α, β, Q, Z), blkdims
+   
+   # end salocinf
+end
+"""
      ev = ordeigvals(A) 
 
 Compute the vector `ev` of eigenvalues of a Schur matrix `A` in their order of appearance down the diagonal of `A`.

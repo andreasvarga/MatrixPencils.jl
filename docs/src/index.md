@@ -67,6 +67,7 @@ The current version of the package includes the following functions:
 | **[`ssblkdiag`](@ref)** | Stable-unstable eigenvalue splitting based block diagonalization |
 | **[`saloc`](@ref)** | Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)` |
 | **[`salocd`](@ref)** | Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`  |
+| **[`salocinf`](@ref)** | Infinite spectrum alocation for the pair `(A-λE,B)` |
 | **[`ordeigvals`](@ref)** | Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.   |
 
 **Some applications of matrix pencil computations**
@@ -168,6 +169,10 @@ A complete list of implemented functions is available [here](https://sites.googl
 Functional enhancements of some functions will be performed if the need arises.
 
 ## Release Notes
+
+### Version 1.5
+
+This minor release includes a new function for infinite spectrum assignment of a regular pencil, two new functions to refine the computed Kronecker-like forms such that the diagonal and supradiagonal blocks have upper triangular forms, and, accordingly, enhancements of several functions to compute Kronecker-like forms with the staircase form having upper triangular blocks.  
 
 ### Version 1.4.1
 

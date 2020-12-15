@@ -1,7 +1,7 @@
 name = "MatrixPencils"
 uuid = "48965c70-4690-11ea-1f13-43a2532b2fa8"
 authors = ["Andreas Varga <varga.andreas@gmail.com>"]
-version = "1.4.1"
+version = "1.5"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

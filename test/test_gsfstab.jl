@@ -6,7 +6,6 @@ using MatrixPencils
 using Test
 
 
-
 function evsym!(ev) 
    ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0])
    return ev
@@ -578,6 +577,11 @@ a = randn(Ty,6,6); e = randn(Ty,6,6); b = rand(Ty,6,3);
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && sum(blkdims[2:3]) == 6  &&
       all(abs.(SF.values) .<= 1)  
 
+# random example  - infinite eigenvalue assignment 
+a = randn(Ty,6,6); e = randn(Ty,6,6); b = rand(Ty,6,3);    
+@time f, g, SF, blkdims = salocinf(a,e,b,atol1=1.e-7,atol2=1.e-7)
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e+b*g  && sum(blkdims[2:3]) == 6  &&
+      any(isfinite.(SF.values)) == false 
 
 # random example  
 a = rand(Ty,6,6); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)]; e = rand(Ty,6,6); 
@@ -599,6 +603,19 @@ evals = eigvals(rand(Ty,nc,nc));
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && blkdims == [0, 0, nc, nu] &&
       sort(real(poluc)) ≈ sort(real(SF.values[nc+1:n])) && sort(imag(poluc)) ≈ sort(imag(SF.values[nc+1:n])) &&
       sort(real(evals)) ≈ sort(real(SF.values[1:nc])) && sort(imag(evals)) ≈ sort(imag(SF.values[1:nc])) 
+
+n = 10; nc = 6; nu = n-nc; m = 4; 
+au = rand(Ty,nu,nu); ac = rand(Ty,nc,nc); eu = rand(Ty,nu,nu); ec = rand(Ty,nc,nc);
+a = [ac rand(Ty,nc,nu); zeros(Ty,nu,nc) au]; b = [rand(Ty,nc,m);zeros(Ty,nu,m)];
+e = [ec rand(Ty,nc,nu); zeros(Ty,nu,nc) eu];
+q = qr(rand(Ty,n,n)).Q; z = qr(rand(Ty,n,n)).Q; 
+poluc = eigvals(au,eu);
+a = q'*a*z; e = q'*e*z; b = q'*b;
+evals = eigvals(rand(Ty,nc,nc));
+@time f, g, SF, blkdims = salocinf(a,e,b,fast = fast, atol1 = 1.e-7, atol2 = 1.e-7, atol3 = 1.e-7)
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e+b*g  && blkdims == [0, nc, nu] &&
+      sort(real(poluc)) ≈ sort(real(SF.values[nc+1:n])) && sort(imag(poluc)) ≈ sort(imag(SF.values[nc+1:n])) &&
+      any(isfinite.(SF.values[1:nc])) == false 
 
 end # Ty loop
 

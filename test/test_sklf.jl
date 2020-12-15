@@ -163,6 +163,13 @@ M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, f
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       νr == [] && μr == [] && νi == [2, 2] && νl == [1, 1, 1] && μl == [0, 1, 1] && nf == 2
 
+M = copy(M2); N = copy(N2);
+M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, finite_infinite = false, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [] && μr == [] && νi == [2, 2] && νl == [1, 1, 1] && μl == [0, 1, 1] && nf == 2
+
+
 M2 = [A' B; C D]; N2 = [E zeros(6,2); zeros(3,8)];  
 
 M = copy(M2); N = copy(N2);
@@ -257,7 +264,20 @@ M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, f
       νr == [1, 1, 0] && μr == [1, 1, 1 ] && νi == [1, 1, 5] && νl == [1, 1] && μl == [0, 1] && nf == 1
 
 M = copy(M2); N = copy(N2);
+M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, finite_infinite = false, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [1, 1, 0] && μr == [1, 1, 1 ] && νi == [1, 1, 5] && νl == [1, 1] && μl == [0, 1] && nf == 1
+
+
+M = copy(M2); N = copy(N2);
 M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, finite_infinite = true, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [1, 1, 0] && μr == [1, 1, 1 ] && νi == [5, 1, 1] && νl == [1, 1] && μl == [0, 1] && nf == 1
+
+M = copy(M2); N = copy(N2);
+M1, N1, Q1, Z1, νr, μr, νi, nf, νl, μl = sklf(A, E, B, C, D, fast = fast, finite_infinite = true, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       νr == [1, 1, 0] && μr == [1, 1, 1 ] && νi == [5, 1, 1] && νl == [1, 1] && μl == [0, 1] && nf == 1
@@ -297,10 +317,26 @@ M1, N1, Q1, Z1, νr, μr, nf, ν, μ  = sklf_right(A, E, B, C, D, fast = fast, a
 
 M2 = [A B; C D]; N2 = [E zeros(9,3); zeros(3,12)];  
 M = copy(M2); N = copy(N2);
+M1, N1, Q1, Z1, νr, μr, nf, ν, μ  = sklf_right(A, E, B, C, D, fast = fast, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [1, 1, 0] && μr == [1, 1, 1] && ν == [1, 2, 6] && μ == [1, 1, 6] && nf == 1
+
+
+M2 = [A B; C D]; N2 = [E zeros(9,3); zeros(3,12)];  
+M = copy(M2); N = copy(N2);
 M1, N1, Q1, Z1, ν, μ, nf, νl, μl = sklf_left(A, E, B, C, D, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       ν == [6, 2, 1] && μ == [6, 2, 2] && νl == [1, 1] && μl == [0, 1] && nf == 1
+
+M2 = [A B; C D]; N2 = [E zeros(9,3); zeros(3,12)];  
+M = copy(M2); N = copy(N2);
+M1, N1, Q1, Z1, ν, μ, nf, νl, μl = sklf_left(A, E, B, C, D, fast = fast, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      ν == [6, 2, 1] && μ == [6, 2, 2] && νl == [1, 1] && μl == [0, 1] && nf == 1
+
 
 end
 end

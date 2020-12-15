@@ -123,7 +123,7 @@ function sreduceBF(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
    return F, G, Q, Z, n1, m1+nu, p1+ny
 end
 """
-    sklf(A, E, B, C, D; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, νi, nf, νl, μl)
+    sklf(A, E, B, C, D; fast = true, finite_infinite = false, ut = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, νi, nf, νl, μl)
 
 Reduce the structured matrix pencil `M - λN` 
 
@@ -151,6 +151,9 @@ The `nr`-dimensional vectors `νr` and `μr` contain the row and, respectively, 
 of the staircase form  `Mr-λNr` such that the `i`-th block has dimensions `νr[i] x μr[i]` and 
 has full row rank. The difference `μr[i]-νr[i]` for `i = 1, 2, ..., nr` is the number of elementary Kronecker 
 blocks of size `(i-1) x i`.
+If `ut = true`, the full row rank diagonal blocks of `Mr` are reduced to the form `[0 X]` 
+with `X` upper triangular and nonsingular and the full column rank supradiagonal blocks of `Nr` are
+reduced to the form `[Y; 0]` with `Y` upper triangular and nonsingular. 
 
 The pencil `Mreg-λNreg` is regular, contains the infinite and finite elementary divisors of `M-λN` and has the form
 
@@ -163,7 +166,8 @@ The pencil `Mreg-λNreg` is regular, contains the infinite and finite elementary
          Mreg-λNreg  = |--------|---------|, if `finite_infinite = true`, 
                        |   0    |  Mi-λNi |
      
-where: (1) `Mi-λNi`, in staircase form, contains the infinite elementary divisors of `M-λN`, `Mi` is upper triangular and nonsingular, and 
+where: (1) `Mi-λNi`, in staircase form, contains the infinite elementary divisors of `M-λN`, 
+`Mi` is upper triangular if `ut = true` and nonsingular, and 
 `Ni` is upper triangular and nilpotent; 
 (2) `Mf-λNf` contains the infinite elementary divisors of `M-λN` and 
 `Nf` is upper triangular and nonsingular.
@@ -185,6 +189,9 @@ The `nl`-dimensional vectors `νl` and `μl` contain the row and, respectively, 
 of the staircase form  `Ml-λNl` such that the `j`-th block has dimensions `νl[j] x μl[j]` and has full column rank. 
 The difference `νl[nl-j+1]-μl[nl-j+1]` for `j = 1, 2, ..., nl` is the number of elementary Kronecker blocks of size 
 `j x (j-1)`.
+If `ut = true`, the full column rank diagonal blocks of `Ml` are reduced to the form `[X; 0]` 
+with `X` upper triangular and nonsingular and the full row rank supradiagonal blocks of `Nl` are
+reduced to the form `[0 Y]` with `Y` upper triangular and nonsingular. 
 
 The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,  and the relative tolerance 
@@ -202,7 +209,7 @@ function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformS
               atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
               atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
               rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2)), 
-              fast::Bool = true, finite_infinite::Bool = false, withQ::Bool = true, withZ::Bool = true) 
+              fast::Bool = true, finite_infinite::Bool = false, ut::Bool = false, withQ::Bool = true, withZ::Bool = true) 
    
    # Step 0: Reduce to the standard form
    M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ)
@@ -214,13 +221,13 @@ function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformS
       # Reduce M-λN to a KLF exhibiting the right and finite structures
       #                  [ Mr - λ Nr  |   *        |     *        ]
       #      M1 - λ N1 = [    0       | Mf -  λ Nf |     *        ]
-      #                  [    0       |    0       | Mli -  λ Nli ]
+      #                  [    0       |    0       | Mil -  λ Nil ]
       
       νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                           withQ = withQ, withZ = withZ, fast = fast)
       (mM == 0 || nM == 0) && (return  M, N, Q, Z, νr, μr, ν[1:0], nf, ν, μ)
     
-      # Reduce Mli-λNli to a KLF exhibiting the infinite and left structures and update M1 - λ N1 to
+      # Reduce Mil-λNil to a KLF exhibiting the infinite and left structures and update M1 - λ N1 to
       #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
       #     M2 -  λ N2 = [    0       | Mf -  λ Nf |     *      |    *       ]
       #                  [    0       |    0       | Mi -  λ Ni |    *       ]
@@ -228,12 +235,14 @@ function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformS
 
       mr = sum(νr)+nf
       nr = sum(μr)+nf
+      ut && klf_right_refineut!(νr, μr, M, N, Q, Z, ctrail = nM-nr, withQ = withQ, withZ = withZ)
+
       jM2 = nr+1:nr+sum(μ)
       M2 = view(M,:,jM2)
       N2 = view(N,:,jM2)
       withZ ? (Z2 = view(Z,:,jM2)) : (Z2 = nothing)
       νi, νl, μl = klf_left_refine!(ν, μ, M2, N2, Q, Z2, tol1, roff = mr,    
-                                    withQ = withQ, withZ = withZ, fast = fast)
+                                    withQ = withQ, withZ = withZ, fast = fast, ut = ut)
    else
 
       # Reduce M-λN to a KLF exhibiting the left and finite structures
@@ -245,6 +254,8 @@ function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformS
                                          withQ = withQ, withZ = withZ, fast = fast)
       (mM == 0 || nM == 0) && (return  M, N, Q, Z, ν, μ, ν[1:0], nf, νl, μl)
    
+      ut && klf_left_refineut!(νl, μl, M, N, Q, Z, roff = mM-sum(νl), coff = nM-sum(μl), withQ = withQ, withZ = withZ)
+
       # Reduce Mri-λNri to a KLF exhibiting the right and infinite structures and update M1 - λ N1 to
       #                  [ Mr - λ Nr  |   *        |     *      |    *       ]
       #     M2 -  λ N2 = [    0       | Mi -  λ Ni |     *      |    *       ]
@@ -255,12 +266,12 @@ function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformS
       M1 = view(M,iM11,:)
       N1 = view(N,iM11,:)
       νr, μr, νi = klf_right_refine!(ν, μ, M1, N1, Q, Z, tol1, ctrail = nM-sum(μ),   
-                                     withQ = withQ, withZ = withZ, fast = fast)
+                                     withQ = withQ, withZ = withZ, fast = fast, ut = ut)
    end
    return  M, N, Q, Z, νr, μr, νi, nf, νl, μl                                             
 end
 """
-    sklf_right(A, E, B, C, D; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, nf, ν, μ)
+    sklf_right(A, E, B, C, D; fast = true, ut = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, νr, μr, nf, ν, μ)
 
 Reduce the structured matrix pencil `M - λN` 
 
@@ -276,7 +287,7 @@ following Kronecker-like form exhibiting the right and finite Kronecker structur
                 |------------|------------|----------|
       F - λG =  |    O       |   Mf-λNf   |    *     |
                 |------------|------------|----------|
-                |    O       |     0      | Mli-λNli |            
+                |    O       |     0      | Mil-λNil |            
 
 The full row rank pencil `Mr-λNr`, in a staircase form, contains the right Kronecker indices of `M-λN` and has the form
 
@@ -287,17 +298,23 @@ The `nr`-dimensional vectors `νr` and `μr` contain the row and, respectively, 
 of the staircase form  `Mr-λNr` such that `i`-th block has dimensions `νr[i] x μr[i]` and 
 has full row rank. The difference `μr[i]-νr[i]` for `i = 1, 2, ..., nr` is the number of elementary Kronecker blocks
 of size `(i-1) x i`.
+If `ut = true`, the full row rank diagonal blocks of `Mr` are reduced to the form `[0 X]` 
+with `X` upper triangular and nonsingular and the full column rank supradiagonal blocks of `Nr` are
+reduced to the form `[Y; 0]` with `Y` upper triangular and nonsingular. 
 
 The `nf x nf` pencil `Mf-λNf` is regular and contains the finite elementary divisors of `M-λN`. 
 Nf is upper triangular and nonsingular.
 
-The full column rank pencil `Mli-λNli` is in a staircase form, and contains the  left Kronecker indices 
+The full column rank pencil `Mil-λNil` is in a staircase form, and contains the  left Kronecker indices 
 and infinite elementary divisors of the pencil `M-λN`. 
 The `nb`-dimensional vectors `ν` and `μ` contain the row and, respectively, column dimensions of the blocks
-of the staircase form  `Mli-λNli` such that the `i`-th block has dimensions `ν[i] x μ[i]` and has full column rank. 
+of the staircase form  `Mil-λNil` such that the `i`-th block has dimensions `ν[i] x μ[i]` and has full column rank. 
 The difference `ν[nb-j+1]-μ[nb-j+1]` for `j = 1, 2, ..., nb` is the number of elementary Kronecker blocks of size 
 `j x (j-1)`. The difference `μ[nb-j+1]-ν[nb-j]` for `j = 1, 2, ..., nb` is the number of infinite elementary 
 divisors of degree `j` (with `ν[0] = 0`).
+If `ut = true`, the full column rank diagonal blocks of `Mil` are reduced to the form `[X; 0]` 
+with `X` upper triangular and nonsingular and the full row rank supradiagonal blocks of `Nil` are
+reduced to the form `[0 Y]` with `Y` upper triangular and nonsingular. 
 
 The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of `M`, the absolute tolerance for the nonzero elements of `N`,  and the relative tolerance 
@@ -310,7 +327,7 @@ Otherwise, `Q` is set to `nothing`.
 The performed right orthogonal or unitary or unitary transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.   
 
-`Note:` If the pencil `M - λN` has full row rank, then the regular pencil `Mli-λNli` is in a staircase form with
+`Note:` If the pencil `M - λN` has full row rank, then the regular pencil `Mil-λNil` is in a staircase form with
 square upper triangular diagonal blocks (i.e.,`μ[j] = ν[j]`), and the difference `ν[nb-j+1]-ν[nb-j]` for 
 `j = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `j` (with `ν[0] = 0`).
 """
@@ -319,7 +336,7 @@ function sklf_right(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Un
    atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2)), 
-   fast::Bool = true, withQ::Bool = true, withZ::Bool = true) 
+   fast::Bool = true, ut::Bool = false, withQ::Bool = true, withZ::Bool = true) 
    
    # Step 0: Reduce to the standard form
    M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ)
@@ -327,11 +344,18 @@ function sklf_right(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Un
    νr, μr, nf, ν, μ, tol1 = klf_right!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                        withQ = withQ, withZ = withZ, fast = fast)
 
+   if ut
+      mM, nM = size(M)
+      mr = sum(νr)+nf
+      nr = sum(μr)+nf
+      klf_right_refineut!(νr, μr, M, N, Q, Z, ctrail = nM-nr, withQ = withQ, withZ = withZ)
+      klf_left_refineut!(ν, μ, M, N, Q, Z, roff = mM-sum(ν), coff = nM-sum(μ), withQ = withQ, withZ = withZ)
+   end
    return M, N, Q, Z, νr, μr, nf, ν, μ
 
 end
 """
-    sklf_left(A, E, B, C, D; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, nf, νl, μl)
+    sklf_left(A, E, B, C, D; fast = true, ut = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (F, G, Q, Z, ν, μ, nf, νl, μl)
 
 Reduce the structured matrix pencil `M - λN` 
 
@@ -370,6 +394,10 @@ has full row rank.
 The difference `μ[i]-ν[i]` for `i = 1, 2, ..., nb` is the number of elementary Kronecker blocks of size `(i-1) x i`.
 The difference `ν[i]-μ[i+1]` for `i = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `i` 
 (with `μ[nb+1] = 0`).
+If `ut = true`, the full row rank diagonal blocks of `Mri` are reduced to the form `[0 X]` 
+with `X` upper triangular and nonsingular and the full column rank supradiagonal blocks of `Nri` are
+reduced to the form `[Y; 0]` with `Y` upper triangular and nonsingular. 
+
 The `nl`-dimensional vectors `νl` and `μl` contain the row and, respectively, column dimensions of the blocks
 of the staircase form  `Ml-λNl` such that the `j`-th block has dimensions `νl[j] x μl[j]` and has full column rank. 
 The difference `νl[nl-j+1]-μl[nl-j+1]` for `j = 1, 2, ..., nl` is the number of elementary Kronecker blocks of size 
@@ -395,7 +423,7 @@ function sklf_left(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
    atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2)), 
-   fast::Bool = true, withQ::Bool = true, withZ::Bool = true) 
+   fast::Bool = true, ut::Bool = false, withQ::Bool = true, withZ::Bool = true) 
    
    # Step 0: Reduce to the standard form
    M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ)
@@ -403,6 +431,11 @@ function sklf_left(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
    ν, μ, nf, νl, μl, tol1 = klf_left!(n, m, p, M, N, Q, Z, atol = atol1, rtol = rtol,  
                                       withQ = withQ, withZ = withZ, fast = fast)
 
+   if ut
+      mM, nM = size(M)
+      klf_left_refineut!(νl, μl, M, N, Q, Z, roff = mM-sum(νl), coff = nM-sum(μl), withQ = withQ, withZ = withZ)
+      klf_right_refineut!(ν, μ, M, N, Q, Z, ctrail = nM-sum(μ), withQ = withQ, withZ = withZ)
+   end
    return M, N, Q, Z, ν, μ, nf, νl, μl
 end
 """
