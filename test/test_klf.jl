@@ -385,17 +385,16 @@ M = copy(M2); N = copy(N2);
       ν == [4, 2, 0 ] && μ == [6, 3, 1] && νl == [1, 1, 1, 2] && μl == [0, 1, 1, 1] && nf == 3
 
 M = copy(M2); N = copy(N2); 
-@time M1, N1, Q1, Z1, n, m, p, νi, νl, μl = klf_leftinf(M, N, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
+@time M1, N1, Q1, Z1, n, m, νi, νl, μl = klf_leftinf(M, N, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
-      n == 6 && m == 4 && p == 0 && νl == [1, 1, 1, 2] && μl == [0, 1, 1, 1] && νi == [2, 1]
+      n == 6 && m == 4 && νl == [1, 1, 1, 2] && μl == [0, 1, 1, 1] && νi == [2, 1]
 
 M = copy(M2); N = copy(N2); 
-@time M1, N1, Q1, Z1, n, m, p, νi, νl, μl = klf_leftinf(M, N, fast = fast, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
+@time M1, N1, Q1, Z1, n, m, νi, νl, μl = klf_leftinf(M, N, fast = fast, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
-      n == 6 && m == 4 && p == 0 && νl == [1, 1, 1, 2] && μl == [0, 1, 1, 1] && νi == [2, 1]
-
+      n == 6 && m == 4 && νl == [1, 1, 1, 2] && μl == [0, 1, 1, 1] && νi == [2, 1]
 
 M = copy(M2); N = copy(N2); 
 @time M1, N1, Q1, Z1, νr, μr, nf, ν, μ  = klf_right(M, N, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
@@ -408,7 +407,20 @@ M = copy(M2); N = copy(N2);
 @test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       νr == [2, 1, 0] && μr == [4, 2, 1]  && ν == [1, 1, 2, 4] && μ == [0, 1, 2, 3] && nf == 3
+
+M = copy(M2); N = copy(N2); 
+@time M1, N1, Q1, Z1, νr, μr, νi, n, p  = klf_rightinf(M, N, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [2, 1, 0] && μr == [4, 2, 1]  && νi == [1, 2] && n == 6 && p == 2
+
+M = copy(M2); N = copy(N2); 
+@time M1, N1, Q1, Z1, νr, μr, νi, n, p  = klf_rightinf(M, N, fast = fast, ut = true, atol1 = 1.e-7, atol2 = 1.e-7)
+@test norm(Q1'*M2*Z1-M1) < sqrt(eps(1.)) &&
+      norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
+      νr == [2, 1, 0] && μr == [4, 2, 1]  && νi == [1, 2] && n == 6 && p == 2
       
+
 M = copy(M2'); N = copy(N2'); 
 @time M1, N1, Q1, Z1, ν, μ, nf, νl, μl = klf_left(M, N, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q1'*M2'*Z1-M1) < sqrt(eps(1.)) &&

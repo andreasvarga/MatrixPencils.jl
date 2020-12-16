@@ -35,9 +35,10 @@ The current version of the package includes the following functions:
 | :--- | :--- |
 | **[`preduceBF`](@ref)** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
 | **[`klf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
+| **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and finite Kronecker structures |
+| **[`klf_rightinf`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and infinite Kronecker structures |
 | **[`klf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left and finite Kronecker structures |
 | **[`klf_leftinf`](@ref)** |  Computation of the Kronecker-like form exhibiting the left and infinite Kronecker structures |
-| **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and finite Kronecker structures |
 | **[`klf_rlsplit`](@ref)** | Computation of the Kronecker-like form exhibiting the separation of right and left Kronecker structures |
 
 **Manipulation of structured matrix pencils of the form [A-λE B; C D]**
@@ -46,8 +47,8 @@ The current version of the package includes the following functions:
 | :--- | :--- |
 | **[`sreduceBF`](@ref)** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
 | **[`sklf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
-| **[`sklf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
 | **[`sklf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right Kronecker structure |
+| **[`sklf_left`](@ref)** |  Computation of the Kronecker-like form exhibiting the left Kronecker structure |
 | **[`gsklf`](@ref)** | Computation of several row partition preserving special Kronecker-like forms |
 
 **Manipulation of regular matrix pencils**
@@ -68,6 +69,7 @@ The current version of the package includes the following functions:
 | **[`saloc`](@ref)** | Spectrum alocation for the pairs `(A,B)` and `(A-λE,B)` |
 | **[`salocd`](@ref)** | Spectrum alocation for the dual pairs `(A,C)` and `(A-λE,C)`  |
 | **[`salocinf`](@ref)** | Infinite spectrum alocation for the pair `(A-λE,B)` |
+| **[`salocinfd`](@ref)** | Infinite spectrum alocation for the dual pair `(A-λE,C)` |
 | **[`ordeigvals`](@ref)** | Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.   |
 
 **Some applications of matrix pencil computations**
@@ -172,7 +174,7 @@ Functional enhancements of some functions will be performed if the need arises.
 
 ### Version 1.5
 
-This minor release includes a new function for infinite spectrum assignment of a regular pencil, two new functions to refine the computed Kronecker-like forms such that the diagonal and supradiagonal blocks have upper triangular forms, and, accordingly, enhancements of several functions to compute Kronecker-like forms with the staircase form having upper triangular blocks.  
+This minor release includes two new functions for infinite spectrum assignment of a regular pencil, a function for the computation of a Kronecker-like form exhibiting the right and infinite Kronecker structures, two new functions to refine the computed Kronecker-like forms such that the diagonal and supradiagonal blocks have upper triangular forms, and, accordingly, enhancements of several functions to compute Kronecker-like forms with the staircase form having upper triangular blocks. Several bug fixes have also been performed.
 
 ### Version 1.4.1
 
@@ -232,7 +234,7 @@ This is the initial release providing prototype implementations of several penci
 
 ## Main developer
 
-[Andreas Varga](https://sites.google.com/site/andreasvargacontact/home)
+[Andreas Varga](https://sites.google.com/view/andreasvarga/home)
 
 License: MIT (expat)
 

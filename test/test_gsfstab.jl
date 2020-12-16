@@ -216,9 +216,9 @@ a = rand(Ty,6,6); b = [zeros(Ty,2,3);rand(Ty,2,3);zeros(Ty,2,3)];   evals = eigv
       sort(real( evals)) ≈ sort(real(SF.values)) && sort(imag( evals)) ≈ sort(imag(SF.values)) 
 
 # random example  
-a = rand(Ty,6,6); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)];   evals = eigvals(a); 
+a = rand(Ty,6,6); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)];   evals = eigvals(rand(Ty,6,6));
 @time k, SF, blkdims = salocd(a, c, evals =  evals)
-@test SF.Z*SF.T*SF.Z' ≈ a+k*c  && norm(k) < 1.e-10 && blkdims == [0, 6, 0] &&
+@test SF.Z*SF.T*SF.Z' ≈ a+k*c  && blkdims == [0, 6, 0] &&
       sort(real( evals)) ≈ sort(real(SF.values)) && sort(imag( evals)) ≈ sort(imag(SF.values))     
 
 # random example  - stabilization
@@ -583,12 +583,26 @@ a = randn(Ty,6,6); e = randn(Ty,6,6); b = rand(Ty,6,3);
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e+b*g  && sum(blkdims[2:3]) == 6  &&
       any(isfinite.(SF.values)) == false 
 
+# random example  - infinite eigenvalue assignment 
+a = triu(randn(Ty,6,6),1); e = randn(Ty,6,6); b = rand(Ty,6,3);    
+@time f, g, SF, blkdims = salocinf(a,e,b,atol1=1.e-7,atol2=1.e-7)
+@test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e+b*g  && blkdims == [0, 6, 0]  &&
+      any(isfinite.(SF.values)) == false 
+
 # random example  
-a = rand(Ty,6,6); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)]; e = rand(Ty,6,6); 
-evals = complx ? eigvals(a,e) : evsym!(eigvals(a,e)); 
+a = rand(Ty,6,6); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)]; e = rand(Ty,6,6); evals = eigvals(rand(Ty,6,6),rand(Ty,6,6));
+complx || evsym!(evals) 
 @time k, SF, blkdims = salocd(a,e,c,evals = evals, fast = fast)
-@test SF.Q*SF.S*SF.Z' ≈ a+k*c && SF.Q*SF.T*SF.Z' ≈ e  && norm(k) < 1.e-10  && blkdims == [0, 6, 0, 0] && 
+@test SF.Q*SF.S*SF.Z' ≈ a+k*c && SF.Q*SF.T*SF.Z' ≈ e  && #norm(k) < 1.e-10  && 
+      blkdims == [0, 6, 0, 0] && 
       sort(real(evals)) ≈ sort(real(SF.values)) && sort(imag(evals)) ≈ sort(imag(SF.values)) 
+
+# random example  
+a = triu(rand(Ty,6,6),1); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)]; e = rand(Ty,6,6); 
+@time k, l, SF, blkdims = salocinfd(a, e, c, fast = fast, atol1=1.e-7, atol2 = 1.e-7, atol3=1.e-7)
+@test SF.Q*SF.S*SF.Z' ≈ a+k*c && SF.Q*SF.T*SF.Z' ≈ e+l*c  &&  blkdims == [1, 5, 0] && 
+      count(isfinite.(SF.values)) == blkdims[1] 
+
 
 ##  uncontrollable system 
 n = 10; nc = 6; nu = n-nc; m = 4; 

@@ -1,5 +1,5 @@
 module MatrixPencils
-# Release V1.4 (in preparation)
+# Release V1.5 
 
 const BlasFloat = Union{Float64,Float32,ComplexF64,ComplexF32}
 const BlasReal = Union{Float64,Float32}
@@ -12,7 +12,9 @@ using Random
 include("lapackutil2.jl")
 import .LapackUtil2: larfg!, larfgl!, larf!, gghrd!, hgeqz!, tgexc!, tgsen!, lanv2, lag2, safemin, tgsyl!
 
-export preduceBF, klf, klf_left, klf_leftinf, klf_right, klf_rlsplit, klf_right_refineut!, klf_left_refineut!
+export preduceBF, klf, klf_left, klf_leftinf, klf_right, klf_rightinf, klf_rlsplit, 
+       klf_right!, klf_right_refine!, klf_right_refineut!, klf_right_refineinf!, 
+       klf_left!, klf_left_refine!, klf_left_refineut!, klf_left_refineinf!
 export prank, pkstruct, peigvals, pzeros, KRInfo
 export isregular, isunimodular, fisplit, _svdlikeAE!, sfisplit
 export sreduceBF, sklf, gsklf, sklf_right, sklf_left, sklf_right!, sklf_right2!, sklf_left!, sklf_rightfin!, sklf_rightfin2!, sklf_leftfin! 
@@ -26,7 +28,7 @@ export pmkstruct, pmeigvals, pmzeros, pmzeros1, pmzeros2, pmroots, pmpoles, pmpo
 export rmeval, rm2lspm, rm2ls, ls2rm, rm2lps, lps2rm
 export lpmfd2ls, rpmfd2ls, lpmfd2lps, rpmfd2lps, pminv2ls, pminv2lps
 export rmkstruct, rmzeros, rmzeros1, rmpoles, rmpoles1, rmrank 
-export saloc, salocd, salocinf, ordeigvals, isqtriu, eigselect1, eigselect2, saloc2
+export saloc, salocd, salocinf, salocinfd, ordeigvals, isqtriu, eigselect1, eigselect2, saloc2
 export fihess, fischur, fischursep, sfischursep, fiblkdiag, gsblkdiag, ssblkdiag
 import LinearAlgebra: copy_oftype
 

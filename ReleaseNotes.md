@@ -2,7 +2,7 @@
 
 ## Version 1.5
 
-This minor release includes a new function for infinite spectrum assignment of a regular pencil, two new functions to refine the computed Kronecker-like forms such that the diagonal and supradiagonal blocks have upper triangular forms, and, accordingly, enhancements of several functions to compute Kronecker-like forms with the staircase form having upper triangular blocks.
+This minor release includes two new functions for infinite spectrum assignment of a regular pencil, a function for the computation of a Kronecker-like form exhibiting the right and infinite Kronecker structures, two new functions to refine the computed Kronecker-like forms such that the diagonal and supradiagonal blocks have upper triangular forms, and, accordingly, enhancements of several functions to compute Kronecker-like forms with the staircase form having upper triangular blocks. Several bug fixes have also been performed.
 
 ## Version 1.4.1
 
