@@ -1724,12 +1724,12 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    if n3 > 0
       if job == 0 || job == 3 
          # compute the KLF with (Arf,Ainf,Al) diagonal blocks 
-         AB[i1,j1], EF[i1,j1], q, z, nr, mr, pr, νi, νl, μl = 
+         AB[i1,j1], EF[i1,j1], q, z, nr, mr, νi, νl, μl = 
                klf_leftinf(view(AB,i1,j1),view(EF,i1,j1); fast = fast,  
                atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = true) 
          nf = 0                              
          #mc = nr+pr; nc = nr+mr;
-         mc = nr+mr; nc = nr+pr;
+         mc = nr+mr; nc = nr;
       else
          if job == 1
             # compute the KLF with (Ar,Af,Ainf,Al) diagonal blocks if disc = true, or 
