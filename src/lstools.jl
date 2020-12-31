@@ -34,6 +34,10 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
                 B::AbstractVecOrMat, C::AbstractMatrix, D::AbstractVecOrMat, val::Number;  
                 atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
                 rtol::Real =  (size(A,1)+1)*eps(float(real(eltype(A))))*iszero(max(atol1,atol2)), fast::Bool = true)
+                
+   T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D),typeof(val))
+   E == I || (T = promote_type(T,eltype(E)))
+   T <: BlasFloat || (T = promote_type(Float64,T))  
    # check dimensions
    n = LinearAlgebra.checksquare(A)
    if typeof(E) <: AbstractMatrix
@@ -49,9 +53,6 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
    m1 == m ||  error("D must have the same column size as B")
    p1 == p ||  error("D must have the same row size as C")
 
-   T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D),typeof(val))
-   E == I || (T = promote_type(T,eltype(E)))
-   T <: BlasFloat || (T = promote_type(Float64,T))  
 
    toleps = (size(A,1)+1)*eps(real(T))
    if abs(val) < Inf 
