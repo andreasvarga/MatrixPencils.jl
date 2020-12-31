@@ -16,6 +16,18 @@ for fast in (true, false)
 for Ty in (Float64, Complex{Float64})
 
 
+n2 = 3; m2 = 1; p2 = 4; 
+A2 = rand(Ty,n2,n2); E2 = zeros(Ty,n2,n2); B2 = zeros(Ty,n2); C2 = zeros(Ty,p2,n2); D2 = zeros(Ty,p2);
+A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); D = copy(D2); 
+M2 = [A2 B2; C2 D2]
+N2 = [E zeros(Ty,n2,m2); zeros(Ty,p2,n2+m2)]
+
+@time M, N, Q, Z, n, m, p = sreduceBF(A,E,B,C,D,fast = fast)
+@test norm(Q'*M2*Z-M) < sqrt(eps(1.)) &&
+      norm(Q'*N2*Z-N) < sqrt(eps(1.)) &&
+      n == rank(E) && m == n2-n+m2 && p == n2-n+p2  
+
+
 n2 = 3; m2 = 2; p2 = 4; 
 A2 = rand(Ty,n2,n2); E2 = zeros(Ty,n2,n2); B2 = zeros(Ty,n2,m2); C2 = zeros(Ty,p2,n2); D2 = zeros(Ty,p2,m2);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); D = copy(D2); 
@@ -366,7 +378,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = missing;
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [0] && no == 0 && nfuo == 0 && niuo == 0
 
-A2 = rand(3,3); E2 = zeros(3,3); C2 = zeros(0,3); B2 = rand(3,2);
+A2 = rand(3,3); E2 = zeros(3,3); C2 = zeros(0,3); B2 = rand(3);
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 
 @time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B, fast = fast)
@@ -401,7 +413,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 
 for Ty in (Float64, Complex{Float64})
 
-A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); C2 = rand(Ty,1,3); B2 = rand(Ty,3,2);
+A2 = rand(Ty,3,3); E2 = rand(Ty,3,3); C2 = rand(Ty,1,3); B2 = rand(Ty,3);
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 
 @time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B,fast=fast)

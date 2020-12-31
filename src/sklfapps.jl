@@ -32,7 +32,7 @@ The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest 
 machine epsilon of the element type of `M`. 
 """
 function spzeros(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-    B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+    B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
     fast::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
     atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
     rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
@@ -122,7 +122,7 @@ The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest 
 machine epsilon of the element type of `M`. 
 """
 function speigvals(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
    fast::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
@@ -225,7 +225,7 @@ The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest 
 machine epsilon of the element type of `M`. 
 """
 function spkstruct(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
    fast::Bool = true, atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
@@ -309,7 +309,7 @@ using rank decisions based on rank revealing SVD-decompositions.
     To enforce compatibility with Julia 1.0, the newer function rank in Julia 1.1 has been explicitly included. 
 """
 function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
    fastrank::Bool = true, atol1::Real = ismissing(A) ? (ismissing(D) ? zero(1.) : zero(real(eltype(D)))) : zero(real(eltype(A))), 
    atol2::Real = ismissing(A) ? (ismissing(D) ? zero(1.) : zero(real(eltype(D)))) : zero(real(eltype(A))), 
    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? (ismissing(D) ? one(1.) : one(real(eltype(D)))) : one(real(eltype(A))))))*iszero(min(atol1,atol2))) 
@@ -354,12 +354,12 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
          isa(E,Adjoint) && (E = copy(E))
          ndx, nx = size(A)
          eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
-         ndx == size(B,1) || throw(DimensionMismatch("A and B must have the same number of rows"))
+         ndx1, nu = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+         ndx == ndx1 || throw(DimensionMismatch("A and B must have the same number of rows"))
          T = promote_type(eltype(A), eltype(E), eltype(B), eltype(E), eltype(A), eltype(E), )
          T <: BlasFloat || (T = promote_type(Float64,T))
          ny = 0
          C = zeros(T,ny,nx)
-         nu = size(B,2)
          D = zeros(T,ny,nu)
       else
          isa(A,Adjoint) && (A = copy(A))
@@ -367,8 +367,9 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
          ndx, nx = size(A)
          T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
          eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
-         ny, nu = size(D)
-         (ndx,nu) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
+         ny, nu = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+         ndx1, nu1 = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+         (ndx,nu) == (ndx1, nu1) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
          (ny,nx) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
          T = promote_type(eltype(A), eltype(E), eltype(B), eltype(C), eltype(D))
          T <: BlasFloat || (T = promote_type(Float64,T))        
@@ -393,7 +394,7 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
       else
          nrmN = opnorm(E,1)
          nrmN == zero(nrmN) && (return rank([A B; C D], atol = atol1, rtol = rtol))
-         nrmM = max(opnorm(A,1), opnorm(B,1), opnorm(C,Inf), opnorm(D,1))
+         nrmM = max(opnorm(A,1), typeof(B) <: AbstractVector ? norm(B,1) : opnorm(B,1), opnorm(C,Inf), typeof(D) <: AbstractVector ? norm(D,1) : opnorm(D,1))
          scale = nrmM/nrmN*rand()
          return rank([A+scale*E B; C D], atol = max(atol1,atol2), rtol = rtol)
       end

@@ -1,21 +1,288 @@
-"""
-    lseval(A, E, B, C, D, val) 
-
-Evaluate the rational matrix `G(λ) = C*inv(λE-A)*B+D` for `λ = val`. 
-"""
-function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}, 
-                B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix, val::Number)
-   return C*((val*E-A)\B)+D
+function rcond(A::DenseMatrix,tola::Real = 0)
+   T = eltype(A)
+   T1 = T <: BlasFloat ? T : T1 = promote_type(T,Float64)
+   nrmA = opnorm(A,1)
+   nrmA <= tola && return zero(real(T1))
+   istriu(A) ? (return LinearAlgebra.LAPACK.trcon!('1','U','N',copy_oftype(A,T1))) : 
+       (return LinearAlgebra.LAPACK.gecon!('1', LinearAlgebra.LAPACK.getrf!(copy_oftype(A,T1))[1],real(T1)(nrmA)) ) 
+end
+function rcond(A::UpperTriangular,tola::Real = 0) 
+   T = eltype(A)
+   T1 = T <: BlasFloat ? T : T1 = promote_type(T,Float64)
+   nrmA = opnorm(A,1)
+   nrmA <= tola && return zero(real(T1))
+   return LinearAlgebra.LAPACK.trcon!('1','U','N', Matrix(copy_oftype(A,T1))) 
 end
 """
-    lpseval(A, E, B, F, C, G, D, H, val) 
+    lseval(A, E, B, C, D, val; atol1, atol2, rtol, fast = true) -> Gval
 
-Evaluate the rational matrix `G(λ) = (C-λG)*inv(λE-A)*(B-λF)+D-λH` for `λ = val`. 
+Evaluate `Gval`, the value of the rational matrix `G(λ) = C*inv(λE-A)*B+D` for `λ = val`. 
+The computed `Gval` has infinite entries if `val` is a pole (finite or infinite) of `G(λ)`.
+If `val` is finite and `val*E-A` is singular or if `val = Inf` and `E` is singular, 
+then the entries of `Gval` are evaluated separately for minimal realizations of each input-output channel.
+
+The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of matrices `A`, `B`, `C`, `D`, the absolute tolerance for the nonzero elements of `E`,  
+and the relative tolerance for the nonzero elements of `A`, `B`, `C`, `D` and `E`. 
+
+The computation of minimal realizations of individual input-output channels relies on pencil manipulation algorithms,
+which employ rank determinations based on either the use of 
+rank revealing QR-decomposition with column pivoting, if `fast = true`, or the SVD-decomposition.
+The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
+"""
+function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}, 
+                B::AbstractVecOrMat, C::AbstractMatrix, D::AbstractVecOrMat, val::Number;  
+                atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
+                rtol::Real =  (size(A,1)+1)*eps(float(real(eltype(A))))*iszero(max(atol1,atol2)), fast::Bool = true)
+   # check dimensions
+   n = LinearAlgebra.checksquare(A)
+   if typeof(E) <: AbstractMatrix
+      n == LinearAlgebra.checksquare(E) || error("A and E must have the same size")
+   end
+   n == 0 && (return T.(D))
+
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+   n1 == n ||  error("B must have the same row size as A")
+   p, n1 = size(C)
+   n1 == n ||  error("C must have the same column size as A")
+   p1, m1 = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+   m1 == m ||  error("D must have the same column size as B")
+   p1 == p ||  error("D must have the same row size as C")
+
+   T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D),typeof(val))
+   E == I || (T = promote_type(T,eltype(E)))
+   T <: BlasFloat || (T = promote_type(Float64,T))  
+
+   toleps = (size(A,1)+1)*eps(real(T))
+   if abs(val) < Inf 
+      LUF = lu!(T(val)*E-A;check = false)
+      tol = max(atol1,atol2)
+      if rcond(LUF.U, tol) < toleps
+         G = zeros(T,p,m)
+         for i = 1:p
+            At1, Et1, Bt1, Ct1, Dt1, = lsminreal2(A, E, B, view(C,i:i,:), view(D,i:i,:); infinite = false, noseig = false, contr = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
+            for j = 1:m
+                At11, Et11, Bt11, Ct11, Dt11, = lsminreal2(At1, Et1, view(Bt1,:,j:j), Ct1, view(Dt1,:,j:j); infinite = false, noseig = false, obs = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
+                LUF = lu!(T(val)*Et11-At11;check = false)
+                rcond(LUF.U,tol) < toleps ? G[i,j] = T(Inf) : G[i,j] = (Ct11*ldiv!(LUF,copy_oftype(Bt11,T)) + Dt11)[1,1]
+            end
+         end
+         return G
+      else
+         return C*ldiv!(LUF,copy_oftype(B,T)) + D
+      end
+   else
+      (E == I || rcond(E,atol2) > toleps) && (return D) 
+      At, Et, Bt, Ct, Dt, = lsminreal2(A, E, B, C, D; finite = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
+      if rcond(Et,atol2) < toleps 
+         G = zeros(T,p,m)
+         for i = 1:p
+            At1, Et1, Bt1, Ct1, Dt1, = lsminreal2(At, Et, Bt, view(Ct,i:i,:), view(Dt,i:i,:); finite = false, contr = false, noseig = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
+            for j = 1:m
+                At11, Et11, Bt11, Ct11, Dt11, = lsminreal2(At1, Et1, view(Bt1,:,j:j), Ct1, view(Dt1,:,j:j); finite = false, obs = false, noseig = true, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
+                rcond(Et11,atol2) < toleps ? G[i,j] = T(Inf) : G[i,j] = Dt11[1,1]
+            end
+         end
+         return G
+      else
+         return Dt
+      end
+   end
+   return
+end
+"""
+     lps2ls(A, E, B, F, C, G, D, H; compacted = false, atol1 = 0, atol2 = 0, rtol = min(atol1,atol2)>0 ? 0 : n*ϵ) -> (Ad,Ed,Bd,Cd,Dd)
+
+Construct an input-output equivalent descriptor system linearizations `(Ad-λdE,Bd,Cd,Dd)` to a pencil based linearization 
+`(A-λE,B-λF,C-λG,D-λH)` satisfying 
+
+                -1                        -1
+     Cd*(λEd-Ad)  *Bd + Dd = (C-λG)*(λE-A)  *(B-λF) + D-λH .
+
+If `compacted = true`, a compacted linearization is determined by exploiting possible rank defficiencies of the
+matrices `F`, `G`, and `H`.  
+
+The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of `F`, the absolute tolerance for the nonzero elements of `G` and the relative tolerance 
+for the nonzero elements of `F` and `G`. The default relative tolerance is `k*ϵ`, where `k` is the size of 
+the smallest dimension of `B`, and `ϵ` is the machine epsilon of the element type of `B`. 
+"""
+function lps2ls(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling}, B::AbstractVecOrMat, F::Union{AbstractVecOrMat,Missing},
+                C::AbstractMatrix, G::Union{AbstractMatrix,Missing}, D::AbstractVecOrMat, H::Union{AbstractVecOrMat,Missing}; 
+                compacted::Bool = false, atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
+                rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2))) 
+
+   T = promote_type(eltype(A), E == I ? Bool : eltype(E), eltype(B), eltype(C), eltype(D))
+   T = promote_type(T, ismissing(F) ? T : eltype(F), ismissing(G) ? T : eltype(G), ismissing(H) ? T :  eltype(H))
+   ismissing(F) && ismissing(G) && ismissing(H) && (return A, E, B, C, D)
+
+   n = size(A,1)
+   p, m = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+   nm = n+m
+   D1 = copy_oftype(D,T)
+
+   (ismissing(F) || iszero(F)) ? mF = 0 : mF = m
+   (ismissing(G) || iszero(G)) ? pG = 0 : pG = p
+   if compacted
+       if ismissing(G) || iszero(G) 
+           pG = 0 
+           C11 = zeros(T,p,pG)
+           E12 = zeros(T,pG,n)
+       else
+          S = svd(G,full=true)
+          pG = count(S.S .> max(atol2,rtol*S.S[1]))
+          if pG == p
+             C11 = -I
+             E12 = view(G,:,:)
+          else
+             C11 = -S.U[:,1:pG]
+             E12 = Diagonal(view(S.S,1:pG))*view(S.Vt,1:pG,:)
+          end
+       end
+       if ismissing(F) || iszero(F) 
+           mF = 0 
+           B22 = zeros(T,mF,m)
+           E23 = zeros(T,n,mF)
+       else
+          # svd is not working on a vector
+          typeof(F) <: AbstractVector ? S = svd(reshape(F,n,1),full=true) : S = svd(F,full=true)
+          mF = count(S.S .> max(atol1,rtol*S.S[1]))
+          if mF == m
+             B22 = -I
+             E23 = view(F,:,:)
+          else
+             B22 = -S.Vt[1:mF,:]
+             E23 = view(S.U,:,1:mF)*Diagonal(view(S.S,1:mF))
+          end
+       end
+       A1 = [I zeros(T,pG,n+mF); zeros(T,n,pG) A zeros(T,n,mF); zeros(T,mF,pG+n) I]
+       E1 = [zeros(T,pG,pG) E12 zeros(T,pG,mF); zeros(T,n,pG) E E23; zeros(T,mF,pG+n+mF)]
+       B1 = [zeros(T,pG,m); B; B22]
+       C1 = [C11 C zeros(T,p,mF)]
+   else
+       A1 = [I zeros(T,pG,n+mF); zeros(T,n,pG) A zeros(T,n,mF); zeros(T,mF,pG+n) I]
+       E1 = [zeros(T,pG,pG) ismissing(G) ? zeros(T,pG,n) : G[1:pG,:] zeros(T,pG,mF); zeros(T,n,pG) E ismissing(F) ? zeros(T,n,mF) : F[:,1:mF]; zeros(T,mF,pG+n+mF)]
+       B1 = [zeros(T,pG,m); B; mF > 0 ? -I : zeros(T,mF,m)]
+       C1 = [pG > 0 ? -I : zeros(T,p,pG) C zeros(T,p,mF)]
+   end
+   (ismissing(H) || iszero(H)) &&  (return A1, E1, B1, C1, D1)
+
+   finished = false
+   if compacted
+      typeof(H) <: AbstractVector ? S = svd(reshape(H,p,1),full=true) : S = svd(H,full=true)
+      r = count(S.S .> max(atol1,atol2,rtol*S.S[1]))
+      if r < min(p,m)
+         hs2 = Diagonal(sqrt.(view(S.S,1:r)))
+         A2 = Matrix{T}(I,2*r,2*r)
+         E2 = [zeros(T,r,r) I; zeros(T,r,2*r)]
+         B2 = [zeros(T,r,m); hs2*view(S.Vt,1:r,:)]
+         C2 = [view(S.U,:,1:r)*hs2 zeros(T,p,r)]
+         finished = true
+      end
+   end
+   if !finished
+      if m <= p
+         A2 = Matrix{T}(I,2*m,2*m)
+         E2 = [zeros(T,m,m) I; zeros(T,m,2*m)]
+         B2 = [zeros(T,m,m); I]
+         C2 = [H zeros(T,p,m)]
+      else
+         A2 = Matrix{T}(I,2*p,2*p)
+         E2 = [zeros(T,p,p) I; zeros(T,p,2*p)]
+         B2 = [zeros(T,p,m); -H]
+         C2 = [-I zeros(T,p,p)]
+      end 
+   end
+   return blockdiag(A1,A2), blockdiag(E1,E2), [B1; B2], [C1 C2], D1
+end
+blockdiag(mats::AbstractMatrix...) = blockdiag(promote(mats...)...)
+
+function blockdiag(mats::AbstractMatrix{T}...) where T
+    rows = Int[size(m, 1) for m in mats]
+    cols = Int[size(m, 2) for m in mats]
+    res = zeros(T, sum(rows), sum(cols))
+    m = 1
+    n = 1
+    for ind=1:length(mats)
+        mat = mats[ind]
+        i = rows[ind]
+        j = cols[ind]
+        res[m:m + i - 1, n:n + j - 1] = mat
+        m += i
+        n += j
+    end
+    return res
+end
+"""
+    lpseval(A, E, B, F, C, G, D, H, val; atol1, atol2, rtol, fast = true) -> Gval
+
+Evaluate `Gval`, the value of the rational matrix `G(λ) = (C-λG)*inv(λE-A)*(B-λF)+D-λH` for `λ = val`. 
+The computed `Gval` has infinite entries if `val` is a pole (finite or infinite) of `G(λ)`.
+If `val` is finite and `val*E-A` is singular or `val` is infinite and `E` is singular, 
+then the entries of `Gval` are evaluated separately for each input-output chanel employing descriptor system based 
+minimal realizations.
+
+The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of matrices `A`, `B`, `C`, `D`, the absolute tolerance for the nonzero elements of `E`, `F`, `G`, `H`,  
+and the relative tolerance for the nonzero elements of `A`, `B`, `C`, `D`, `E`, `F`, `G`, and `H`. 
+
+The computation of minimal realizations of individual input-output chanels relies on pencil manipulation algorithms,
+which employ rank determinations based on either the use of 
+rank revealing QR-decomposition with column pivoting, if `fast = true`, or the SVD-decomposition.
+The rank decision based on the SVD-decomposition is generally more reliable, but the involved computational effort is higher.
 """
 function lpseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}, 
-                 B::AbstractMatrix, F::AbstractMatrix, C::AbstractMatrix, G::AbstractMatrix, 
-                 D::AbstractMatrix, H::AbstractMatrix, val::Number)
-   return (C-val*G)*((val*E-A)\(B-val*F))+D-val*H
+                 B::AbstractVecOrMat, F::AbstractVecOrMat, C::AbstractMatrix, G::AbstractMatrix, 
+                 D::AbstractVecOrMat, H::AbstractVecOrMat, val::Number; atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
+                 rtol::Real =  (size(A,1)+1)*eps(float(real(eltype(A))))*iszero(max(atol1,atol2)), fast::Bool = true)
+
+   # check dimensions
+   n = LinearAlgebra.checksquare(A)
+   if typeof(E) <: AbstractMatrix
+      n == LinearAlgebra.checksquare(E) || error("A and E must have the same size")
+   end
+   
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+   n1 == n ||  error("B must have the same row size as A")
+   n1, m1 = typeof(F) <: AbstractVector ? (length(F),1) : size(F)
+   (n1, m1) == (n, m) ||  error("B and F must have the same size")
+   p, n1 = size(C)
+   n1 == n ||  error("C must have the same column size as A")
+   (p, n) == size(G) ||  error("C and G must have the same size")
+   p1, m1 = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+   m1 == m ||  error("D must have the same column size as B")
+   p1 == p ||  error("D must have the same row size as C")
+   p1, m1 = typeof(H) <: AbstractVector ? (length(H),1) : size(H)
+   (p, m) == (p1, m1) || error("D and H must have the same size")
+
+   T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D), eltype(F), eltype(G), eltype(H), typeof(val))
+   E == I || (T = promote_type(T,eltype(E)))
+   T <: BlasFloat || (T = promote_type(Float64,T))        
+
+   toleps = (size(A,1)+1)*eps(real(T))
+   if abs(val) < Inf 
+      LUF = lu!(T(val)*E-A;check = false)
+      tol = max(atol1,atol2)
+      if rcond(LUF.U, tol) < toleps
+         At, Et, Bt, Ct, Dt = lps2ls(A, E, B, F, C, G, D, H; compacted = true, atol1 = atol2, atol2 = atol2, rtol = rtol)
+         p, m = typeof(Dt) <: AbstractVector ? (length(D),1) : size(Dt)
+         G = zeros(T,p,m)
+         for i = 1:p
+            At1, Et1, Bt1, Ct1, Dt1, = lsminreal2(At, Et, Bt, view(Ct,i:i,:), view(Dt,i:i,:); infinite = false, noseig = false, contr = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
+            for j = 1:m
+                At11, Et11, Bt11, Ct11, Dt11, = lsminreal2(At1, Et1, view(Bt1,:,j:j), Ct1, view(Dt1,:,j:j); infinite = false, noseig = false, obs = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
+                LUF = lu!(T(val)*Et11-At11;check = false)
+                rcond(LUF.U,tol) < toleps ? G[i,j] = T(Inf) : G[i,j] = (Ct11*ldiv!(LUF,copy_oftype(Bt11,T)) + Dt11)[1,1]
+            end
+         end
+         return G
+      else
+         return (C-val*G)*ldiv!(LUF,copy_oftype(B-val*F,T)) + D-val*H
+      end
+   else
+      return lseval(lps2ls(A, E, B, F, C, G, D, H; compacted = true, atol1 = atol2, atol2 = atol2, rtol = rtol)...,val; 
+                 atol1 = atol1, atol2 = atol2, rtol = rtol, fast = fast)
+   end
 end
 """
      lsequal(A1, E1, B1, C1, D1, A2, E2, B2, C2, D2; 
@@ -53,9 +320,9 @@ the smallest dimension of `M`, and `ϵ` is the machine epsilon of the element ty
 [1] A. Varga, On checking null rank conditions of rational matrices, [arXiv:1812.11396](https://arxiv.org/abs/1812.11396), 2018.
 """
 function lsequal(A1::AbstractMatrix, E1::Union{AbstractMatrix,UniformScaling{Bool}}, 
-   B1::AbstractMatrix, C1::AbstractMatrix, D1::AbstractMatrix,
+   B1::AbstractVecOrMat, C1::AbstractMatrix, D1::AbstractVecOrMat,
    A2::AbstractMatrix, E2::Union{AbstractMatrix,UniformScaling{Bool}}, 
-   B2::AbstractMatrix, C2::AbstractMatrix, D2::AbstractMatrix; 
+   B2::AbstractVecOrMat, C2::AbstractMatrix, D2::AbstractVecOrMat; 
    atol1::Real = zero(real(eltype(A1))), atol2::Real = zero(real(eltype(A1))), 
    rtol::Real =  (size(A1,1)+size(A2,1)+2)*eps(real(float(one(real(eltype(A1))))))*iszero(max(atol1,atol2)), 
    fastrank::Bool = true)
@@ -215,7 +482,7 @@ and the relative tolerance for the nonzero elements of `A`, `B`, `C`, `D` and `E
 [1] A. Varga, Solving Fault Diagnosis Problems - Linear Synthesis Techniques, Springer Verlag, 2017. 
 """
 function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}, 
-                    B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix; 
+                    B::AbstractVecOrMat, C::AbstractMatrix, D::AbstractVecOrMat; 
                     atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
                     rtol::Real =  (size(A,1)+1)*eps(real(float(one(real(eltype(A))))))*iszero(max(atol1,atol2)), 
                     fast::Bool = true, finite::Bool = true, infinite::Bool = true, 
@@ -225,8 +492,9 @@ function lsminreal2(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bo
    eident = !emat || isequal(E,I) 
    n = LinearAlgebra.checksquare(A)
    emat && (n,n) != size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
-   p, m = size(D)
-   (n,m) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
+   p, m = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+   n1, m1 = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+   (n,m) == (n1, m1) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
    (p,n) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
    T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
    eident || (T = promote_type(T,eltype(E)))
@@ -417,12 +685,12 @@ nonzero elements of matrices `A`, `B`, `C`.
 [1] P. Van Dooreen, The generalized eigenstructure problem in linear system theory, 
 IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
 """
-function lsminreal(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix; 
+function lsminreal(A::AbstractMatrix, B::AbstractVecOrMat, C::AbstractMatrix; 
                    atol::Real = zero(real(eltype(A))), 
                    rtol::Real =  (size(A,1)+1)*eps(real(float(one(real(eltype(A))))))*iszero(atol), 
                    fast::Bool = true, contr::Bool = true, obs::Bool = true)
    n = LinearAlgebra.checksquare(A)
-   (n1,m) = size(B)
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    (p,n1) = size(C)
    n1 == n || throw(DimensionMismatch("A and C must have the same number of columns"))
@@ -532,7 +800,7 @@ IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
 [2] A. Varga, Solving Fault Diagnosis Problems - Linear Synthesis Techniques, Springer Verlag, 2017. 
 """
 function lsminreal(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}, 
-                   B::AbstractMatrix, C::AbstractMatrix, D::AbstractMatrix; 
+                   B::AbstractVecOrMat, C::AbstractMatrix, D::AbstractVecOrMat; 
                    atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
                    rtol::Real =  (size(A,1)+1)*eps(real(float(one(real(eltype(A))))))*iszero(max(atol1,atol2)), 
                    fast::Bool = true, contr::Bool = true, obs::Bool = true, noseig::Bool = true)
@@ -541,8 +809,9 @@ function lsminreal(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Boo
    eident = !emat || isequal(E,I) 
    n = LinearAlgebra.checksquare(A)
    emat && (n,n) != size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
-   p, m = size(D)
-   (n,m) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
+   p, m = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+   n1, m1 = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+   (n,m) == (n1, m1) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
    (p,n) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
    T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
    eident || (T = promote_type(T,eltype(E)))

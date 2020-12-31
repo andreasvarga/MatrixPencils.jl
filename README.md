@@ -84,6 +84,9 @@ The current version of the package includes the following functions:
 * **lpsminreal**  Computation of strong minimal pencil based linearizations of the form `[A-λE B-λF; C-λG D-λH]`.
 * **lsequal**  Check the equivalence of two linearizations.
 * **lpsequal**  Check the equivalence of two pencil based linearizations.  
+* **lseval**   Evaluation of the value of the rational matrix corresponding to a descriptor system based linearization.
+* **lpseval**  Evaluation of the value of the rational matrix corresponding to a pencil based linearization.
+* **lps2ls**  Conversion of a pencil based linearization into a descriptor system based linearization.
 
 **Manipulation of polynomial matrices** 
 

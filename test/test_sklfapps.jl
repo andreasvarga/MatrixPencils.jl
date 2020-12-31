@@ -34,19 +34,33 @@ D = [
    0.0   0.0]; 
 M2 = [A B; C D]; N2 = [E zeros(6,2); zeros(3,8)];
 
-# zeros
+# Kronecker structure
 kinfo  = spkstruct(A, E, B, C, D, atol1 = 1.e-7, atol2 = 1.e-7)
 @test (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8)
 
+kinfo  = spkstruct(A, E, view(B,:,1), C, view(D,:,1), atol1 = 1.e-7, atol2 = 1.e-7)
+@test (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1,2], [2], 2, 7)
+
+# zeros
 @time val, iz, kinfo  = spzeros(A, E, B, C, D)
 @test sort(real(val)) ≈ [-1, 2, Inf,Inf] && iz == [1, 1] && 
       (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8)
+
+@time val, iz, kinfo  = spzeros(A, E, view(B,:,1), C, view(D,:,1))
+@test sort(real(val)) ≈ [-1, 2, Inf] && iz == [1] && 
+      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1, 2], [2], 2, 7)
 
 @time val, kinfo  = speigvals(A, E, B, C, D)
 @test sort(real(val)) ≈ [-1, 2, Inf, Inf, Inf, Inf] && 
 (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8) 
 
+@time val, kinfo  = speigvals(A, E, view(B,:,1), C, view(D,:,1))
+@test sort(real(val)) ≈ [-1, 2, Inf, Inf] && 
+(kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1, 2], [2], 2, 7) 
+
 @test sprank(A, E, B, C, D, fastrank = true) == 8 && sprank(A, E, B, C, D, fastrank = false) == 8
+
+@test sprank(A, E, view(B,:,1), C, view(D,:,1), fastrank = true) == 7 && sprank(A, E, view(B,:,1), C, view(D,:,1), fastrank = false) == 7
 
 # output decoupling zeros
 kinfo  = spkstruct(A, E, missing, C, missing, atol1 = 1.e-7, atol2 = 1.e-7)

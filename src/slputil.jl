@@ -14,10 +14,10 @@ where `B11` has full row rank `ρ`. `Q1'*A`, `Q1'*E` and `BT` are returned in `A
 The performed orthogonal or unitary transformations are accumulated in `Q` if `withQ = true`. 
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `B`.
 """
-function _sreduceB!(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},
+function _sreduceB!(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractVecOrMat{T},
                     Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                     fast::Bool = true, withQ::Bool = true) where T <: BlasFloat
-   n, m = size(B)                
+   n, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
    (m == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
    ZERO = zero(T)
@@ -179,7 +179,7 @@ where `B11` has full row rank `ρ`. `H` and `C*diag(I,Q1)` are returned in `A` a
 and `B` is unchanged. The performed orthogonal or unitary transformations are accumulated in `Q` if `withQ = true`. 
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractVecOrMat{T},C::Union{AbstractMatrix{T},Missing},
                      Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                      fast::Bool = true, init::Bool = true, roff::Int = 0, coff::Int = 0, withQ::Bool = true) where T <: BlasFloat
    (m == 0 || n == 0) && (return 0)
@@ -388,7 +388,7 @@ where `C11` has full column rank `ρ`. `H` and `diag(Q1',I)*B` are returned in `
 and `C` is unchanged. The performed orthogonal or unitary transformations are accumulated in `Q` if `withQ = true`. 
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractMatrix{T},Missing},
+function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractVecOrMat{T},Missing},
                      Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                      fast::Bool = true, init::Bool = true, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true) where T <: BlasFloat
    (p == 0 || n == 0) && (return 0)
@@ -513,7 +513,7 @@ The performed orthogonal or unitary transformations are accumulated in `Q` as `Q
 and in `Z` as `Z <- Z*diag(I,Z1)` if `withZ = true`.
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractVecOrMat{T},C::Union{AbstractMatrix{T},Missing},
                       Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                       fast::Bool = true, init::Bool = true, roff::Int = 0, coff::Int = 0, 
                       withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
@@ -814,7 +814,7 @@ The performed orthogonal or unitary transformations are accumulated in `Q` as `Q
 and in `Z` as `Z <- Z*diag(I,Z1)` if `withZ = true`.
 The rank decisions use the absolute tolerance `tol` for the nonzero elements of `A`.
 """
-function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractMatrix{T},Missing},
+function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractVecOrMat{T},Missing},
                       Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                       fast::Bool = true, init::Bool = true, rtrail::Int = 0, ctrail::Int = 0, 
                       withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat

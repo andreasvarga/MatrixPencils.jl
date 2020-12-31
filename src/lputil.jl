@@ -36,7 +36,7 @@ The rank decision based on the SVD-decomposition is generally more reliable, but
 """
 function _preduceBF!(M::AbstractMatrix{T}, N::AbstractMatrix{T}, 
                      Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
-                     L::Union{AbstractMatrix{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
+                     L::Union{AbstractVecOrMat{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
                      atol::Real = zero(real(T)), rtol::Real = (min(size(M)...)*eps(real(float(one(T)))))*iszero(atol), 
                      fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
                      withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
@@ -175,7 +175,7 @@ The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `
 """
 function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMatrix{T},
                     Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real, 
-                    L::Union{AbstractMatrix{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
+                    L::Union{AbstractVecOrMat{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
                     fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
                     withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    #  Steps 1 and 2: QR- or SVD-decomposition based full column compression of [B; D] with the UT-form preservation of E
@@ -283,7 +283,7 @@ The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `
 """
 function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMatrix{T}, 
                     Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real,  
-                    L::Union{AbstractMatrix{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
+                    L::Union{AbstractVecOrMat{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
                     fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
                     withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    #  Steps 1 and 2: QR- or SVD-decomposition based full column compression of [D C] with the UT-form preservation of E
@@ -404,7 +404,7 @@ The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `
 """
 function _preduce3!(n::Int, m::Int, M::AbstractMatrix{T}, N::AbstractMatrix{T}, 
                     Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real, 
-                    L::Union{AbstractMatrix{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
+                    L::Union{AbstractVecOrMat{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
                     fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0,  
                     withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    #  Step 3: QR- or SVD-decomposition based full row compression of B and UT-form preservation of E
@@ -559,7 +559,7 @@ The  matrix `L` is overwritten by `Q1'*L` unless `L = missing` and the  matrix `
 """
 function _preduce4!(n::Int, m::Int, p::Int, M::AbstractMatrix{T},N::AbstractMatrix{T},
                     Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real,  
-                    L::Union{AbstractMatrix{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
+                    L::Union{AbstractVecOrMat{T},Missing} = missing, R::Union{AbstractMatrix{T},Missing} = missing; 
                     fast::Bool = true, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
                     withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    #  Step 4: QR- or SVD-decomposition based full column compression of C and UT-form preservation of E

@@ -19,7 +19,7 @@ export prank, pkstruct, peigvals, pzeros, KRInfo
 export isregular, isunimodular, fisplit, _svdlikeAE!, sfisplit
 export sreduceBF, sklf, gsklf, sklf_right, sklf_left, sklf_right!, sklf_right2!, sklf_left!, sklf_rightfin!, sklf_rightfin2!, sklf_leftfin! 
 export sprank, spkstruct, speigvals, spzeros
-export lsminreal, lsminreal2, lsequal, lseval
+export lsminreal, lsminreal2, lsequal, lseval, lps2ls
 export lpsminreal, lpsequal, lpseval
 export poldivrem, polgcdvw, pollcm, conv, poldiv, convmtx, gcdvwupd, qrsolve!, poldeg, poldeg1
 export poly2pm, pm2poly, pmdeg, pmreverse, pmeval, pmdivrem

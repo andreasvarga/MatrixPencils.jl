@@ -11,7 +11,7 @@ if `withQ = true`. Otherwise, `Q` is unchanged.
 `Q1'*B` is returned in `B` unless `B = missing`.              
 """
 function _qrE!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, Q::Union{AbstractMatrix{T},Nothing}, 
-               B::Union{AbstractMatrix{T},Missing} = missing; withQ::Bool = true) where T <: BlasFloat
+               B::Union{AbstractVecOrMat{T},Missing} = missing; withQ::Bool = true) where T <: BlasFloat
    
    # fast return for dimensions 0 or 1
    size(A,1) <= 1 && return
@@ -68,7 +68,7 @@ Otherwise, `Z` is unchanged.
 """
 function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
                      Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
-                     B::Union{AbstractMatrix{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                     B::Union{AbstractVecOrMat{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
                      svdA::Bool = true, fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                      rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
                      withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
@@ -370,7 +370,7 @@ Otherwise, `Z` is set to `nothing`.
 unless `C = missing`, in which case `Ct = missing` is returned .              
 
 """
-function fisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}; 
+function fisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}; 
    fast::Bool = true, finite_infinite::Bool = false, 
    atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(E))), 
    rtol::Real = (size(A,1)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2)), 
@@ -462,7 +462,7 @@ if `withZ = true`. Otherwise, `Z` is unchanged.
 """
 function fisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
                   Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
-                  B::Union{AbstractMatrix{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                  B::Union{AbstractVecOrMat{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
                   fast::Bool = true, finite_infinite::Bool = false, 
                   atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                   rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
@@ -629,7 +629,7 @@ Otherwise, `Z` is set to `nothing`.
 `Bt = Q'*B`, unless `B = missing`, in which case `Bt = missing` is returned, and `Ct = C*Z`, 
 unless `C = missing`, in which case `Ct = missing` is returned .              
 """
-function sfisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}; 
+function sfisplit(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}; 
    fast::Bool = true, finite_infinite::Bool = false, 
    atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(E))), 
    rtol::Real = (size(A,1)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2)), 
@@ -719,7 +719,7 @@ if `withZ = true`. Otherwise, `Z` is unchanged.
 """
 function sfisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
                   Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
-                  B::Union{AbstractMatrix{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                  B::Union{AbstractVecOrMat{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
                   fast::Bool = true, finite_infinite::Bool = false, 
                   atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                   rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 

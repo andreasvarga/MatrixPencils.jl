@@ -97,8 +97,11 @@ The current version of the package includes the following functions:
 | **[`lsminreal`](@ref)** | Computation of irreducible descriptor system based linearizations  |
 | **[`lsminreal2`](@ref)** | Computation of irreducible descriptor system based linearizations (potentially more efficient)|
 | **[`lpsminreal`](@ref)** | Computation of strongly minimal pencil based linearizations |
-| **[`lsequal`](@ref)** | Check the equivalence of two descriptor system based linearizations |
-| **[`lpsequal`](@ref)** | Check the equivalence of two pencil based linearizations |
+| **[`lsequal`](@ref)** | Checking the equivalence of two descriptor system based linearizations |
+| **[`lpsequal`](@ref)** | Checking the equivalence of two pencil based linearizations |
+| **[`lseval`](@ref)** | Evaluation of the value of the rational matrix corresponding to a descriptor system based linearization  |
+| **[`lpseval`](@ref)** | Evaluation of the value of the rational matrix corresponding to a pencil based linearization |
+| **[`lps2ls`](@ref)** | Conversion of a pencil based linearization into a descriptor system based linearization |
 
 **Manipulation of polynomial matrices** 
 
@@ -171,6 +174,11 @@ A complete list of implemented functions is available [here](https://sites.googl
 Functional enhancements of some functions will be performed if the need arises.
 
 ## Release Notes
+
+### Version 1.5.1
+
+This patch release includes fixes in two functions for the evaluation of frequency gains for descriptor and pencil based linearizations, a new function to convert a pencil based linearization into a descriptor system based linearization, and enhancements of several functions for structured pencil to work with
+both one- and two-dimensional arrays.
 
 ### Version 1.5
 

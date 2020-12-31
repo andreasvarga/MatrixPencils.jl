@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 1.5.1
+
+This patch release includes fixes in two functions for the evaluation of frequency gains for descriptor and pencil based linearizations, a new function to convert a pencil based linearization into a descriptor system based linearization, and enhancements of several functions for structured pencil to work with
+both one- and two-dimensional arrays.
+
 ## Version 1.5
 
 This minor release includes two new functions for infinite spectrum assignment of a regular pencil, a function for the computation of a Kronecker-like form exhibiting the right and infinite Kronecker structures, two new functions to refine the computed Kronecker-like forms such that the diagonal and supradiagonal blocks have upper triangular forms, and, accordingly, enhancements of several functions to compute Kronecker-like forms with the staircase form having upper triangular blocks. Several bug fixes have also been performed.

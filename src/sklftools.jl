@@ -34,7 +34,7 @@ The performed right orthogonal or unitary transformations are accumulated in the
 Otherwise, `Z` is set to `nothing`.  
 """
 function sreduceBF(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-                   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+                   B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
                    atol::Real = ismissing(A) ? (ismissing(D) ? zero(1.) : zero(real(eltype(D)))) : zero(real(eltype(A))), 
                    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? (ismissing(D) ? zero(1.) : one(real(eltype(D)))) : one(real(eltype(A))))))*iszero(atol), 
                    fast::Bool = true, withQ::Bool = true, withZ::Bool = true) 
@@ -48,7 +48,7 @@ function sreduceBF(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
       T = Float64
       return zeros(T,0,0), zeros(T,0,0), zeros(T,0,0), zeros(T,0,0), 0, 0, 0
    elseif ismissing(A) 
-      p, m = size(D)
+      p, m = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
       T = eltype(D)
       T <: BlasFloat || (T = promote_type(Float64,T))
       F = copy_oftype(D,T)   
@@ -77,19 +77,20 @@ function sreduceBF(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Uni
    elseif ismissing(C)
       ndx, nx = size(A)
       eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
-      ndx == size(B,1) || throw(DimensionMismatch("A and B must have the same number of rows"))
+      ndx1, nu = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+      ndx == ndx1 || throw(DimensionMismatch("A and B must have the same number of rows"))
       T = promote_type(eltype(A), eltype(E), eltype(B), eltype(E), eltype(A), eltype(E) )
       T <: BlasFloat || (T = promote_type(Float64,T))
       ny = 0
       C = zeros(T,ny,nx)
-      nu = size(B,2)
       D = zeros(T,ny,nu)
    else
       ndx, nx = size(A)
       T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D))
       eident || (ndx,nx) == size(E) || throw(DimensionMismatch("A and E must have the same dimensions"))
-      ny, nu = size(D)
-      (ndx,nu) == size(B) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
+      ny, nu = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+      ndx1, nu1 = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+      (ndx,nu) == (ndx1,nu1) || throw(DimensionMismatch("A, B and D must have compatible dimensions"))
       (ny,nx) == size(C) || throw(DimensionMismatch("A, C and D must have compatible dimensions"))
       T = promote_type(eltype(A), eltype(E), eltype(B), eltype(C), eltype(D))
       T <: BlasFloat || (T = promote_type(Float64,T))        
@@ -205,7 +206,7 @@ The performed right orthogonal or unitary transformations are accumulated in the
 Otherwise, `Z` is set to `nothing`.  
 """
 function sklf(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-              B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+              B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
               atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
               atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
               rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2)), 
@@ -332,7 +333,7 @@ square upper triangular diagonal blocks (i.e.,`μ[j] = ν[j]`), and the differen
 `j = 1, 2, ..., nb` is the number of infinite elementary divisors of degree `j` (with `ν[0] = 0`).
 """
 function sklf_right(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
    atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2)), 
@@ -419,7 +420,7 @@ square upper triangular diagonal blocks (i.e.,`μ[i] = ν[i]`), and the differen
 is the number of infinite elementary divisors of degree `i` (with `ν[nb+1] = 0`).
 """
 function sklf_left(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
-   B::Union{AbstractMatrix,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractMatrix,Missing}; 
+   B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
    atol1::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    atol2::Real = ismissing(A) ? zero(real(eltype(D))) : zero(real(eltype(A))), 
    rtol::Real = (ismissing(A) ? 1 : min(size(A)...))*eps(real(float(ismissing(A) ? one(real(eltype(D))) : one(real(eltype(A))))))*iszero(min(atol1,atol2)), 
@@ -493,23 +494,26 @@ Otherwise, `Q` is set to `nothing`.
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
 If `withZ = false`, `Z` contains the upper triangular matrix `Z11`.   
 """
-function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMatrix{T1}, F::AbstractMatrix{T1}, 
+function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractVecOrMat{T1}, F::AbstractVecOrMat{T1}, 
                      C::Union{AbstractMatrix{T1},T2}, G::Union{AbstractMatrix{T1},T2},
-                     D::Union{AbstractMatrix{T1},T2}, H::Union{AbstractMatrix{T1},T2}; 
+                     D::Union{AbstractVecOrMat{T1},T2}, H::Union{AbstractVecOrMat{T1},T2}; 
                      fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), atol3::Real = zero(real(T1)), 
                      rtol::Real = ((size(A,1)+2)*eps(real(float(one(T1)))))*iszero(max(atol1,atol2,atol3)), 
                      withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat, T2 <: Missing}
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
-   n1, m = size(B)
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
-   (n,m) == size(F) || throw(DimensionMismatch("B and F must have the same dimensions"))
+   n2, m2 = typeof(F) <: AbstractVector ? (length(F),1) : size(F)
+   (n,m) == (n2,m2) || throw(DimensionMismatch("B and F must have the same dimensions"))
    if !ismissing(C) 
       (p,n2) = size(C)
       n == n2 || throw(DimensionMismatch("A and C must have the same number of columns"))
       (p,n) == size(G) || throw(DimensionMismatch("C and G must have the same dimensions"))
-      (p,m) == size(D) || throw(DimensionMismatch("D must have the same row dimension as C and same column dimension as B"))
-      (p,m) == size(H) || throw(DimensionMismatch("D and H must have the same dimensions"))
+      p1, m1 = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+      (p,m) == (p1,m1) || throw(DimensionMismatch("D must have the same row dimension as C and same column dimension as B"))
+      p1, m1 = typeof(H) <: AbstractVector ? (length(H),1) : size(H)
+      (p,m) == (p1,m1) || throw(DimensionMismatch("D and H must have the same dimensions"))
    end
    mn = m+n
    (m == 0 || n == 0) && (return withQ ? Matrix{T1}(I,n,n) : nothing,  withZ ? Matrix{T1}(I,mn,mn) : Matrix{T1}(I,m,m), 0)
@@ -610,8 +614,8 @@ The performed orthogonal or unitary right transformations are accumulated in the
 Otherwise, `Z` is set to `nothing`.   
 """
 function sklf_left!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMatrix{T1}, G::AbstractMatrix{T1}, 
-                     B::Union{AbstractMatrix{T1},T2}, F::Union{AbstractMatrix{T1},T2},
-                     D::Union{AbstractMatrix{T1},T2}, H::Union{AbstractMatrix{T1},T2}; 
+                     B::Union{AbstractVecOrMat{T1},T2}, F::Union{AbstractVecOrMat{T1},T2},
+                     D::Union{AbstractVecOrMat{T1},T2}, H::Union{AbstractVecOrMat{T1},T2}; 
                      fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), atol3::Real = zero(real(T1)), 
                      rtol::Real = ((size(A,1)+2)*eps(real(float(one(T1)))))*iszero(max(atol1,atol2,atol3)), 
                      withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat, T2 <: Missing}
@@ -621,11 +625,14 @@ function sklf_left!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMat
    n == n1 || throw(DimensionMismatch("A and C must have the same number of columns"))
    (p,n) == size(G) || throw(DimensionMismatch("C and G must have the same dimensions"))
    if !ismissing(C) 
-      n2, m = size(B)
+      n2, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
       n == n2 || throw(DimensionMismatch("A and B must have the same number of rows"))
-      (n,m) == size(F) || throw(DimensionMismatch("B and F must have the same dimensions"))
-      (p,m) == size(D) || throw(DimensionMismatch("D must have the same row dimension as C and same column dimension as B"))
-      (p,m) == size(H) || throw(DimensionMismatch("D and H must have the same dimensions"))
+      n2, m2 = typeof(F) <: AbstractVector ? (length(F),1) : size(F)
+      (n,m) == (n2,m2) || throw(DimensionMismatch("B and F must have the same dimensions"))
+      p1, m1 = typeof(D) <: AbstractVector ? (length(D),1) : size(D)
+      (p,m) == (p1,m1) || throw(DimensionMismatch("D must have the same row dimension as C and same column dimension as B"))
+      p1, m1 = typeof(H) <: AbstractVector ? (length(H),1) : size(H)
+      (p,m) == (p1,m1) || throw(DimensionMismatch("D and H must have the same dimensions"))
    end
    np = n+p
    (p == 0 || n == 0) && (return withQ ? Matrix{T1}(I,n,n) : nothing, withZ ? Matrix{T1}(I,np,np) : Matrix{T1}(I,p,p), 0)
@@ -694,7 +701,7 @@ The `nfuc x nfuc` subpencil `Afuc-λEfuc` contains the finite eigenvalues of `M 
 
 The `niuc x niuc` subpencil `Aiuc-λEiuc` contains the infinite eigenvalues of `M - λN` (also called the uncontrollable infinite eigenvalues of `A - λE`).  
 
-The keyword arguments `atol1`, `atol2`, , `atol3`, and `rtol`, specify, respectively, the absolute tolerance for the 
+The keyword arguments `atol1`, `atol2`, `atol3`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of `A`, the absolute tolerance for the nonzero elements of `E`, the absolute tolerance for the nonzero elements of `B`,  
 and the relative tolerance for the nonzero elements of `A`, `E` and `B`.  
 The reduction is performed using rank decisions based on rank revealing QR-decompositions with column pivoting 
@@ -705,13 +712,13 @@ Otherwise, `Q` is set to `nothing`.
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.   
 """
-function sklf_right!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractMatrix{T}, C::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
+function sklf_right!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
                    atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), atol3::Real = zero(real(T)), 
                    rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2,atol3)), 
                    withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
-   n1, m = size(B)
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
    
@@ -732,7 +739,7 @@ function sklf_right!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractMatr
    end
 
    tolA = max(atol1, rtol*opnorm(A,1))
-   tolB = max(atol3, rtol*opnorm(B,1))
+   typeof(B) <: AbstractVector ? tolB = max(atol3, rtol*norm(B,1)) : tolB = max(atol3, rtol*opnorm(B,1))
 
    ρ1 = _sreduceB!(A, E, B, Q, tolB; fast = fast, withQ = withQ)
    ρ1 == n && (return Q, Z, [ρ1], n, nfu, niu)
@@ -833,13 +840,13 @@ Otherwise, `Z` is set to `nothing`.
 `Note:` This function, called with reversed input parameters `E` and `A` (i.e., instead `A` and `E`), performs the 
 separation all infinite and nonzero finite eigenvalues of the pencil `M - λN`.
 """
-function sklf_rightfin!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractMatrix{T}, C::Union{AbstractMatrix{T},Missing}; 
+function sklf_rightfin!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::Union{AbstractMatrix{T},Missing}; 
                         fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                         rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
                         withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
-   n1, m = size(B)
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
    
@@ -856,7 +863,7 @@ function sklf_rightfin!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractM
    m == 0 && (return Q, Z, νr[1:0], 0, n)
   
    tolA = max(atol1, rtol*opnorm(A,1))
-   tolB = max(atol2, rtol*opnorm(B,1))
+   typeof(B) <: AbstractVector ? tolB = max(atol2, rtol*norm(B,1)) : tolB = max(atol2, rtol*opnorm(B,1))
 
    i = 0
    init = true
@@ -1055,7 +1062,7 @@ Otherwise, `Q` is set to `nothing`.
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
 Otherwise, `Z` is set to `nothing`.   
 """
-function sklf_left!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
+function sklf_left!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractVecOrMat{T},Missing}; fast::Bool = true, 
                    atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), atol3::Real = zero(real(T)), 
                    rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2,atol3)), 
                    withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
@@ -1182,7 +1189,7 @@ Otherwise, `Z` is set to `nothing`.
 `Note:` This function, called with reversed input parameters `E` and `A` (i.e., instead `A` and `E`), performs the 
 separation all infinite and nonzero finite eigenvalues of the pencil `M - λN`.
 """
-function sklf_leftfin!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractMatrix{T},Missing}; 
+function sklf_leftfin!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractVecOrMat{T},Missing}; 
                        fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                        rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
                        withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
@@ -1269,12 +1276,12 @@ if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
 The performed orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 """
-function sklf_right!(A::AbstractMatrix{T}, B::AbstractMatrix{T}, C::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
+function sklf_right!(A::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
                      atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                      rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
                      withQ::Bool = true) where T <: BlasFloat
    n = LinearAlgebra.checksquare(A)
-   n1, m = size(B)
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
    
@@ -1294,7 +1301,7 @@ function sklf_right!(A::AbstractMatrix{T}, B::AbstractMatrix{T}, C::Union{Abstra
    end
 
    tolA = max(atol1, rtol*opnorm(A,1))
-   tolB = max(atol2, rtol*opnorm(B,1))
+   typeof(B) <: AbstractVector ? tolB = max(atol2, rtol*norm(B,1)) : tolB = max(atol2, rtol*opnorm(B,1))
       
    i = 0
    init = true
@@ -1474,7 +1481,7 @@ if `fast = true` or the more reliable SVD-decompositions if `fast = false`.
 The performed orthogonal or unitary transformations are accumulated in the matrix `Q` if `withQ = true`. 
 Otherwise, `Q` is set to `nothing`.   
 """
-function sklf_left!(A::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractMatrix{T},Missing}; fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+function sklf_left!(A::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractVecOrMat{T},Missing}; fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                    rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
                    withQ::Bool = true) where T <: BlasFloat
    n = LinearAlgebra.checksquare(A)
