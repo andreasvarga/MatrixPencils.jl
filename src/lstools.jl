@@ -6,13 +6,6 @@ function rcond(A::DenseMatrix,tola::Real = 0)
    istriu(A) ? (return LinearAlgebra.LAPACK.trcon!('1','U','N',copy_oftype(A,T1))) : 
        (return LinearAlgebra.LAPACK.gecon!('1', LinearAlgebra.LAPACK.getrf!(copy_oftype(A,T1))[1],real(T1)(nrmA)) ) 
 end
-function rcond(A::UpperTriangular,tola::Real = 0) 
-   T = eltype(A)
-   T1 = T <: BlasFloat ? T : T1 = promote_type(T,Float64)
-   nrmA = opnorm(A,1)
-   nrmA <= tola && return zero(real(T1))
-   return LinearAlgebra.LAPACK.trcon!('1','U','N', Matrix(copy_oftype(A,T1))) 
-end
 """
     lseval(A, E, B, C, D, val; atol1, atol2, rtol, fast = true) -> Gval
 
@@ -34,7 +27,7 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
                 B::AbstractVecOrMat, C::AbstractMatrix, D::AbstractVecOrMat, val::Number;  
                 atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
                 rtol::Real =  (size(A,1)+1)*eps(float(real(eltype(A))))*iszero(max(atol1,atol2)), fast::Bool = true)
-                
+
    T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D),typeof(val))
    E == I || (T = promote_type(T,eltype(E)))
    T <: BlasFloat || (T = promote_type(Float64,T))  
@@ -73,7 +66,7 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
          return C*ldiv!(LUF,copy_oftype(B,T)) + D
       end
    else
-      (E == I || rcond(E,atol2) > toleps) && (return D) 
+      (E == I || rcond(E,atol2) > toleps) && (return T.(D))
       At, Et, Bt, Ct, Dt, = lsminreal2(A, E, B, C, D; finite = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
       if rcond(Et,atol2) < toleps 
          G = zeros(T,p,m)
@@ -89,7 +82,6 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
          return Dt
       end
    end
-   return
 end
 """
      lps2ls(A, E, B, F, C, G, D, H; compacted = false, atol1 = 0, atol2 = 0, rtol = min(atol1,atol2)>0 ? 0 : n*ϵ) -> (Ad,Ed,Bd,Cd,Dd)
@@ -196,7 +188,6 @@ function lps2ls(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling}, B::A
    end
    return blockdiag(A1,A2), blockdiag(E1,E2), [B1; B2], [C1 C2], D1
 end
-blockdiag(mats::AbstractMatrix...) = blockdiag(promote(mats...)...)
 
 function blockdiag(mats::AbstractMatrix{T}...) where T
     rows = Int[size(m, 1) for m in mats]

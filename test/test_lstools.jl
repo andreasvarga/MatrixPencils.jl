@@ -82,6 +82,10 @@ D = [     0     0
 @test G ≈ [5.403023058681398e-01 - 8.414709848078965e-01im -4.596976941318602e-01 + 8.414709848078965e-01im;
            5.403023058681398e-01 + 8.414709848078965e-01im -5.000000000000000e-01 + 9.152438608562260e-01im]
 
+A = rand(2,2); E = rand(2,2); B = rand(2,3); C = rand(1,2); D = rand(1,3);  
+@time  G = lseval(A,E,B,C,D,Inf)
+@test G ≈ D
+
 A2 = [
     -2    -3     0     0     0     0     0     0     0
      1     0     0     0     0     0     0     0     0
@@ -134,6 +138,7 @@ sys2 = lps2ls(sys...,compacted = true);
 g1 = lseval(sys1...,1)
 @test g1 ≈ (C2-G2)*((E2-A2)\(B2-F2)) + D2-H2
 g2 = lseval(sys2...,1)
+@test g2 ≈ (C2-G2)*((E2-A2)\(B2-F2)) + D2-H2
 
 sys = (A2,E2,B2,F2,C2,G2,D2,H2);
 @time  G = lpseval(sys...,0)
@@ -144,6 +149,8 @@ sys = (A2,E2,B2,F2,C2,G2,D2,H2);
 @time  G = lpseval(A2,E2,view(B2,:,1),view(F2,:,1),C2,G2,view(D2,:,1),view(H2,:,1),0)
 @test G ≈ lseval(A2,E2,view(B2,:,1),C2,view(D2,:,1),0)
 
+@time  G = lpseval(A2,E2,B2,F2,view(C2,1:1,:),view(G2,1:1,:),view(D2,1:1,:),view(H2,1:1,:),0)
+@test G ≈ lseval(A2,E2,B2,view(C2,1:1,:),view(D2,1:1,:),0)
 
 @time  G = lpseval(sys...,Inf)
 @test G ≈ [Inf Inf; Inf Inf]
@@ -170,6 +177,7 @@ sys = ([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
 @test G ≈ [Inf  Inf  Inf;
 Inf  Inf  Inf;
 Inf  Inf  Inf]
+
 end
 
 
