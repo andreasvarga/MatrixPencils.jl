@@ -97,8 +97,8 @@ matrices `F`, `G`, and `H`.
 
 The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
 nonzero elements of `F`, the absolute tolerance for the nonzero elements of `G` and the relative tolerance 
-for the nonzero elements of `F` and `G`. The default relative tolerance is `k*ϵ`, where `k` is the size of 
-the smallest dimension of `B`, and `ϵ` is the machine epsilon of the element type of `B`. 
+for the nonzero elements of `F` and `G`. The default relative tolerance is `n*ϵ`, where `n` is the size of 
+ `A`, and `ϵ` is the machine epsilon of the element type of `A`. 
 """
 function lps2ls(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling}, B::AbstractVecOrMat, F::Union{AbstractVecOrMat,Missing},
                 C::AbstractMatrix, G::Union{AbstractMatrix,Missing}, D::AbstractVecOrMat, H::Union{AbstractVecOrMat,Missing}; 

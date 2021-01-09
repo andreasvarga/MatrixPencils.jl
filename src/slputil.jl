@@ -32,7 +32,7 @@ function _sreduceB!(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractVecOrMa
          larf!('L', b, conj(τ), A)  
          larf!('L', b, conj(τ), E)  
          withQ && larf!('R', b, τ, Q) 
-         b[:] = [ β; zeros(T,n-1)] 
+         b[:] = [ fill(β,1); zeros(T,n-1)] 
          return 1
       end
 end
@@ -102,7 +102,7 @@ function _sreduceC!(A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{
          larf!('R', c, τ, A)  
          larf!('R', c, τ, E)  
          withZ && larf!('R', c, τ, Z) 
-         c[:] = [zeros(T,n-1); β]; 
+         c[:] = [zeros(T,n-1); fill(β,1)]; 
          return 1
       end
 end
@@ -213,7 +213,7 @@ function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractVecOrMat{T},C
          larf!('R', b, τ, view(A, ia, ja))  
          ismissing(C) || larf!('R', b, τ, view(C,:,ja))  
          withQ && larf!('R', b, τ, view(Q,:,ib)) 
-         b[:] = [ β; zeros(T,n-1)] 
+         b[:] = [ fill(β,1); zeros(T,n-1)] 
          return 1
       end
    end
@@ -307,7 +307,7 @@ function _sreduceBA2!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C:
          larf!('R', b, τ, A2)  
          ismissing(C) || larf!('R', b, τ, view(C,:,ja))  
          withQ && larf!('R', b, τ, view(Q,:,ib)) 
-         b[:] = [ β; zeros(T,n-1)] 
+         b[:] = [ fill(β,1); zeros(T,n-1)] 
          return 1
       end
    end
@@ -421,7 +421,7 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::
          τ = conj(τ)
          larf!('R', c, τ, A1)  
          withQ && larf!('R', c, τ, view(Q,:,ia)) 
-         c[:] = [zeros(T,n-1); β]; 
+         c[:] = [zeros(T,n-1); fill(β,1)]; 
          return 1
       end
    end

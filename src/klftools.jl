@@ -380,7 +380,7 @@ with `X` upper triangular and nonsingular and the full column rank supradiagonal
 reduced to the form `[Y; 0]` with `Y` upper triangular and nonsingular. 
 
 The `nf x nf` pencil `Mf-λNf` is regular and contains the finite elementary divisors of `M-λN`. 
-Nf is upper triangular and nonsingular.
+`Nf` is upper triangular and nonsingular.
 
 The full column rank pencil `Mil-λNil` is in a staircase form, and contains the  left Kronecker indices 
 and infinite elementary divisors of the pencil `M-λN`. 
@@ -447,7 +447,7 @@ The full row rank pencil `Mri-λNri` is in a staircase form, and contains the ri
 and infinite elementary divisors of the pencil `M-λN`.
 
 The `nf x nf` pencil `Mf-λNf` is regular and contains the finite elementary divisors of `M-λN`. 
-Nf is upper triangular and nonsingular.
+`Nf` is upper triangular and nonsingular.
 
 The full column rank pencil `Ml-λNl`, in a staircase form, contains the left Kronecker indices of `M-λN` and has the form
 
@@ -681,7 +681,7 @@ has full row rank. The difference `μr[i]-νr[i]` for `i = 1, 2, ..., nr` is the
 of size `(i-1) x i`.
 
 The `nf x nf` pencil `Mf-λNf` is regular and contains the finite elementary divisors of the subpencil `M22 - λN22`. 
-Nf is upper triangular and nonsingular.
+`Nf` is upper triangular and nonsingular.
 
 The full column rank pencil `Mil-λNil` is in a staircase form, and contains the  left Kronecker indices 
 and infinite elementary divisors of the subpencil `M22 - λN22`. 
@@ -950,7 +950,7 @@ The difference `ν[i]-μ[i+1]` for `i = 1, 2, ..., nb` is the number of infinite
 (with `μ[nb+1] = 0`).
 
 The `nf x nf` pencil `Mf-λNf` is regular and contains the finite elementary divisors of `M-λN`. 
-Nf is upper triangular and nonsingular.
+`Nf` is upper triangular and nonsingular.
 
 The full column rank pencil `Ml-λNl`, in a staircase form, contains the left Kronecker indices of `M-λN` and has the form
 

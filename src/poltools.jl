@@ -153,8 +153,8 @@ function gcdvwupd(a::Vector{T}, b::Vector{T}, d::Vector{T}, v::Vector{T}, w::Vec
     nb1 == nd1+nw1-1 || error("Incompatible dimensions between b, d and w")
 
     h = d/norm(d)^2
-    f = [a;b;one(T)]
-    fh = [conv(v,d); conv(w,d); dot(h,d)]
+    f = [a;b;fill(one(T),1)]
+    fh = [conv(v,d); conv(w,d); fill(dot(h,d),1)]
     Δf = f-fh;
     δ = norm(Δf)
     d0 = copy(d); v0 = copy(v); w0 = copy(w);
@@ -188,7 +188,7 @@ function gcdvwupd(a::Vector{T}, b::Vector{T}, d::Vector{T}, v::Vector{T}, w::Vec
         v1 = v0 + Δz[j1];
         w1 = w0 + Δz[j2];
         d1 = d0 + Δz[j3];
-        fh1 = [conv(v1,d1); conv(w1,d1); dot(h,d1)];
+        fh1 = [conv(v1,d1); conv(w1,d1); fill(dot(h,d1),1)];
         Δf1 = f-fh1;
         δ1 = norm(Δf1)
         if δ1 < δ

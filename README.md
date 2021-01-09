@@ -9,7 +9,7 @@
 
 ## Compatibility
 
-Julia 1.1 and higher.
+Julia 1.2 and higher.
 
 ## How to Install
 
@@ -140,8 +140,8 @@ The current version of the package includes the following functions:
 * **rmkstruct**  Determination of the Kronecker structure and infinite pole-zero structure.
 * **rmzeros**  Computation of the finite and infinite zeros using structured pencil based linearization.
 * **rmzeros1**  Computation of the finite and infinite zeros using linear pencil based structured linearization.
-* **rmpoles**  Computation of the infinite poles using structured pencil based linearization.
-* **rmpoles1**  Computation of the infinite poles using linear pencil based structured linearization.
+* **rmpoles**  Computation of the finite and infinite poles using structured pencil based linearization.
+* **rmpoles1**  Computation of the finite and infinite poles using linear pencil based structured linearization.
 * **rmrank**  Determination of the normal rank.
 
 A complete list of implemented functions is available

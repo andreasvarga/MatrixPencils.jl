@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.5.2
+
+This patch release includes fixes in several functions to enforce the usage of the most efficient concatenation functions involving matrices, vectors and scalars and minor corrections in the documentation.   
+
 ## Version 1.5.1
 
 This patch release includes fixes in two functions for the evaluation of frequency gains for descriptor and pencil based linearizations, a new function to convert a pencil based linearization into a descriptor system based linearization, and enhancements of several functions for structured pencil to work with

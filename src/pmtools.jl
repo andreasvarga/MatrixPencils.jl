@@ -788,7 +788,7 @@ the finite and right Kronecker structures are preserved;
 (3) `rank[A-λE; C] = n` (observability)  if `minimal = true` or `obs = true`, in which case 
 the finite and left Kronecker structures are preserved;
 
-(4) `M-λN` has no simple infinite eigenvalues if `minimal = true`, in which case the complete Kronecker structure is preserved. 
+(4) `A-λE` has no simple infinite eigenvalues if `minimal = true`, in which case the complete Kronecker structure is preserved. 
 
 The keyword arguments `atol` and `rtol`, specify, respectively, the absolute and relative tolerance for the 
 nonzero coefficients of the matrices `T(λ)`, `U(λ)`, `V(λ)` and `W(λ)`. The default relative tolerance is `nt*ϵ`, 
