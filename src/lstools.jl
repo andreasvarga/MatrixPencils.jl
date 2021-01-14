@@ -84,7 +84,7 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
    end
 end
 """
-     lps2ls(A, E, B, F, C, G, D, H; compacted = false, atol1 = 0, atol2 = 0, rtol = min(atol1,atol2)>0 ? 0 : n*ϵ) -> (Ad,Ed,Bd,Cd,Dd)
+     lps2ls(A, E, B, F, C, G, D, H; compacted = false, atol1 = 0, atol2 = 0, atol3 = 0, rtol = min(atol1,atol2,atol3)>0 ? 0 : n*ϵ) -> (Ad,Ed,Bd,Cd,Dd)
 
 Construct an input-output equivalent descriptor system linearizations `(Ad-λdE,Bd,Cd,Dd)` to a pencil based linearization 
 `(A-λE,B-λF,C-λG,D-λH)` satisfying 
@@ -95,15 +95,16 @@ Construct an input-output equivalent descriptor system linearizations `(Ad-λdE,
 If `compacted = true`, a compacted linearization is determined by exploiting possible rank defficiencies of the
 matrices `F`, `G`, and `H`.  
 
-The keyword arguments `atol1`, `atol2`, and `rtol`, specify, respectively, the absolute tolerance for the 
-nonzero elements of `F`, the absolute tolerance for the nonzero elements of `G` and the relative tolerance 
-for the nonzero elements of `F` and `G`. The default relative tolerance is `n*ϵ`, where `n` is the size of 
+The keyword arguments `atol1`, `atol2`, `atol3`, and `rtol`, specify, respectively, the absolute tolerance for the 
+nonzero elements of `F`, the absolute tolerance for the nonzero elements of `G`, 
+the absolute tolerance for the nonzero elements of `H` and the relative tolerance 
+for the nonzero elements of `F`, `G` and `H`. The default relative tolerance is `n*ϵ`, where `n` is the size of 
  `A`, and `ϵ` is the machine epsilon of the element type of `A`. 
 """
 function lps2ls(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling}, B::AbstractVecOrMat, F::Union{AbstractVecOrMat,Missing},
                 C::AbstractMatrix, G::Union{AbstractMatrix,Missing}, D::AbstractVecOrMat, H::Union{AbstractVecOrMat,Missing}; 
                 compacted::Bool = false, atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
-                rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2))) 
+                atol3::Real = zero(real(eltype(A))), rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(min(atol1,atol2,atol3))) 
 
    T = promote_type(eltype(A), E == I ? Bool : eltype(E), eltype(B), eltype(C), eltype(D))
    T = promote_type(T, ismissing(F) ? T : eltype(F), ismissing(G) ? T : eltype(G), ismissing(H) ? T :  eltype(H))
@@ -163,7 +164,7 @@ function lps2ls(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling}, B::A
    finished = false
    if compacted
       typeof(H) <: AbstractVector ? S = svd(reshape(H,p,1),full=true) : S = svd(H,full=true)
-      r = count(S.S .> max(atol1,atol2,rtol*S.S[1]))
+      r = count(S.S .> max(atol3,rtol*S.S[1]))
       if r < min(p,m)
          hs2 = Diagonal(sqrt.(view(S.S,1:r)))
          A2 = Matrix{T}(I,2*r,2*r)
@@ -256,7 +257,7 @@ function lpseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}
       LUF = lu!(T(val)*E-A;check = false)
       tol = max(atol1,atol2)
       if rcond(LUF.U, tol) < toleps
-         At, Et, Bt, Ct, Dt = lps2ls(A, E, B, F, C, G, D, H; compacted = true, atol1 = atol2, atol2 = atol2, rtol = rtol)
+         At, Et, Bt, Ct, Dt = lps2ls(A, E, B, F, C, G, D, H; compacted = true, atol1 = atol2, atol2 = atol2, atol3 = atol2, rtol = rtol)
          p, m = typeof(Dt) <: AbstractVector ? (length(D),1) : size(Dt)
          G = zeros(T,p,m)
          for i = 1:p
@@ -272,8 +273,8 @@ function lpseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}
          return (C-val*G)*ldiv!(LUF,copy_oftype(B-val*F,T)) + D-val*H
       end
    else
-      return lseval(lps2ls(A, E, B, F, C, G, D, H; compacted = true, atol1 = atol2, atol2 = atol2, rtol = rtol)...,val; 
-                 atol1 = atol1, atol2 = atol2, rtol = rtol, fast = fast)
+      return lseval(lps2ls(A, E, B, F, C, G, D, H; compacted = true, atol1 = atol2, atol2 = atol2, atol3 = atol2, rtol = rtol)...,val; 
+                    atol1 = atol1, atol2 = atol2, rtol = rtol, fast = fast)
    end
 end
 """

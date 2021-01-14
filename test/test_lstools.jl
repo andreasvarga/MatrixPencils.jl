@@ -5,7 +5,6 @@ using MatrixPencils
 using Test
 using Polynomials
 
-
 @testset "Linear System Tools" begin
 
 @testset "lseval, lpseval & lps2ls" begin

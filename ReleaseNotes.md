@@ -1,8 +1,12 @@
 # Release Notes
 
+## Version 1.5.3
+
+This patch release includes a new version of the `lps2ls` function, with an additional absolute tolerance parameter.  
+
 ## Version 1.5.2
 
-This patch release includes fixes in several functions to enforce the usage of the most efficient concatenation functions involving matrices, vectors and scalars and minor corrections in the documentation.   
+This patch release includes fixes in several functions to enforce the usage of the most efficient concatenation functions involving matrices, vectors and scalars and minor corrections in the documentation.
 
 ## Version 1.5.1
 
