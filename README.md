@@ -1,6 +1,7 @@
 # MatrixPencils.jl
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3894504.svg)](https://doi.org/10.5281/zenodo.3894503)
-[![Travis](https://travis-ci.com/andreasvarga/MatrixPencils.jl.svg?branch=master)](https://travis-ci.com/andreasvarga/MatrixPencils.jl)
+[![DocBuild](https://github.com/andreasvarga/MatrixPencils.jl/workflows/CI/badge.svg)](https://github.com/andreasvarga/MatrixPencils.jl/actions)
+<!-- [![Travis](https://travis-ci.com/andreasvarga/MatrixPencils.jl.svg?branch=master)](https://travis-ci.com/andreasvarga/MatrixPencils.jl) -->
 [![codecov.io](https://codecov.io/gh/andreasvarga/MatrixPencils.jl/coverage.svg?branch=master)](https://codecov.io/gh/andreasvarga/MatrixPencils.jl?branch=master)
 [![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://andreasvarga.github.io/MatrixPencils.jl/dev/)
 [![The MIT License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](https://github.com/andreasvarga/MatrixPencils.jl/blob/master/LICENSE.md)
