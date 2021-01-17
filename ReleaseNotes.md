@@ -1,8 +1,8 @@
 # Release Notes
 
-## Version 1.5.2
+## Version 1.6
 
-This patch release includes fixes in several functions to enforce the usage of the most efficient concatenation functions involving matrices, vectors and scalars and minor corrections in the documentation. Also, a new version of the `lps2ls` function is provided, with an additional absolute tolerance parameter.
+This minor release includes fixes in several functions to enforce the usage of the most efficient concatenation functions involving matrices, vectors and scalars and minor corrections in the documentation. Also, a new version of the `lps2ls` function is provided, with an additional absolute tolerance parameter. This minor release is also intended to update the package to perform CI with Github Actions instead Travis-CI.
 
 ## Version 1.5.1
 
