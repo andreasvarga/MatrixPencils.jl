@@ -19,7 +19,7 @@ v = [1+2*s;1+2*s+3*s^2]
 
 @test 2 == pmdeg(v)
 
-@test [1;1] == pmeval(v,0)[:]
+@test [1,1] == pmeval(v,0)[:]
 
 @test v == pm2poly(poly2pm(v),:s)[:]
 
