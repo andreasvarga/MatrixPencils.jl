@@ -26,37 +26,37 @@ function poly2pm(PM::Matrix{Polynomial{T}}; grade::Union{Int,Missing} = missing)
    end
    return P      
 end
-# function poly2pm(PM::AbstractMatrix{Polynomial{T,X}}; grade::Union{Int,Missing} = missing) where T <: Number where X
-#    p, m = size(PM)
-#    degs = degree.(PM)
-#    d = maximum(degs)
-#    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
-#    k == 0 && (return zeros(T,p,m,1))
-#    P = zeros(T,p,m,k)
-#    for j = 1:m
-#       for i = 1:p
-#          degs[i,j] < 0 || (P[i,j,1:degs[i,j]+1] = coeffs(PM[i,j])) 
-#       end
-#    end
-#    return P      
-# end
-# function poly2pm(PM::AbstractMatrix{Polynomial{T,X} where T <: Number}; grade::Union{Int,Missing} = missing) where X 
-#    p, m = size(PM)
-#    T = eltype(eltype(PM))
-#    degs = degree.(PM)
-#    d = maximum(degs)
-#    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
-#    k == 0 && (return zeros(T,p,m,1))
-#    P = zeros(T,p,m,k)
-#    for j = 1:m
-#       for i = 1:p
-#          degs[i,j] < 0 || (P[i,j,1:degs[i,j]+1] = coeffs(PM[i,j])) 
-#       end
-#    end
-#    return P      
-# end
+function poly2pm(PM::AbstractMatrix{Polynomial{T,X}}; grade::Union{Int,Missing} = missing) where T <: Number where X
+   p, m = size(PM)
+   degs = degree.(PM)
+   d = maximum(degs)
+   ismissing(grade) ? k = d+1 : k = max(d,grade)+1
+   k == 0 && (return zeros(T,p,m,1))
+   P = zeros(T,p,m,k)
+   for j = 1:m
+      for i = 1:p
+         degs[i,j] < 0 || (P[i,j,1:degs[i,j]+1] = coeffs(PM[i,j])) 
+      end
+   end
+   return P      
+end
+function poly2pm(PM::AbstractMatrix{Polynomial{T,X} where T <: Number}; grade::Union{Int,Missing} = missing) where X 
+   p, m = size(PM)
+   T = eltype(eltype(PM))
+   degs = degree.(PM)
+   d = maximum(degs)
+   ismissing(grade) ? k = d+1 : k = max(d,grade)+1
+   k == 0 && (return zeros(T,p,m,1))
+   P = zeros(T,p,m,k)
+   for j = 1:m
+      for i = 1:p
+         degs[i,j] < 0 || (P[i,j,1:degs[i,j]+1] = coeffs(PM[i,j])) 
+      end
+   end
+   return P      
+end
 
-function poly2pm(PM::Matrix{Polynomial}; grade::Union{Int,Missing} = missing) 
+function poly2pm(PM::Matrix{<:Polynomial}; grade::Union{Int,Missing} = missing) 
    p, m = size(PM)
    degs = degree.(PM)
    d = maximum(degs)
@@ -87,7 +87,19 @@ function poly2pm(PM::Matrix{T}; grade::Union{Int,Missing} = missing) where T <: 
    end
    return P      
 end
-function poly2pm(PM::Vector{Polynomial{T}}; grade::Union{Int,Missing} = missing) where T
+# function poly2pm(PM::Vector{Polynomial{T}}; grade::Union{Int,Missing} = missing) where T
+#    m = length(PM)
+#    degs = degree.(PM)
+#    d = maximum(degs)
+#    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
+#    k == 0 && (return zeros(T,m,1,1))
+#    P = zeros(T,m,1,k)
+#    for i = 1:m
+#       degs[i] < 0 || (P[i,1,1:degs[i]+1] = coeffs(PM[i])) 
+#    end
+#    return P      
+# end
+function poly2pm(PM::Vector{Polynomial{T,X}}; grade::Union{Int,Missing} = missing) where T <: Number where X
    m = length(PM)
    degs = degree.(PM)
    d = maximum(degs)
@@ -99,32 +111,20 @@ function poly2pm(PM::Vector{Polynomial{T}}; grade::Union{Int,Missing} = missing)
    end
    return P      
 end
-# function poly2pm(PM::Vector{Polynomial{T,X}}; grade::Union{Int,Missing} = missing) where T <: Number where X
-#    m = length(PM)
-#    degs = degree.(PM)
-#    d = maximum(degs)
-#    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
-#    k == 0 && (return zeros(T,m,1,1))
-#    P = zeros(T,m,1,k)
-#    for i = 1:m
-#       degs[i] < 0 || (P[i,1,1:degs[i]+1] = coeffs(PM[i])) 
-#    end
-#    return P      
-# end
-# function poly2pm(PM::Vector{Polynomial{T,X} where T <: Number}; grade::Union{Int,Missing} = missing) where X
-#    m = length(PM)
-#    T = eltype(eltype(PM))
-#    degs = degree.(PM)
-#    d = maximum(degs)
-#    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
-#    k == 0 && (return zeros(T,m,1,1))
-#    P = zeros(T,m,1,k)
-#    for i = 1:m
-#       degs[i] < 0 || (P[i,1,1:degs[i]+1] = coeffs(PM[i])) 
-#    end
-#    return P      
-# end
-function poly2pm(PM::Vector{Polynomial}; grade::Union{Int,Missing} = missing)
+function poly2pm(PM::Vector{Polynomial{T,X} where T <: Number}; grade::Union{Int,Missing} = missing) where X
+   m = length(PM)
+   T = eltype(eltype(PM))
+   degs = degree.(PM)
+   d = maximum(degs)
+   ismissing(grade) ? k = d+1 : k = max(d,grade)+1
+   k == 0 && (return zeros(T,m,1,1))
+   P = zeros(T,m,1,k)
+   for i = 1:m
+      degs[i] < 0 || (P[i,1,1:degs[i]+1] = coeffs(PM[i])) 
+   end
+   return P      
+end
+function poly2pm(PM::Vector{<:Polynomial}; grade::Union{Int,Missing} = missing)
    m = length(PM)
    degs = degree.(PM)
    d = maximum(degs)
@@ -167,7 +167,7 @@ function poly2pm(PM::Union{Adjoint{T,Vector{T}},Transpose{T,Vector{T}}}; grade::
    end
    return P      
 end
-function poly2pm(PM::Polynomial{T}; grade::Union{Int,Missing} = missing) where T
+function poly2pm(PM::Polynomial{T,X}; grade::Union{Int,Missing} = missing) where T where X
    d = degree(PM)
    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
    k == 0 && (return zeros(T,1,1,1))
@@ -235,10 +235,10 @@ function pmdeg(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}) w
    typeof(P) <: Number && (P == 0 ? (return -1) : (return 0) )
    return maximum(degree.(P))
 end
-# function pmdeg(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X},Number}) where {T,X}
-#    typeof(P) <: Number && (P == 0 ? (return -1) : (return 0) )
-#    return maximum(degree.(P))
-# end
+function pmdeg(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X},Number}) where {T,X}
+   typeof(P) <: Number && (P == 0 ? (return -1) : (return 0) )
+   return maximum(degree.(P))
+end
 """
     pmeval(P,val) -> R
 
@@ -266,8 +266,8 @@ end
 pmeval(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T}},val::Number) where T =
       pmeval(poly2pm(P),val::Number)
 pmeval(P::Union{Number,AbstractVecOrMat{T}},val::Number) where T <: Number = P
-# pmeval(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}},val::Number) where {T,X} =
-#       pmeval(poly2pm(P),val::Number)
+pmeval(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}},val::Number) where {T,X} =
+      pmeval(poly2pm(P),val::Number)
 """
     pmreverse(P[,j]) -> Q
 
@@ -618,7 +618,7 @@ function pm2ls(P::AbstractArray{T,3}; minimal::Bool = false, contr::Bool = false
    end
    return A, E, B, C, D
 end
-pm2ls(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T}}; kwargs...) where {T,X} =
+pm2ls(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
          pm2ls(poly2pm(P); kwargs...)
 pm2ls(P::Union{AbstractVecOrMat{T},Number}; kwargs...) where {T <: Number} =
          pm2ls(poly2pm(P); kwargs...)
@@ -708,7 +708,7 @@ function pm2lps(P::AbstractArray{T,3}; contr::Bool = false, obs::Bool = false) w
 end
 # pm2lps(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number}; kwargs...) where {T} =
 #          pm2lps(poly2pm(P); kwargs...)
-pm2lps(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T}}; kwargs...) where {T,X} =
+pm2lps(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
          pm2lps(poly2pm(P); kwargs...)
 pm2lps(P::Union{AbstractVecOrMat{T},Number}; kwargs...) where {T <: Number} =
          pm2lps(poly2pm(P); kwargs...)
