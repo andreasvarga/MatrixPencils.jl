@@ -108,20 +108,20 @@ function rmkstruct(P::AbstractArray{T,3}; kwargs...) where {T}
    info, iz, ip = pmkstruct(P; kwargs...)
    return info, iz, 0, ip
 end
-function rmkstruct(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                   D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmkstruct(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                   D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)  
    return rmkstruct(poly2pm(N),poly2pm(D); kwargs...)
 end
-function rmkstruct(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} 
+function rmkstruct(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    info, iz, ip = pmkstruct(poly2pm(P); kwargs...)
    return info, iz, 0, ip
 end
-function rmkstruct(N::AbstractArray{T1,3}, 
-                   D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmkstruct(N::AbstractArray{T,3}, 
+                   D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where T 
    return rmkstruct(N,poly2pm(D); kwargs...)
 end
-function rmkstruct(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                   D::AbstractArray{T2,3}; kwargs...) where {T1,T2} 
+function rmkstruct(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                   D::AbstractArray{T,3}; kwargs...) where T 
    return rmkstruct(poly2pm(N),D; kwargs...)
 end
 """
@@ -201,19 +201,19 @@ end
 function rmzeros(N::AbstractArray{T,3}; kwargs...) where {T} 
    return pmzeros2(N; kwargs...)
 end
-function rmzeros(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmzeros(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    return rmzeros(poly2pm(N),poly2pm(D); kwargs...)
 end
-function rmzeros(N::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} 
+function rmzeros(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    return pmzeros2(poly2pm(N); kwargs...)
 end
-function rmzeros(N::AbstractArray{T1,3}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmzeros(N::AbstractArray{T,3}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where T
    return rmzeros(N,poly2pm(D); kwargs...)
 end
-function rmzeros(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::AbstractArray{T2,3}; kwargs...) where {T1,T2} 
+function rmzeros(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::AbstractArray{T,3}; kwargs...) where T
    return rmzeros(poly2pm(N),D; kwargs...)
 end
 """
@@ -298,19 +298,19 @@ end
 function rmpoles(N::AbstractArray{T,3}; kwargs...) where T 
    return pmpoles2(N; kwargs...) 
 end
-function rmpoles(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmpoles(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)  
    return rmpoles(poly2pm(N),poly2pm(D); kwargs...)
 end
-function rmpoles(N::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} 
+function rmpoles(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    return pmpoles2(poly2pm(N); kwargs...)
 end
-function rmpoles(N::AbstractArray{T1,3}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmpoles(N::AbstractArray{T,3}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where T 
    return rmpoles(N,poly2pm(D); kwargs...)
 end
-function rmpoles(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::AbstractArray{T2,3}; kwargs...) where {T1,T2} 
+function rmpoles(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::AbstractArray{T,3}; kwargs...) where T
    return rmpoles(poly2pm(N),D; kwargs...)
 end
 """
@@ -390,19 +390,19 @@ end
 function rmzeros1(N::AbstractArray{T,3}; kwargs...) where {T} 
    return pmzeros1(N; kwargs...)
 end
-function rmzeros1(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmzeros1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    return rmzeros1(poly2pm(N),poly2pm(D); kwargs...)
 end
-function rmzeros1(N::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} 
+function rmzeros1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    return pmzeros1(poly2pm(N); kwargs...)
 end
-function rmzeros1(N::AbstractArray{T1,3}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmzeros1(N::AbstractArray{T,3}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where T 
    return rmzeros1(N,poly2pm(D); kwargs...)
 end
-function rmzeros1(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::AbstractArray{T2,3}; kwargs...) where {T1,T2} 
+function rmzeros1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::AbstractArray{T,3}; kwargs...) where T 
    return rmzeros1(poly2pm(N),D; kwargs...)
 end
 """
@@ -493,19 +493,19 @@ end
 function rmpoles1(N::AbstractArray{T,3}; kwargs...) where T 
    return pmpoles1(N; kwargs...) 
 end
-function rmpoles1(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmpoles1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where {T1,T2} 
    return rmpoles1(poly2pm(N),poly2pm(D); kwargs...)
 end
-function rmpoles1(N::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} 
+function rmpoles1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where {T} 
    return pmpoles1(poly2pm(N); kwargs...)
 end
-function rmpoles1(N::AbstractArray{T1,3}, 
-                 D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmpoles1(N::AbstractArray{T,3}, 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where T 
    return rmpoles1(N,poly2pm(D); kwargs...)
 end
-function rmpoles1(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                 D::AbstractArray{T2,3}; kwargs...) where {T1,T2} 
+function rmpoles1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                 D::AbstractArray{T,3}; kwargs...) where T
    return rmpoles1(poly2pm(N),D; kwargs...)
 end
 """
@@ -566,19 +566,19 @@ end
 function rmrank(N::AbstractArray{T,3}; kwargs...) where T
     pmrank(N; kwargs...)
 end
-function rmrank(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmrank(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)  
    return rmrank(poly2pm(N),poly2pm(D); kwargs...)
 end
-function rmrank(N::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T}
+function rmrank(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
     pmrank(poly2pm(N); kwargs...)
 end
-function rmrank(N::AbstractArray{T1,3}, 
-                D::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} 
+function rmrank(N::AbstractArray{T,3}, 
+                D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where T 
    return rmrank(N,poly2pm(D); kwargs...)
 end
-function rmrank(N::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}, 
-                D::AbstractArray{T2,3}; kwargs...) where {T1,T2} 
+function rmrank(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                D::AbstractArray{T,3}; kwargs...) where T 
    return rmrank(poly2pm(N),D; kwargs...)
 end
 

@@ -1223,7 +1223,6 @@ sys2  = ([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
 [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0])
 
 # the initial realization is already strongly observable 
-n = size(A,1)
 (A, E, B, F, C, G, D, H) = copy.(sys2)
 V, Z, no = sklf_left!(A, E, C, G, B, F, D, H, fast = fast, withQ = false, withZ = false) 
 n = size(A,1)
@@ -1244,8 +1243,8 @@ W = Z[1:3,1:3]
 # the eigenvalues and Kronecker structure of P(s) are the expected ones
 Mc = [A[i1,i1] B[i1,:]; C[:,i1] D]
 Nc = [E[i1,i1] F[i1,:]; G[:,i1] H]
-val, info = peigvals(Mc,Nc)
-@test val[1] ≈ 1 && val[2] == Inf && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1], 1)
+val, info = peigvals(Mc,Nc,atol1=1.e-7,atol2=1.e-7)
+@test val[1] ≈ 1 && val[2] == Inf && (info.rki, info.lki,info.id, info.nf) == ([0], [1], [1], 1)  
 
 # use a minimal descriptor realization (which is however not strongly minimal)
 (A, E, B, C, D) = 

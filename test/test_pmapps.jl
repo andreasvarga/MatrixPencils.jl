@@ -459,16 +459,16 @@ val, info = pmeigvals(P,CF1=true,grade = 5, fast = fast)
 val, info = pmeigvals(P,CF1=false, grade = 5, fast = fast)
 @test val == [Inf, Inf] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [1, 1], 0, 2)
 
-val, iz, info = pmzeros(P, fast = fast)
+val, iz, info = pmzeros(P, fast = fast, atol = abstol)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 2)
 
 val, ip, id = pmpoles(P,CF1=false, fast = fast)
 @test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [4, 8, 8]
 
-val, ip, id = pmpoles(P,CF1=true, fast = fast)
+val, ip, id = pmpoles(P,CF1=true, fast = fast, atol = abstol)
 @test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [4, 8, 8]
 
-val, iz, info = pmzeros1(P, fast = fast)
+val, iz, info = pmzeros1(P, fast = fast, atol = abstol)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 2) 
 
 val, iz, info = pmzeros1(P1, fast = fast)
@@ -480,10 +480,10 @@ val, ip, id = pmpoles1(P, fast = fast, atol = abstol)
 val, ip, id = pmpoles1(P1, fast = fast, atol = abstol)
 @test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [1, 5, 5]
 
-val, iz, info = pmzeros2(P, fast = fast)
+val, iz, info = pmzeros2(P, fast = fast, atol = abstol)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [1, 1, 1, 1], 0, 2)  
 
-val, ip, id = pmpoles2(P, fast = fast)
+val, ip, id = pmpoles2(P, fast = fast, atol = abstol)
 @test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [5, 5]
 
 

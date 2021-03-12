@@ -188,11 +188,12 @@ function rm2lspm(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3}; contr::Bool 
         return A, B, C, D, blkdims[1:nb]   
     end   
 end
-function rm2lspm(NUM::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat},
-    DEN::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat};kwargs...) where {T1,T2}
+function rm2lspm(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}},
+                 DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}};kwargs...) 
+    #TODO: checking that both NUM and DEN have the same variable
     return rm2lspm(poly2pm(NUM),poly2pm(DEN);kwargs...)
 end
-function rm2lspm(NUM::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat};kwargs...) where {T1}
+function rm2lspm(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}};kwargs...) 
    return rm2lspm(poly2pm(NUM);kwargs...)
 end
 function rm2lspm(NUM::AbstractArray{T,3}; kwargs...) where T
@@ -222,10 +223,10 @@ end
 function rmeval(NUM::AbstractArray{T,3},val::Number) where {T}
     return pmeval(NUM,val) 
 end
-rmeval(NUM::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat},
-       DEN::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat},val::Number) where {T1,T2} =
+rmeval(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}},
+       DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}},val::Number) =
        rmeval(poly2pm(NUM),poly2pm(DEN),val::Number)
-rmeval(NUM::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat},val::Number) where {T} =
+rmeval(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}},val::Number) =
        pmeval(poly2pm(NUM),val::Number)
 """
       rm2ls(NUM, DEN; contr = false, obs = false, noseig = false, minimal = false,
@@ -315,14 +316,14 @@ function rm2ls(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3}; minimal::Bool 
     end    
     return A, E, B, C, D, [nf,ni]
 end
-rm2ls(NUM::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat},
-       DEN::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} =
+rm2ls(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}},
+      DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) =
        rm2ls(poly2pm(NUM),poly2pm(DEN); kwargs...)
 function rm2ls(NUM::AbstractArray{T,3}; kwargs...) where T
     sys = pm2ls(NUM; kwargs...)
     return sys..., [0;size(sys[1],1)]
 end
-function rm2ls(NUM::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}; kwargs...) where {T1} 
+function rm2ls(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)
     sys = pm2ls(poly2pm(NUM); kwargs...)
     return sys..., [0;size(sys[1],1)]
 end
@@ -502,14 +503,14 @@ function rm2lps(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3}; minimal::Bool
     end    
     return A, E, B, F, C, G, D, H, [nf, ni]
 end
-rm2lps(NUM::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat},
-       DEN::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat}; kwargs...) where {T1,T2} =
+rm2lps(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}},
+       DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) =
        rm2lps(poly2pm(NUM),poly2pm(DEN); kwargs...)
 function rm2lps(NUM::AbstractArray{T,3}; kwargs...) where T 
     sys = pm2lps(NUM; kwargs...)
     return sys..., [0;size(sys[1],1)]
 end
-function rm2lps(NUM::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractVecOrMat}; kwargs...) where {T1} 
+function rm2lps(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
     sys = pm2lps(poly2pm(NUM); kwargs...)
     return sys..., [0;size(sys[1],1)]
 end
@@ -657,12 +658,12 @@ function lpmfd2ls(DEN::Union{AbstractArray{T1,3},AbstractArray{T1,2}},NUM::Union
     return spm2ls(DEN, NUM, Matrix{T1}(I,p,p), zeros(T1,p,m), contr = contr, obs = obs, minimal = minimal, 
                   fast = fast, atol = atol, rtol = rtol) 
 end
-function lpmfd2ls(DEN::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}, 
-                  NUM::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat{T2}}; kwargs...) where {T1, T2}
+function lpmfd2ls(DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                  NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
     return lpmfd2ls(poly2pm(DEN),poly2pm(NUM); kwargs...)
 end
 """
-     rpmfd2ls(DEN, N; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, C, D)
+     rpmfd2ls(DEN, NUM; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, C, D)
             
 Build a structured linearization as a system matrix `S(λ)` of the form
 
@@ -722,12 +723,12 @@ function rpmfd2ls(DEN::Union{AbstractArray{T1,3},AbstractArray{T1,2}},NUM::Union
     return spm2ls(DEN, Matrix{T1}(I,m,m), NUM, zeros(T1,p,m), contr = contr, obs = obs, minimal = minimal, 
                   fast = fast, atol = atol, rtol = rtol) 
 end
-function rpmfd2ls(DEN::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}, 
-                  NUM::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat{T2}}; kwargs...) where {T1, T2}
+function rpmfd2ls(DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                  NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
     return rpmfd2ls(poly2pm(DEN),poly2pm(NUM); kwargs...)
 end
 """
-     lpmfd2lps(DEN, N; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, F, C, G, D, H)
+     lpmfd2lps(DEN, NUM; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, F, C, G, D, H)
             
 Build a structured linearization as a system matrix `S(λ)` of the form
 
@@ -783,12 +784,12 @@ function lpmfd2lps(DEN::Union{AbstractArray{T1,3},AbstractArray{T1,2}},NUM::Unio
     return spm2lps(DEN, NUM, Matrix{T1}(I,p,p), zeros(T1,p,m), contr = contr, obs = obs, minimal = minimal, 
                   fast = fast, atol = atol, rtol = rtol) 
 end
-function lpmfd2lps(DEN::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}, 
-                   NUM::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat{T2}}; kwargs...) where {T1, T2}
+function lpmfd2lps(DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                   NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
     return lpmfd2lps(poly2pm(DEN),poly2pm(NUM); kwargs...)
 end
 """
-     rpmfd2lps(DEN, N; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, F, C, G, D, H)
+     rpmfd2lps(DEN, NUM; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, F, C, G, D, H)
             
 Build a structured linearization as a system matrix `S(λ)` of the form
 
@@ -844,8 +845,8 @@ function rpmfd2lps(DEN::Union{AbstractArray{T1,3},AbstractArray{T1,2}},NUM::Unio
     return spm2lps(DEN, Matrix{T1}(I,m,m), NUM, zeros(T1,p,m), contr = contr, obs = obs, minimal = minimal, 
                   fast = fast, atol = atol, rtol = rtol) 
 end
-function rpmfd2lps(DEN::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}, 
-                   NUM::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat{T2}}; kwargs...) where {T1, T2}
+function rpmfd2lps(DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+                   NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
     return rpmfd2lps(poly2pm(DEN),poly2pm(NUM); kwargs...)
 end
 """
@@ -906,7 +907,7 @@ function pminv2ls(P::Union{AbstractArray{T1,3},AbstractArray{T1,2}};
     return spm2ls(P, Matrix{T1}(I,n,n), Matrix{T1}(I,n,n), zeros(T1,n,n), contr = contr, obs = obs, minimal = minimal, 
                   fast = fast, atol = atol, rtol = rtol) 
 end
-function pminv2ls(P::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}; kwargs...) where {T1}
+function pminv2ls(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)
     return pminv2ls(poly2pm(P); kwargs...)
 end
 """
@@ -963,6 +964,6 @@ function pminv2lps(P::Union{AbstractArray{T1,3},AbstractArray{T1,2}};
     return spm2lps(P, Matrix{T1}(I,n,n), Matrix{T1}(I,n,n), zeros(T1,n,n), contr = contr, obs = obs, minimal = minimal, 
                   fast = fast, atol = atol, rtol = rtol) 
 end
-function pminv2lps(P::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}; kwargs...) where {T1}
+function pminv2lps(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)
     return pminv2lps(poly2pm(P); kwargs...)
 end

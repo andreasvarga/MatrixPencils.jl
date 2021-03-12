@@ -86,7 +86,7 @@ function pmkstruct(P::AbstractArray{T,3}; CF1::Bool = size(P,1) <= size(P,2) ? f
 
    return kinfo, iz, ip
 end 
-pmkstruct(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmkstruct(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
           pmkstruct(poly2pm(P); kwargs...)
 """
     pmeigvals(P; CF1, grade = l, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, KRInfo)
@@ -149,7 +149,7 @@ function pmeigvals(P::AbstractArray{T,3}; CF1::Bool = size(P,1) <= size(P,2) ? f
    end
    return val, kinfo
 end
-pmeigvals(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmeigvals(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
           pmeigvals(poly2pm(P); kwargs...)
 """
     pmzeros(P; CF1, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
@@ -219,7 +219,7 @@ function pmzeros(P::AbstractArray{T,3}; CF1::Bool = size(P,1) <= size(P,2) ? fal
    end 
    return val, iz, kinfo
 end
-pmzeros(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmzeros(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
        pmzeros(poly2pm(P); kwargs...)
 """
     pmpoles(P; CF1, fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, id)
@@ -274,7 +274,7 @@ function pmpoles(P::AbstractArray{T,3}; kwargs...) where T
    val, ip, kinfo = pmzeros(Ptilde; kwargs...) 
    return val, ip, kinfo.id
 end
-pmpoles(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmpoles(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
        pmpoles(poly2pm(P); kwargs...)
 """
     pmzeros1(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
@@ -402,7 +402,7 @@ function pmpoles1(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)
    val, iz, info = pzeros(M, N; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
    return val, iz, info.id
 end
-pmpoles1(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmpoles1(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
        pmpoles1(poly2pm(P); kwargs...)
 """
       pmzeros2(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, iz, KRInfo)
@@ -464,7 +464,7 @@ function pmzeros2(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)
    info.nrank -= size(sys[1],1)
    return val, iz, info 
 end
-pmzeros2(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmzeros2(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
        pmzeros2(poly2pm(P); kwargs...)
 """
     pmpoles2(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, id)
@@ -513,7 +513,7 @@ function pmpoles2(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)
    val, ip, info = pzeros(A, E; fast = fast, atol1 = atol, atol2 = atol, rtol = rtol)
    return val, ip, info.id
 end
-pmpoles2(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmpoles2(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
        pmpoles2(poly2pm(P); kwargs...)
 """
     pmroots(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> val
@@ -545,7 +545,7 @@ function pmroots(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T))
    val, iz, _ = pmzeros(P, fast = fast, atol = atol, rtol = rtol)  
    return val[1:end-sum(iz)]
 end
-pmroots(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmroots(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
         pmroots(poly2pm(P); kwargs...)
 """
        pmrank(P; fastrank = true, atol = 0, rtol = atol > 0 ? 0 : n*ϵ) 
@@ -588,7 +588,7 @@ function pmrank(P::AbstractArray{T,3}; fastrank::Bool = true, atol::Real = zero(
        end
    end
 end
-pmrank(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+pmrank(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
        pmrank(poly2pm(P); kwargs...) 
 """
     ispmregular(P; fastrank = true, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> Bool
@@ -624,7 +624,7 @@ function ispmregular(P::AbstractArray{T,3}; fastrank = true, atol::Real = zero(r
       return isregular(MN..., atol1 = atol, atol2 = atol, rtol = rtol)
    end
 end
-ispmregular(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+ispmregular(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
        ispmregular(poly2pm(P); kwargs...)
 """
     ispmunimodular(P; fastrank = true, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> Bool
@@ -651,7 +651,7 @@ function ispmunimodular(P::AbstractArray{T,3}; atol::Real = zero(real(T)),
    m == p || (return false)
    return isunimodular(pm2lpCF1(P)..., atol1 = atol, atol2 = atol, rtol = rtol)
 end
-ispmunimodular(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},Number,AbstractVecOrMat}; kwargs...) where {T} =
+ispmunimodular(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat}; kwargs...) =
                ispmunimodular(poly2pm(P); kwargs...)
 
 
