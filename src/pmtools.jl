@@ -455,6 +455,7 @@ function pm2ls(P::AbstractArray{T,3}; minimal::Bool = false, contr::Bool = false
       A = Matrix{T}(I,n,n)
    else
       if p <= m
+         # build an observable linearization
          n = p*nd
          E = [zeros(T,n,p) [I; zeros(T,p,p*(nd-1))]]
          B = zeros(T,n,m)
