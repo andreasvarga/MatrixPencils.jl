@@ -38,7 +38,6 @@ for fast in (false,true)
 
 
 # P = 1
-
 @time info, iz, nfp, ip = rmkstruct(1, fast = fast)
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [], 0, 1) && iz == [] && ip == [] && nfp == 0
 
@@ -63,7 +62,6 @@ for fast in (false,true)
 
 
 # P = λ 
-
 λ = Polynomial([0,1],:λ)
 
 @time info, iz, nfp, ip = rmkstruct(λ, fast = fast)
@@ -288,21 +286,23 @@ D = [(s+1)^2 s+2; (s+1)^3 (s+1)*(s+2)]
 @time val, ip, id = rmpoles1(N, poly2pm(D), fast = fast, atol=1.e-7)
 @test fromroots(val) ≈ Polynomial([2, 7, 9, 5, 1]) && ip == [] && id == [1, 1, 1, 1]
 
+#fail
 # Example 1 (Polynomial): Dopico et al. 2020
 e1 = Polynomial(rand(6))
 e2 = Polynomial(rand(2))
 P = [e1 0; 0 e2]
 
-zer, iz, info = rmzeros(P,fast = fast, atol=1.e-7)
+zer, iz, info = rmzeros(P,fast = fast, atol=1.e-9)
 @test fromroots(zer) ≈ e1*e2/(e1[end]*e2[end]) && iz == [] && (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [1, 1, 1, 1], 6, 2)
 
+#fail
 # Example 2 (Rational): Dopico et al. 2020
 e1 = Polynomial(rand(6))
 e2 = Polynomial(rand(2))
 N = [e1 0; 1 e2]
 D = [1 1; Polynomial([0, 1]) 1]
 
-zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-7)
+zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-9)
 @test fromroots(zer) ≈ e1*e2/(e1[end]*e2[end])*Polynomial([0,1]) && iz == [] && (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [1, 1, 1, 1], 7, 2)
 
 pol, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)
