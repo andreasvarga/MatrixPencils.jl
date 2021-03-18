@@ -27,6 +27,7 @@ where `DEN[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ*
 
 Alternatively, `NUM(λ)` and `DEN(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The polynomial part `D(λ)` is contained in `D`, which is a 2-dimensional array if `D(λ)` has degree 0
 or a 3-dimensional array if `D(λ)` has degree  greater than 0. In the latter case `D[:,:,i]` contains the `i`-th 
@@ -190,7 +191,6 @@ function rm2lspm(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3}; contr::Bool 
 end
 function rm2lspm(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}},
                  DEN::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}};kwargs...) 
-    #TODO: checking that both NUM and DEN have the same variable
     return rm2lspm(poly2pm(NUM),poly2pm(DEN);kwargs...)
 end
 function rm2lspm(NUM::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}};kwargs...) 
@@ -216,6 +216,7 @@ where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(
 
 Alternatively, `NUM(λ)` and `DEN(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 """
 function rmeval(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3},val::Number) where {T1,T2}
     return pmeval(NUM,val) ./ pmeval(DEN,val)
@@ -257,6 +258,7 @@ where `DEN[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ*
 
 Alternatively, `NUM(λ)` and `DEN(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
  
 If `n` is the order of `A-λE`, then the computed linearization satisfies:
  
@@ -437,6 +439,7 @@ where `DEN[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ*
 
 Alternatively, `NUM(λ)` and `DEN(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 If `n` is the order of the matrix `A`, then the computed linearization satisfies:
 
@@ -617,6 +620,7 @@ the 3-dimensional matrices `X`, where `X[:,:,i]` contains the `i`-th coefficient
 
 `DEN(λ)` and `NUM(λ)` can also be specified as matrices, vectors or scalars of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The computed structured linearization satisfies:
 
@@ -682,6 +686,7 @@ the 3-dimensional matrices `X`, where `X[:,:,i]` contains the `i`-th coefficient
 
 `DEN(λ)` and `NUM(λ)` can also be specified as matrices, vectors or scalars of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The computed structured linearization satisfies:
 
@@ -747,6 +752,7 @@ the 3-dimensional matrices `X`, where `X[:,:,i]` contains the `i`-th coefficient
 
 `DEN(λ)` and `NUM(λ)` can also be specified as matrices, vectors or scalars of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The computed structured linearization satisfies:
 
@@ -808,6 +814,7 @@ the 3-dimensional matrices `X`, where `X[:,:,i]` contains the `i`-th coefficient
 
 `DEN(λ)` and `NUM(λ)` can also be specified as matrices, vectors or scalars of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package.   
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The computed structured linearization satisfies:
 

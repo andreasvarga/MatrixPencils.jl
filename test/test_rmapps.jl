@@ -6,6 +6,9 @@ using MatrixPencils
 using Polynomials
 using Test
 
+# λ = Polynomial([0,1],:λ)
+# @time info, iz, nfp, ip = rmkstruct(λ, 1, fast = true)
+Random.seed!(21235)
 
 @testset "Rational Matrix Applications" begin
 
@@ -302,7 +305,7 @@ e2 = Polynomial(rand(2))
 N = [e1 0; 1 e2]
 D = [1 1; Polynomial([0, 1]) 1]
 
-zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-9)
+zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-7)
 @test fromroots(zer) ≈ e1*e2/(e1[end]*e2[end])*Polynomial([0,1]) && iz == [] && (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [1, 1, 1, 1], 7, 2)
 
 pol, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)

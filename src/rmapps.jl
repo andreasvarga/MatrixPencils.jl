@@ -15,6 +15,7 @@ where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(
 
 Alternatively, `N(λ)` and `D(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The information on the Kronecker-structure of the rational matrix `R(λ)` consists of 
 the right Kronecker indices `rki`, left Kronecker indices `lki`, the number of finite zeros `nf` 
@@ -109,9 +110,17 @@ function rmkstruct(P::AbstractArray{T,3}; kwargs...) where {T}
    return info, iz, 0, ip
 end
 function rmkstruct(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
-                   D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)  
+   D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)  
    return rmkstruct(poly2pm(N),poly2pm(D); kwargs...)
 end
+# function rmkstruct(N::Union{AbstractVecOrMat{<:Polynomial{T1,X}},Polynomial{T1,X},Number,AbstractVecOrMat{<:Number}}, 
+#    D::Union{AbstractVecOrMat{<:Polynomial{T2,X}},Polynomial{T2,X},Number,AbstractVecOrMat{<:Number}}; kwargs...)  where {T1<:Number,T2<:Number,X}
+#    return rmkstruct(poly2pm(N),poly2pm(D); kwargs...)
+# end
+# function rmkstruct(N::Union{AbstractVecOrMat{Polynomial{T1,X}}, AbstractVecOrMat{<:Polynomial}, Polynomial{T1,X},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
+#    D::Union{AbstractVecOrMat{Polynomial{T2,X}}, AbstractVecOrMat{<:Polynomial}, Polynomial{T2,X},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)  where {T1<:Number,T2<:Number,X}
+#    return rmkstruct(poly2pm(N),poly2pm(D); kwargs...)
+# end
 function rmkstruct(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    info, iz, ip = pmkstruct(poly2pm(P); kwargs...)
    return info, iz, 0, ip
@@ -159,6 +168,7 @@ where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(
 
 Alternatively, `N(λ)` and `D(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The irreducible descriptor system based linearization is built using the methods described in [3] in conjunction with
 pencil manipulation algorithms of [4] and [5] to compute reduced order linearizations. These algorithms 
@@ -245,6 +255,7 @@ where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(
 
 Alternatively, `N(λ)` and `D(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The irreducible descriptor system based linearization is built using the methods described in [3] in conjunction with
 pencil manipulation algorithms of [4] and [5] to compute reduced order linearizations. These algorithms 
@@ -348,6 +359,7 @@ where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(
 
 Alternatively, `N(λ)` and `D(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The strongly minimal pencil based linearization is built using the methods described in [3] in conjunction with
 pencil manipulation algorithms of [4] to compute reduced order linearizations. These algorithms 
@@ -434,6 +446,7 @@ where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(
 
 Alternatively, `N(λ)` and `D(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The strongly minimal pencil based linearization is built using the methods described in [3] in conjunction with
 pencil manipulation algorithms of [4] to compute reduced order linearizations. These algorithms 
@@ -530,6 +543,7 @@ where `D[:,:,i]` contain the `i`-th coefficient matrix `D_i` (multiplying `λ**(
 
 Alternatively, `N(λ)` and `D(λ)` can be specified as matrices of elements of the `Polynomial` type 
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. 
+In this case, no check is performed that `N(λ)` and `D(λ)` have the same indeterminates.
 
 The irreducible descriptor system based linearization is built using the methods described in [1] in conjunction with
 pencil manipulation algorithms of [2] and [3] to compute reduced order linearizations. These algorithms 

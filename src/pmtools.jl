@@ -80,11 +80,11 @@ function poly2pm(PM::Union{Adjoint{T,Vector{T}},Transpose{T,Vector{T}}}; grade::
    end
    return P      
 end
-function poly2pm(PM::Polynomial; grade::Union{Int,Missing} = missing) 
+function poly2pm(PM::Polynomial{T}; grade::Union{Int,Missing} = missing) where T
    d = degree(PM)
    ismissing(grade) ? k = d+1 : k = max(d,grade)+1
    k == 0 && (return zeros(T,1,1,1))
-   P = zeros(eltype(PM),1,1,k)
+   P = zeros(T,1,1,k)
    d < 0 || (P[1,1,1:d+1] = coeffs(PM))
    return P      
 end
