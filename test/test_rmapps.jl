@@ -295,7 +295,7 @@ e1 = Polynomial(rand(6))
 e2 = Polynomial(rand(2))
 P = [e1 0; 0 e2]
 
-zer, iz, info = rmzeros(P,fast = fast, atol=1.e-9)
+@time zer, iz, info = rmzeros(P,fast = fast, atol=1.e-9)
 @test fromroots(zer) ≈ e1*e2/(e1[end]*e2[end]) && iz == [] && (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [1, 1, 1, 1], 6, 2)
 
 #fail
@@ -305,10 +305,10 @@ e2 = Polynomial(rand(2))
 N = [e1 0; 1 e2]
 D = [1 1; Polynomial([0, 1]) 1]
 
-zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-7)
+@time zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-9)
 @test fromroots(zer) ≈ e1*e2/(e1[end]*e2[end])*Polynomial([0,1]) && iz == [] && (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [1, 1, 1, 1], 7, 2)
 
-pol, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)
+@time pol, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)
 @test pol ≈ [0, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [1, 5] && id == [2, 6]
 
 
@@ -316,10 +316,10 @@ pol, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)
 s = Polynomial([0,1]);
 N = [s^2+s-1 -1; -1 -s^2+s-2];
 D = [s s; 1 1];
-zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-7)
+@time zer, iz, info = rmzeros(N, D, fast = fast, atol=1.e-7)
 @test fromroots(zer) ≈ Polynomial([-1, 3, 0, 0, 1]) && iz == [] && (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [1, 1, 1, 1], 4, 2)
 
-pol, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)
+@time pol, ip, id = rmpoles(N, D, fast = fast, atol=1.e-7)
 @test pol ≈ [0, Inf, Inf, Inf] && ip == [1, 2] && id == [2, 3]
 
 
