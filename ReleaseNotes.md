@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.6.3
+
+This patch version fixes a bug in the function gsklf.
+
 ## Version 1.6.2
 
 This patch version alleviates the excessive compilation times arising after updating the package to using the latest version v2.0 of Polynomials.jl.

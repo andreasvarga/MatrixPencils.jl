@@ -1767,7 +1767,8 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    nmszer = missing; nizer = missing;
    if job == 0
       # no zeros included
-      nus = 0; ns = ni; nizer = ni;
+      nus = 0; ns = ni; 
+      disc ? nizer = 0 : nizer = ni
    elseif job == 1 
       # include all unstable zeros excluding those on the boundary of the
       # stability region
@@ -1820,7 +1821,8 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
       nus = nf+ni; ns = 0;
    elseif job == 3   
       # include all infinite zeros 
-      nus = ni; ns = 0; nizer = ni; 
+      nus = ni; ns = 0; 
+      disc ? nizer = 0 : nizer = ni
    elseif job == 4   
       # include all finite zeros 
       nus = nf; ns = ni;
