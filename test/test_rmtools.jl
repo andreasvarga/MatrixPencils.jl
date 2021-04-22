@@ -492,7 +492,7 @@ sys1 = pminv2lps(poly2pm(U),atol=1.e-7,minimal = true)
 val = float(pi)
 @test  pmeval(U,val) * lpseval(sys1...,val)  ≈ I
 
-NUM1, DEN1 = lps2rm(sys1...)
+NUM1, DEN1 = lps2rm(sys1...,atol1=1.e-7,atol2=1.e-7)
 @test  rmeval(NUM1,DEN1,val) * pmeval(U,val)  ≈ I
 
 @test ispmunimodular(NUM1,atol=1.e-7) && DEN1[:,:,1] ≈ ones(3,3)
@@ -501,10 +501,10 @@ sys2 = pminv2lps(poly2pm(V),atol=1.e-7,minimal = true)
 val = float(pi)
 @test  pmeval(V,val) * lpseval(sys2...,val)  ≈ I
 
-NUM2, DEN2 = lps2rm(sys2...)
+NUM2, DEN2 = lps2rm(sys2...,atol1=1.e-7,atol2=1.e-7)
 @test  rmeval(NUM2,DEN2,val) * pmeval(V,val)  ≈ I
 
-@test ispmunimodular(NUM2,atol=1.e-7) && DEN2[:,:,1] ≈ ones(3,3)
+@test ispmunimodular(NUM2,atol=1.e-7) && DEN2[:,:,1] ≈ ones(3,3) 
 
 end
 

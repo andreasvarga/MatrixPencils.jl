@@ -1286,55 +1286,56 @@ If `evr = missing`, `evc = missing` and `disc = true`, then
 `γ[1] = sdeg/abs(evref))*evref[1]` and `γ[2] = sdeg/abs(evref))*evref[2]`. 
 """
 function eigselect2(evr::Union{AbstractVector,Missing},evc::Union{AbstractVector,Missing},sdeg::Union{Real,Missing},evref::Union{Real,Complex},disc::Bool)
-   
+   # corrected version to run under Julia 1.6
    evref = real(evref) + im*abs(imag(evref))
    if ismissing(evr) && ismissing(evc)
       if ismissing(sdeg)
          T = typeof(evref)
          sdegdef = disc ? real(T)(0.95) : real(T)(-0.05)
          evi = imag(evref)
-         γ = [complex(sdegdef,evi); complex(sdegdef,-evi)]
+         γ = [complex(sdegdef,evi), complex(sdegdef,-evi)]
       else
         if disc
-           γ = [evref; conj(evref)]
+           γ = [evref, conj(evref)]
            γ = (sdeg/abs(evref))*γ 
         else
            evi = imag(evref)
-           γ = [complex(sdeg,evi); complex(sdeg,-evi)]
+           γ = [complex(sdeg,evi), complex(sdeg,-evi)]
         end
       end
       evrupd = missing
-      evcupd = missing;
+      evcupd = missing
    elseif ismissing(evc)
       # select two real eigenvalues
       if length(evr) < 2
          if ismissing(sdeg)
             T = typeof(evref)
             sdegdef = disc ? real(T)(0.95) : real(T)(-0.05)
-            γ = [evr;sdegdef]; 
+            γ = [evr[1],sdegdef] 
          else
-            γ = [evr;sdeg]; 
+            γ = [evr[1],sdeg] 
          end
-         evrupd = missing;
-         evcupd = missing;
+         evrupd = missing
+         evcupd = missing
       else
          evr = evr[sortperm(abs.(evr .- evref))]
-         γ = [ evr[1]; evr[2]];
+         γ = [ evr[1], evr[2]]
          evrupd = evr[3:end]
          isempty(evrupd) && (evrupd = missing)
-         evcupd = missing;
+         evcupd = missing
       end
    else
       i = argmin(abs.(evc .- evref))
-      γ = [evc[i];evc[i+1]];       
-      evcupd = [evc[1:i-1]; evc[i+2:end]];
+      γ = [evc[i],evc[i+1]]       
+      evcupd = [evc[1:i-1]; evc[i+2:end]]
       isempty(evcupd) && (evcupd = missing)
-      evrupd = evr;
+      evrupd = evr
    end
    return γ, evrupd, evcupd
    
 # end eigselect2
 end
+
 """
     isqtriu(A::AbstractMatrix) -> Bool
 

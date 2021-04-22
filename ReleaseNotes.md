@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.6.4
+
+This patch version fixes a bug in the function eigselect2.
+
 ## Version 1.6.3
 
 This patch version fixes a bug in the function gsklf.
