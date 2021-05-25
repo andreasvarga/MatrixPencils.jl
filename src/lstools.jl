@@ -68,13 +68,13 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
    else
       (E == I || rcond(E,atol2) > toleps) && (return T.(D))
       At, Et, Bt, Ct, Dt, = lsminreal2(A, E, B, C, D; finite = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
-      if rcond(Et,atol2) < toleps 
+      if size(At,1) > 0 && rcond(Et,atol2) < toleps 
          G = zeros(T,p,m)
          for i = 1:p
             At1, Et1, Bt1, Ct1, Dt1, = lsminreal2(At, Et, Bt, view(Ct,i:i,:), view(Dt,i:i,:); finite = false, contr = false, noseig = false, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
             for j = 1:m
                 At11, Et11, Bt11, Ct11, Dt11, = lsminreal2(At1, Et1, view(Bt1,:,j:j), Ct1, view(Dt1,:,j:j); finite = false, obs = false, noseig = true, fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
-                rcond(Et11,atol2) < toleps ? G[i,j] = T(Inf) : G[i,j] = Dt11[1,1]
+                size(At11,1) > 0 && rcond(Et11,atol2) < toleps ? G[i,j] = T(Inf) : G[i,j] = Dt11[1,1]
             end
          end
          return G

@@ -348,7 +348,7 @@ machine epsilon of the element type of coefficients of `A`.
 
 The keyword argument `gaintol` specifies the threshold for the magnitude of the nonzero elements of the gain matrix 
 `C*inv(γE-A)*B+D`, where `γ = val` if `val` is a number or `γ` is a randomly chosen complex value of unit magnitude, 
-if `val = missing`. Generally, `val` should not be a root of any of entries of `P`.
+if `val = missing`. Generally, `val` should not be a zero of any of entries of `R`.
 
 `NUM(λ)` is a polynomial matrix of the form `NUM(λ) = N_1 + λ N_2 + ... + λ**k N_(k+1)`, for which  
 the coefficient matrices `N_i`, `i = 1, ..., k+1` are stored in the 3-dimensional matrix `NUM`, 
