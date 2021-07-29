@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.6.6
+
+This patch version performs minor cleaning and removes nightly test dependence.  
+
 ## Version 1.6.5
 
 This patch version fixes a bug in the function lseval.

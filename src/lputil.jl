@@ -167,7 +167,7 @@ with E upper triangular and nonsingular to the following form `M1 - λN1 = Q1'*(
          [ 0   *    *   *     *  ] rtrail          [ 0   *  *   *    *   ] rtrail
           coff m    ρ  n-ρ ctrail                   coff m  ρ  n-ρ ctrail   
 
-where τ = rank D, B1 is full row rank, and E11 and E22 are upper triangular and nonsingular.
+where τ = rank D, B1 is full row rank, and E22 is upper triangular and nonsingular.
 The performed orthogonal or unitary transformations are accumulated in `Q` (i.e., `Q <- Q*Q1`), if `withQ = true`, and 
 `Z` (i.e., `Z <- Z*Z1`), if `withZ = true`. The rank decisions use the absolute tolerance `tol` for the nonzero elements of `M`.
 
@@ -196,7 +196,7 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
    #       [ 0   *    *   *     *  ] rtrail           [ 0   *  *   *    *   ] rtrail
    #        coff m    ρ  n-ρ ctrail                    coff m  ρ  n-ρ ctrail   
    #
-   #  where τ = rank D, B1 is full row rank and E11 and E22 are upper triangular and nonsingular.
+   #  where τ = rank D, B1 is full row rank and E22 is upper triangular and nonsingular.
 
    npm = n+m
    npp = n+p
@@ -227,7 +227,7 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
       lmul!(QR.Q',EE)
       withQ && rmul!(view(Q,:,ic),QR.Q) 
       ismissing(L) || lmul!(QR.Q',view(L,ic,:))
-      D[:,:] = [ QR.R[1:τ,:]; zeros(p-τ,m) ]
+      D[:,:] = [ QR.R[1:τ,:]; zeros(T,p-τ,m) ]
       # Step 2:
       k = 1
       for j = coff+1:coff+τ

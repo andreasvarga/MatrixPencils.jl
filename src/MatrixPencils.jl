@@ -1,5 +1,4 @@
 module MatrixPencils
-# Release V1.5 
 
 const BlasFloat = Union{Float64,Float32,ComplexF64,ComplexF32}
 const BlasReal = Union{Float64,Float32}
@@ -7,7 +6,6 @@ const BlasComplex = Union{ComplexF64,ComplexF32}
 
 using LinearAlgebra
 using Polynomials
-using Random
 
 include("lapackutil2.jl")
 import .LapackUtil2: larfg!, larfgl!, larf!, gghrd!, hgeqz!, tgexc!, tgsen!, lanv2, lag2, safemin, tgsyl!
@@ -47,14 +45,5 @@ include("lputil.jl")
 include("slputil.jl")
 include("gsfstab.jl")
 include("gsep.jl")
-# fallback for versions prior 1.1
-if VERSION < v"1.1.0" 
-function rank(A::AbstractMatrix; atol::Real = 0.0, rtol::Real = (min(size(A)...)*eps(real(float(one(eltype(A))))))*iszero(atol))
-    isempty(A) && return 0 # 0-dimensional case
-    s = svdvals(A)
-    tol = max(atol, rtol*s[1])
-    count(x -> x > tol, s)
-end
-end
  
 end

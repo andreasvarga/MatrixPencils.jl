@@ -5,7 +5,6 @@ using LinearAlgebra
 using MatrixPencils
 using Test
 
-
 @testset "Matrix Pencils Applications" begin
 
 Random.seed!(2351);
