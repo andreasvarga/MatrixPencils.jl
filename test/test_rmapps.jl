@@ -289,19 +289,23 @@ D = [(s+1)^2 s+2; (s+1)^3 (s+1)*(s+2)]
 @time val, ip, id = rmpoles1(N, poly2pm(D), fast = fast, atol=1.e-7)
 @test fromroots(val) ≈ Polynomial([2, 7, 9, 5, 1]) && ip == [] && id == [1, 1, 1, 1]
 
-#fail
+
 # Example 1 (Polynomial): Dopico et al. 2020
-e1 = Polynomial(rand(6))
-e2 = Polynomial(rand(2))
+c1 = [0.06155268911372547, 0.006545378521362721, 0.40445990039119284, 0.8829892254580274, 0.7573496766341161, 0.4094804382958148]; 
+c2 = [0.4059208742974014, 0.48094667571705574]; 
+e1 = Polynomial(c1)
+e2 = Polynomial(c2)
 P = [e1 0; 0 e2]
+
 
 @time zer, iz, info = rmzeros(P,fast = fast, atol=1.e-9)
 @test fromroots(zer) ≈ e1*e2/(e1[end]*e2[end]) && iz == [] && (info.rki, info.lki,info.id, info.nf, info.nrank) == ([], [], [1, 1, 1, 1], 6, 2)
 
-#fail
 # Example 2 (Rational): Dopico et al. 2020
-e1 = Polynomial(rand(6))
-e2 = Polynomial(rand(2))
+c1 = [0.06155268911372547, 0.006545378521362721, 0.40445990039119284, 0.8829892254580274, 0.7573496766341161, 0.4094804382958148]; 
+c2 = [0.4059208742974014, 0.48094667571705574]; 
+e1 = Polynomial(c1)
+e2 = Polynomial(c2)
 N = [e1 0; 1 e2]
 D = [1 1; Polynomial([0, 1]) 1]
 

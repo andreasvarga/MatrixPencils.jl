@@ -973,7 +973,7 @@ N2 = [rand(Ty,mr,nM);
 # N2 = Q*N2*Z;
 
 M = copy(M2); N = copy(N2);
-atol1 = 1.e-7; atol2 = 1.e-7; rtol = 1.e-7;
+atol1 = 1.e-6; atol2 = 1.e-7; rtol = 1.e-7;
 @time M1, N1, Q1, Z1, νr, μr, νi, nfe, νl, μl = klf(M, N, finite_infinite=true,fast = fast, atol1 = atol1, atol2 = 0*atol2, rtol = rtol)
 @test norm(Q1'*M2*Z1-M1) < atol1 &&
       norm(Q1'*N2*Z1-N1) < atol2 &&
@@ -981,7 +981,7 @@ atol1 = 1.e-7; atol2 = 1.e-7; rtol = 1.e-7;
       νi == ones(Int,ni) && νl == ones(Int,ml) && μl == [0; ones(Int,nl)] && nfe == nf
 
 M = copy(M2); N = copy(N2);
-atol1 = 1.e-7; atol2 = 1.e-7; rtol = 1.e-7;
+atol1 = 1.e-6; atol2 = 1.e-7; rtol = 1.e-7;
 @time M1, N1, Q1, Z1, νr, μr, νi, nfe, νl, μl = klf(M, N, finite_infinite=false,fast = fast, atol1 = atol1, atol2 = 0*atol2, rtol = rtol)
 @test norm(Q1'*M2*Z1-M1) < atol1 &&
       norm(Q1'*N2*Z1-N1) < atol2 &&

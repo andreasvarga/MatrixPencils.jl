@@ -198,8 +198,6 @@ M = copy(M2); N = copy(N2);
 #Ty = Float64; fast = true;
 for Ty in (Float64, Complex{Float64})
 
-abstol = sqrt(eps(one(real(Ty))))
-
 # given structure 
 mr = 2; nr = 3; ni = 4; nf = 10; ml = 5; nl = 4;
 mM = mr+ni+nf+ml;
@@ -217,11 +215,12 @@ Z = qr(rand(Ty,nM,nM)).Q;
 M = Q*M*Z;
 N = Q*N*Z;
 
-@time val, kinfo = peigvals(M, N, fast = fast, atol1 = abstol, atol2 = abstol)
+@time val, kinfo = peigvals(M, N, fast = fast, atol1 = 1.e-5, atol2 = 1.e-7) 
 @test length(val) == ni+nf &&
       length(filter(y-> y == true,isinf.(val))) == ni &&
       length(filter(y-> y == true,isfinite.(val))) == nf && 
       (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([mr], [nl], [ni], nf, mr+nl+ni+nf)
+
 end
 end
 end
