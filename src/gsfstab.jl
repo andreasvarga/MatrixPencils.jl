@@ -181,7 +181,6 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
                evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
                atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(B))),  
                rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2)))
-
    n = LinearAlgebra.checksquare(A)
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
@@ -290,6 +289,7 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
    
    ng = n-nb
    fnrmtol = 1000*nrmA/nrmB
+   fnrmtol == 0 && (fnrmtol = 1000/nrmB)
    
    nu = 0; na = 0
    nc = n  

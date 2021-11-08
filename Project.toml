@@ -1,11 +1,12 @@
 name = "MatrixPencils"
 uuid = "48965c70-4690-11ea-1f13-43a2532b2fa8"
 authors = ["Andreas Varga <varga.andreas@gmail.com>"]
-version = "1.6.6"
+version = "1.6.7"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
 julia = "1.2"

@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.6.7
+
+This patch version fixes null dimension error in geqrf!.  
+
 ## Version 1.6.6
 
 This patch version performs minor cleaning and removes nightly test dependence.  

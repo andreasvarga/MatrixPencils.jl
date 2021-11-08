@@ -1305,7 +1305,7 @@ function klf_left_refineut!(ν::AbstractVector{Int}, μ::AbstractVector{Int}, M:
       nj1 = μ[i]
       kj2 = kj1+nj1-1
       kkj = kj1:kj2
-      if ni1 > 1
+      if ni1 > 1 && nj1 > 0
          Mij = view(M,kki,kkj) 
          tau = similar(M,nj1)
          LinearAlgebra.LAPACK.geqrf!(Mij,tau)
@@ -1320,7 +1320,7 @@ function klf_left_refineut!(ν::AbstractVector{Int}, μ::AbstractVector{Int}, M:
          kjp1 = kj2+1
          kjp2 = kj2+njp1
          kkjp = kjp1:kjp2
-         if nip1 > 1
+         if nip1 > 1 
             Nijp = view(N,kki,kkjp)
             tau = similar(N,ni1)
             LinearAlgebra.LAPACK.gerqf!(Nijp,tau)
