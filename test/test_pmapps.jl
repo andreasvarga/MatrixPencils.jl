@@ -435,31 +435,31 @@ P = rand(Ty,2,3,5);
 P1 = rand(Ty,3,2,5);
 abstol = sqrt(eps(one(real(Ty))))
 
-@time info, iz, ip = pmkstruct(P,CF1=false, fast = fast)
+@time info, iz, ip = pmkstruct(P,CF1=false, fast = fast, atol = abstol)
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([8], [], [], 0, 2) && iz == [] && ip ==[4, 4]
 
-@time info, iz, ip = pmkstruct(P,CF1=true, fast = fast)
+@time info, iz, ip = pmkstruct(P,CF1=true, fast = fast, atol = abstol)
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([8], [], [], 0, 2) && iz == [] && ip ==[4, 4]
 
-@time info, iz, ip = pmkstruct(P,grade=5, CF1=false, fast = fast)
+@time info, iz, ip = pmkstruct(P,grade=5, CF1=false, fast = fast, atol = abstol)
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([8], [], [1, 1], 0, 2) && iz == [] && ip ==[4, 4]
 
-@time info, iz, ip = pmkstruct(P,grade=5,CF1=true, fast = fast)
+@time info, iz, ip = pmkstruct(P,grade=5,CF1=true, fast = fast, atol = abstol)
 @test (info.rki, info.lki,info.id, info.nf, info.nrank) == ([8], [], [1, 1], 0, 2) && iz == [] && ip ==[4, 4]
 
-@time val, info = pmeigvals(P, fast = fast)
+@time val, info = pmeigvals(P, fast = fast, atol = abstol)
 @test val == Ty[] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 2)
 
-@time val, info = pmeigvals(P,CF1=true,grade = 5, fast = fast)
+@time val, info = pmeigvals(P,CF1=true,grade = 5, fast = fast, atol = abstol)
 @test val == [Inf, Inf] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [1, 1], 0, 2)
 
-@time val, info = pmeigvals(P,CF1=false, grade = 5, fast = fast)
+@time val, info = pmeigvals(P,CF1=false, grade = 5, fast = fast, atol = abstol)
 @test val == [Inf, Inf] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [1, 1], 0, 2)
 
 @time val, iz, info = pmzeros(P, fast = fast, atol = abstol)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 2)
 
-@time val, ip, id = pmpoles(P,CF1=false, fast = fast)
+@time val, ip, id = pmpoles(P,CF1=false, fast = fast, atol = abstol)
 @test val == [Inf, Inf, Inf, Inf, Inf, Inf, Inf, Inf] && ip == [4, 4] && id == [4, 8, 8]
 
 @time val, ip, id = pmpoles(P,CF1=true, fast = fast, atol = abstol)
@@ -468,7 +468,7 @@ abstol = sqrt(eps(one(real(Ty))))
 @time val, iz, info = pmzeros1(P, fast = fast, atol = abstol)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([8], [], [], 0, 2) 
 
-@time val, iz, info = pmzeros1(P1, fast = fast)
+@time val, iz, info = pmzeros1(P1, fast = fast, atol = abstol)
 @test val == Ty[] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([], [8], [], 0, 2) 
 
 @time val, ip, id = pmpoles1(P, fast = fast, atol = abstol)
