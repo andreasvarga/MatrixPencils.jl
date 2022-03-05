@@ -722,7 +722,3 @@ function ssblkdiag(A::AbstractMatrix{T}, B::Union{AbstractMatrix{T},Missing}, C:
     fill!(Y,ZERO)
     return S.T, B1, C1, Q, withZ ? S.Z : nothing, (n1, n-n1), sep                                                    
 end
-# fallback for versions prior 1.3
-VERSION > v"1.3.0" || (mul!(C::StridedMatrix{T}, A::StridedMatrix{T}, B::StridedMatrix{T}, α::T, β::T) where {T<:BlasFloat} = 
-                           BLAS.gemm!('N', 'N', α, A, B, β, C))
-

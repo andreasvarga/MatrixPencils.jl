@@ -372,19 +372,20 @@ D2 = [ 1.0   2.0  -2.0
 # infinite zeros (with multiplicities), the left and right Kronecker structure
 #A2,E2,B2,C2,D2 = pol2lp(P)
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-@time A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D, fast = fast);
+@time A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D, atol1 = 1.e-7, atol2 = 1.e-7, fast = fast);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 1
-val, iz, info = spzeros(A1,E1,B1,C1,D1) 
+val, iz, info = spzeros(A1,E1,B1,C1,D1; atol1 = 1.e-7, atol2 = 1.e-7) 
+println("val, iz, info = $((val, iz, info))")
 @test val ≈ [1.0] && iz == [] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
 val, info = speigvals(A1,E1,B1,C1,D1) 
 @test val ≈ [1., Inf, Inf, Inf] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
-@time A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,obs=false, fast = fast);
+@time A1, E1, B1, C1, D1, nuc, nuo, nse  = lsminreal(A,E,B,C,D,obs=false, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 1
-val, iz, info = spzeros(A1,E1,B1,C1,D1) 
+val, iz, info = spzeros(A1,E1,B1,C1,D1; atol1 = 1.e-7, atol2 = 1.e-7) 
 @test val ≈ [1.0] && iz == [] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
 val, info = speigvals(A1,E1,B1,C1,D1) 
 @test val ≈ [1., Inf, Inf, Inf] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)

@@ -1,6 +1,5 @@
 function qrsolve!(A::AbstractMatrix{T},b::AbstractVector{T}) where {T}
     # Fast least-squares solver for full column rank Hessenberg-like matrices
-    #VERSION >= v"1.2.0" && require_one_based_indexing(A)
     m, n = size(A) 
     m < n && error("Column dimension exceeds row dimension") 
     _, τ = LinearAlgebra.LAPACK.geqrf!(A)

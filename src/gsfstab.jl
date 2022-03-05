@@ -1357,44 +1357,21 @@ function isqtriu(A)
    end
    return true
 end
-@static if VERSION < v"1.2"
-   function eigvalsnosort(M; kwargs...)
-      return eigvals(M; kwargs...)
-   end
-   function eigvalsnosort(M, N; kwargs...)
-      ev = eigvals(M, N; kwargs...)
-      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
-      return ev
-   end
-   function eigvalsnosort!(M; kwargs...)
-      return eigvals!(M; kwargs...)
-   end
-   function eigvalsnosort!(M, N; kwargs...)
-      ev = eigvals!(M, N; kwargs...)
-      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
-      return ev
-   end
-else
-   function eigvalsnosort(M; kwargs...)
-      return eigvals(M; sortby=nothing, kwargs...)
-   end
-   function eigvalsnosort(M, N; kwargs...)
-      ev = eigvals(M, N; sortby=nothing, kwargs...)
-      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
-      return ev
-   end
-   function eigvalsnosort!(M; kwargs...)
-      return eigvals!(M; sortby=nothing, kwargs...)
-   end
-   function eigvalsnosort!(M, N; kwargs...)
-      ev = eigvals!(M, N; sortby=nothing, kwargs...)
-      eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
-      return ev
-   end
+function eigvalsnosort(M; kwargs...)
+   return eigvals(M; sortby=nothing, kwargs...)
 end
-@static if VERSION < v"1.1"
-   isnothing(::Any) = false
-   isnothing(::Nothing) = true
+function eigvalsnosort(M, N; kwargs...)
+   ev = eigvals(M, N; sortby=nothing, kwargs...)
+   eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+   return ev
+end
+function eigvalsnosort!(M; kwargs...)
+   return eigvals!(M; sortby=nothing, kwargs...)
+end
+function eigvalsnosort!(M, N; kwargs...)
+   ev = eigvals!(M, N; sortby=nothing, kwargs...)
+   eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+   return ev
 end
 
 
