@@ -1,8 +1,8 @@
 # Release Notes
 
-## Version 1.6.8
+## Version 1.8
 
-This patch version uses Polynomials v3.0.  
+This minor version bump uses Julia 1.6 (and up) and Polynomials v3.0.  
 
 ## Version 1.6.7
 
