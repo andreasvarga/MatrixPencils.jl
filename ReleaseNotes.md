@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.7.1
+
+This patch version adjusts the dependencies of BLAS+LAPACK and Polynomials.  
+
 ## Version 1.7
 
 This minor version bump uses Julia 1.6 (and up) and Polynomials v3.0.  
