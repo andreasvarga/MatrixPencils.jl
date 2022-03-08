@@ -708,8 +708,8 @@ function lps2pm(A::AbstractMatrix, E::AbstractMatrix,B::AbstractMatrix, F::Abstr
    M1 = [A1 B1/W1; V1'\C1 V1'\D1/W1]
    N1 = [E1 F1/W1; V1'\G1 V1'\H1/W1]
    n = size(A1,1)
-   indi = [1:n;1]
-   indj = [1:n;1]
+   indi = [1:n;[1]]
+   indj = [1:n;[1]]
    n1 = n+1
    for i = 1:p
       indi[n1] = n+i

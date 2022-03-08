@@ -5,7 +5,6 @@ using MatrixPencils
 using Polynomials 
 using Test
 
-
 @testset "Rational Matrix Tools" begin
 
 

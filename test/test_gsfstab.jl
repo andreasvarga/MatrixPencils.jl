@@ -14,6 +14,7 @@ end
 
 @testset "Spectrum allocation functions" begin
 
+println("saloc for standard pair (A,B)")
 @testset "saloc for standard pair (A,B)" begin
 
 
@@ -298,6 +299,7 @@ end # Ty loop
 
 end #begin
 
+println("saloc for generalized pair (A-λE,B)")
 @testset "saloc for generalized pair (A-λE,B)" begin
 
 ## simple cases: B = []; 

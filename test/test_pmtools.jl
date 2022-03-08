@@ -5,7 +5,6 @@ using MatrixPencils
 using Polynomials
 using Test
 
-
 @testset "Polynomial Matrix Tools" begin
 
 @testset "Conversions" begin

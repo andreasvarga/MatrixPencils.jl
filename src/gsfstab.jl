@@ -290,7 +290,7 @@ function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false,
    ng = n-nb
    fnrmtol = 1000*nrmA/nrmB
    fnrmtol == 0 && (fnrmtol = 1000/nrmB)
-   
+
    nu = 0; na = 0
    nc = n  
    F = zeros(T,m,n); 
@@ -484,7 +484,7 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    if E == I
       F, S, blkdims = saloc(A, B, evals = evals, sdeg = sdeg, atol1 = atol1, atol2 = atol3, rtol = rtol)
       TS = eltype(F)
-      return F, GeneralizedSchur(S.T, Matrix{TS}(I,n,n), S.values, ones(TS,n), S.Z, S.Z), [0; blkdims]
+      return F, GeneralizedSchur(S.T, Matrix{TS}(I,n,n), S.values, ones(TS,n), S.Z, S.Z), [[0]; blkdims]
    end
    
    LinearAlgebra.checksquare(E) == n || throw(DimensionMismatch("E must be a $n x $n matrix"))
@@ -635,7 +635,7 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
 
    nfg = n-nb-ninf
    fnrmtol = 1000*max(nrmA,1)/nrmB
-   
+
    nfu = 0; nfa = 0
    nc = n  
    F = zeros(T,m,n); 
@@ -1156,7 +1156,7 @@ function saloc2(A::AbstractMatrix{T},B::AbstractMatrix{T},evc::AbstractVector{T1
    sp = real(evc[1]+evc[2]); pp = real(evc[1]*evc[2]);
    k11 = (sc-sp)/s1; 
    k12 = at[2,2]/at[2,1]*k11+(pp-at[1,1]*at[2,2]+at[1,2]*at[2,1])/at[2,1]/s1;
-   F = v1*[-k11 -k12; zeros(m-1,2)]*U'; 
+   F = v1*[[-k11 -k12]; zeros(m-1,2)]*U'; 
    if rankB == 2 && norm(F) > norm(ftry)
      # choose the lower norm feedback 
       F = ftry;
@@ -1225,7 +1225,7 @@ function saloc2(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},e
     sp = real(evc[1]+evc[2]); pp = real(evc[1]*evc[2]);
     k11 = (sc-sp)/s1; 
     k12 = at[2,2]/at[2,1]*k11+(pp-at[1,1]*at[2,2]+at[1,2]*at[2,1])/at[2,1]/s1;
-    F = v1*[-k11 -k12; zeros(m-1,2)]*U'; V = Matrix{eltype(B)}(I,m,m) 
+    F = v1*[[-k11 -k12]; zeros(T,m-1,2)]*U'; V = Matrix{eltype(B)}(I,m,m) 
     if rankB == 2 && norm(F) > norm(ftry)
       # choose the lower norm feedback 
        F = ftry;

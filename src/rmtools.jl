@@ -588,8 +588,8 @@ function lps2rm(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, F::Abst
                  NUM[i,j,1:length(cz)] = compl ? cz*(Rval[i,j]/zval) : real(cz*(Rval[i,j]/zval)) 
               else
                  n1 = size(A1,1)       
-                 M1 = [A1 zeros(T,n1,2); zeros(T,1,n1+1) one(T); zeros(T,1,n1) one(T)  zero(T)]
-                 N1 = [E1 F1 zeros(T,n1,1); G1 H1 zero(T); zeros(T,1,n1+2)]
+                 M1 = [A1 zeros(T,n1,2); zeros(T,1,n1+1) [one(T)]; zeros(T,1,n1) [one(T)  zero(T)]]
+                 N1 = [E1 F1 zeros(T,n1,1); G1 H1 [zero(T)]; zeros(T,1,n1+2)]
                  pol, ip, _ = pzeros(M1,N1; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol) 
                  cp, pval = polcoeffval(pol[1:(length(pol)-sum(ip))],val)
                  NUM[i,j,1:length(cz)] = compl ? cz*(Rval[i,j]*pval/zval) : real(cz*(Rval[i,j]*pval/zval)) 

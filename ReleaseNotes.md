@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.7.2
+
+This patch version eliminates possible hcat/vcat/hvcat type piracies in Julia 1.6 and 1.7.  
+
 ## Version 1.7.1
 
 This patch version adjusts the dependencies of BLAS+LAPACK and Polynomials.  
