@@ -216,7 +216,7 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
       CE = view(M,ic,ja)
       EE = view(N,ic,coff+npm+1:nM)
       if fast
-         QR = qr!(D, Val(true))
+         QR = qr!(D, ColumnNorm())
          τ = count(x -> x > tol, abs.(diag(QR.R))) 
       else
          τ = count(x -> x > tol, svdvals(D))
