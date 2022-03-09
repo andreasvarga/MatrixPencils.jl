@@ -220,7 +220,7 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
          τ = count(x -> x > tol, abs.(diag(QR.R))) 
       else
          τ = count(x -> x > tol, svdvals(D))
-         QR = qr!(D, Val(true))
+         QR = qr!(D, ColumnNorm())
       end
       B[:,:] = B[:,QR.p]
       lmul!(QR.Q',CE)
@@ -328,12 +328,12 @@ function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
       ic = roff+n+1:roff+npp
       D = view(M,ic,jb)
       if fast
-         QR = qr!(copy(D'), Val(true))
+         QR = qr!(copy(D'), ColumnNorm())
          τ = count(x -> x > tol, abs.(diag(QR.R))) 
       else
          # τ = rank(D; atol = tol)
          τ = count(x -> x > tol, svdvals(D))
-         QR = qr!(copy(D'), Val(true))
+         QR = qr!(copy(D'), ColumnNorm())
       end
       rmul!(BE,QR.Q)  # BE*Q
       jt = m:-1:1
