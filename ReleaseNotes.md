@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 1.7.3
+
+This patch version eliminates deprecated use of qr(..., Val{true}) by using 
+lower level LAPACK calls. 
+
 ## Version 1.7.2
 
 This patch version eliminates possible hcat/vcat/hvcat type piracies in Julia 1.6 and 1.7.  

@@ -209,6 +209,7 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
    jb = coff+1:coff+m
    B = view(M,ia,jb) 
    BD = view(M,roff+1:roff+npp,jb)
+   T <: Complex ? tran = 'C' : tran = 'T'
    if p > 0
       # compress D to [D1 D2;0 0] with D1 invertible 
       ic = roff+n+1:roff+npp
@@ -216,18 +217,41 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
       CE = view(M,ic,ja)
       EE = view(N,ic,coff+npm+1:nM)
       if fast
-         QR = qr!(D, Val(true))
-         τ = count(x -> x > tol, abs.(diag(QR.R))) 
+         #QR = qr!(D, Val(true))
+         #τ = count(x -> x > tol, abs.(diag(QR.R))) 
+         _, τau, jpvt = LinearAlgebra.LAPACK.geqp3!(D)
+         τ = count(x -> x > tol, abs.(diag(D))) 
       else
          τ = count(x -> x > tol, svdvals(D))
-         QR = qr!(D, Val(true))
+         #QR = qr!(D, Val(true))
+         _, τau, jpvt = LinearAlgebra.LAPACK.geqp3!(D)
       end
-      B[:,:] = B[:,QR.p]
-      lmul!(QR.Q',CE)
-      lmul!(QR.Q',EE)
-      withQ && rmul!(view(Q,:,ic),QR.Q) 
-      ismissing(L) || lmul!(QR.Q',view(L,ic,:))
-      D[:,:] = [ QR.R[1:τ,:]; zeros(T,p-τ,m) ]
+      #B[:,:] = B[:,QR.p]
+      B[:,:] = B[:,jpvt]
+      #lmul!(QR.Q',CE)
+      #lmul!(QR.Q',EE)
+      # N23 <- Q2'*N23
+      LinearAlgebra.LAPACK.ormqr!('L',tran,D,τau,CE)
+      LinearAlgebra.LAPACK.ormqr!('L',tran,D,τau,EE)
+      #withQ && rmul!(view(Q,:,ic),QR.Q) 
+      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',D,τau,view(Q,:,ic))
+      #ismissing(L) || lmul!(QR.Q',view(L,ic,:))
+      ismissing(L) || LinearAlgebra.LAPACK.ormqr!('L',tran,D,τau,view(L,ic,:))
+      #D[:,:] = [ QR.R[1:τ,:]; zeros(T,p-τ,m) ]
+      D[:,:] = [ triu(D[1:τ,:]); zeros(T,p-τ,m)  ]
+      # if fast
+      #    QR = qr!(D, Val(true))
+      #    τ = count(x -> x > tol, abs.(diag(QR.R))) 
+      # else
+      #    τ = count(x -> x > tol, svdvals(D))
+      #    QR = qr!(D, Val(true))
+      # end
+      # B[:,:] = B[:,QR.p]
+      # lmul!(QR.Q',CE)
+      # lmul!(QR.Q',EE)
+      # withQ && rmul!(view(Q,:,ic),QR.Q) 
+      # ismissing(L) || lmul!(QR.Q',view(L,ic,:))
+      # D[:,:] = [ QR.R[1:τ,:]; zeros(T,p-τ,m) ]
       # Step 2:
       k = 1
       for j = coff+1:coff+τ
@@ -248,7 +272,8 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
    ρ = _preduce3!(n, m-τ, M, N, Q, Z, tol, L, R, fast = fast, coff = coff+τ, roff = roff+τ, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
    if p > 0
       irt = 1:(τ+ρ)
-      BD[irt,:] = BD[irt,invperm(QR.p)]
+      #BD[irt,:] = BD[irt,invperm(QR.p)]
+      BD[irt,:] = BD[irt,invperm(jpvt)]
    end
    return τ, ρ 
 end
@@ -328,27 +353,59 @@ function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
       ic = roff+n+1:roff+npp
       D = view(M,ic,jb)
       if fast
-         QR = qr!(copy(D'), Val(true))
-         τ = count(x -> x > tol, abs.(diag(QR.R))) 
+         # QR = qr!(copy(D'), Val(true))
+         # τ = count(x -> x > tol, abs.(diag(QR.R))) 
+         DT, τau, jpvt = LinearAlgebra.LAPACK.geqp3!(copy(D'))
+         τ = count(x -> x > tol, abs.(diag(DT))) 
       else
          # τ = rank(D; atol = tol)
          τ = count(x -> x > tol, svdvals(D))
-         QR = qr!(copy(D'), Val(true))
+         # QR = qr!(copy(D'), Val(true))
+         DT, τau, jpvt = LinearAlgebra.LAPACK.geqp3!(copy(D'))
       end
-      rmul!(BE,QR.Q)  # BE*Q
+      #rmul!(BE,QR.Q)  # BE*Q
+      LinearAlgebra.LAPACK.ormqr!('R','N',DT,τau,BE)
       jt = m:-1:1
       BE[:,:] = BE[:,jt]      # BE*Q*P2
       if withZ 
          Z1 = view(Z,:,jb)
-         rmul!(Z1,QR.Q) 
+         # rmul!(Z1,QR.Q) 
+         LinearAlgebra.LAPACK.ormqr!('R','N',DT,τau,Z1)
          Z1[:,:] = Z1[:,jt]
       end
-      ismissing(R) || ( rmul!(view(R,:,jb),QR.Q); R[:,jb] = R[:,reverse(jb)] )
-      rmul!(EE,QR.Q)  
+      #ismissing(R) || ( rmul!(view(R,:,jb),QR.Q); R[:,jb] = R[:,reverse(jb)] )
+      ismissing(R) || ( LinearAlgebra.LAPACK.ormqr!('R','N',DT,τau,view(R,:,jb)); R[:,jb] = R[:,reverse(jb)] )
+      #rmul!(EE,QR.Q)  
+      LinearAlgebra.LAPACK.ormqr!('R','N',DT,τau,EE)
       EE[:,:] = EE[:,jt]      # BE*Q*P2
-      D[:,:] = [ zeros(p,m-τ)  QR.R[τ:-1:1,p:-1:1]' ]
-      C[:,:] = C[QR.p,:]
+      #D[:,:] = [ zeros(p,m-τ)  QR.R[τ:-1:1,p:-1:1]' ]
+      D[:,:] = [ zeros(p,m-τ)  triu(DT)[τ:-1:1,p:-1:1]' ]
+      C[:,:] = C[jpvt,:]
       C[:,:] = reverse(C,dims=1)
+
+      # if fast
+      #    QR = qr!(copy(D'), Val(true))
+      #    τ = count(x -> x > tol, abs.(diag(QR.R))) 
+      # else
+      #    # τ = rank(D; atol = tol)
+      #    τ = count(x -> x > tol, svdvals(D))
+      #    QR = qr!(copy(D'), Val(true))
+      # end
+      # rmul!(BE,QR.Q)  # BE*Q
+      # jt = m:-1:1
+      # BE[:,:] = BE[:,jt]      # BE*Q*P2
+      # if withZ 
+      #    Z1 = view(Z,:,jb)
+      #    rmul!(Z1,QR.Q) 
+      #    Z1[:,:] = Z1[:,jt]
+      # end
+      # ismissing(R) || ( rmul!(view(R,:,jb),QR.Q); R[:,jb] = R[:,reverse(jb)] )
+      # rmul!(EE,QR.Q)  
+      # EE[:,:] = EE[:,jt]      # BE*Q*P2
+      # D[:,:] = [ zeros(p,m-τ)  QR.R[τ:-1:1,p:-1:1]' ]
+      # C[:,:] = C[QR.p,:]
+      # C[:,:] = reverse(C,dims=1)
+
       # Step 2:
       k = 1
       for i = roff+npp:-1:roff+npp+1-τ    
@@ -371,7 +428,8 @@ function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
    if m > 0
       jrt = npm-(τ+ρ)+1:npm
       DC[:,jrt] = reverse(DC[:,jrt],dims=1)
-      DC[:,jrt] = DC[invperm(QR.p),jrt]
+      # DC[:,jrt] = DC[invperm(QR.p),jrt]
+      DC[:,jrt] = DC[invperm(jpvt),jrt]
    end
    return τ, ρ 
 end
