@@ -259,10 +259,10 @@ for (gghrd, elty) in
             ccall((@blasfunc($gghrd), liblapack), Cvoid,
                       (Ref{UInt8}, Ref{UInt8},  Ref{BlasInt}, Ref{BlasInt}, Ref{BlasInt},
                       Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt},
-                      Ptr{BlasInt}),
+                      Ptr{BlasInt}, Clong, Clong),
                       compq, compz, n, ilo, ihi, 
                       A, lda, B, ldb, Q, ldq, Z, ldz, 
-                      info)
+                      info, 1, 1)
                 chklapackerror(info[])
            return A, B, Q, Z
         end
@@ -315,12 +315,12 @@ for (hgeqz, elty) in
                        Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ptr{$elty}, Ptr{$elty}, 
                        Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, 
                        Ptr{$elty}, Ref{BlasInt}, 
-                       Ptr{BlasInt}),
+                       Ptr{BlasInt}, Clong, Clong, Clong),
                     'S', compq, compz, n, ilo, ihi, 
                     H, ldh, T, ldt, alphar, alphai, beta, 
                     Q, ldq, Z, ldz, 
                     work, lwork, 
-                    info)
+                    info, 1, 1, 1)
                 chklapackerror(info[])
                 if i == 1
                     lwork = BlasInt(real(work[1]))
@@ -378,12 +378,12 @@ for (hgeqz, elty, relty) in
                        Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ptr{$elty},  
                        Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, 
                        Ptr{$elty}, Ref{BlasInt}, Ptr{$relty}, 
-                       Ptr{BlasInt}),
+                       Ptr{BlasInt}, Clong, Clong, Clong),
                     'S', compq, compz, n, ilo, ihi, 
                     H, ldh, T, ldt, alpha, beta, 
                     Q, ldq, Z, ldz, 
                     work, lwork, rwork,
-                    info)
+                    info, 1, 1, 1)
                 chklapackerror(info[])
                 if i == 1
                     lwork = BlasInt(real(work[1]))
@@ -666,10 +666,10 @@ for (fn, elty, relty) in ((:dtgsyl_, :Float64, :Float64),
                 (Ref{UInt8}, Ref{BlasInt}, Ref{BlasInt}, Ref{BlasInt},
                  Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt},
                  Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt}, Ptr{$elty}, Ref{BlasInt},
-                 Ptr{$relty}, Ptr{$relty}, Ptr{$relty}, Ref{BlasInt}, Ptr{BlasInt}, Ptr{BlasInt}),
+                 Ptr{$relty}, Ptr{$relty}, Ptr{$relty}, Ref{BlasInt}, Ptr{BlasInt}, Ptr{BlasInt}, Clong),
                  trans, ijob, m, n,
                  A, lda, B, ldb, C, ldc, D, ldd, E, lde, F, ldf,
-                 scale, dif, work, lwork, iwork, info)
+                 scale, dif, work, lwork, iwork, info, 1)
             chklapackerror(info[])
             C, F, scale[1]
         end

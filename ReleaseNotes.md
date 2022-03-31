@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.7.4
+
+Patch release to address hidden character length arguments issue discussed in [JuliaLang/julia#32870](https://github.com/JuliaLang/julia/issues/32870). 
+
 ## Version 1.7.3
 
 This patch version eliminates deprecated use of qr(..., Val{true}) by using 
