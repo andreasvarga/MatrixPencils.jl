@@ -1357,18 +1357,18 @@ function isqtriu(A)
    end
    return true
 end
-function eigvalsnosort(M; kwargs...)
+function eigvalsnosort(M; kwargs...)::Vector{Complex{real(eltype(M))}}
    return eigvals(M; sortby=nothing, kwargs...)
 end
-function eigvalsnosort(M, N; kwargs...)
+function eigvalsnosort(M, N; kwargs...)::Vector{Complex{real(eltype(M))}}
    ev = eigvals(M, N; sortby=nothing, kwargs...)
    eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
    return ev
 end
-function eigvalsnosort!(M; kwargs...)
+function eigvalsnosort!(M; kwargs...)::Vector{Complex{real(eltype(M))}}
    return eigvals!(M; sortby=nothing, kwargs...)
 end
-function eigvalsnosort!(M, N; kwargs...)
+function eigvalsnosort!(M, N; kwargs...)::Vector{Complex{real(eltype(M))}}
    ev = eigvals!(M, N; sortby=nothing, kwargs...)
    eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
    return ev
