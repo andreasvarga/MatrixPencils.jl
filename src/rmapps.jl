@@ -507,10 +507,10 @@ function rmpoles1(N::AbstractArray{T,3}; kwargs...) where T
    return pmpoles1(N; kwargs...) 
 end
 function rmpoles1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}, 
-                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where {T1,T2} 
+                 D::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...)  
    return rmpoles1(poly2pm(N),poly2pm(D); kwargs...)
 end
-function rmpoles1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where {T} 
+function rmpoles1(N::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) 
    return pmpoles1(poly2pm(N); kwargs...)
 end
 function rmpoles1(N::AbstractArray{T,3}, 

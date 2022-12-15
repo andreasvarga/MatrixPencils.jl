@@ -26,7 +26,7 @@ The reduction is performed using orthonal similarity transformations and involve
 if `fast = true`, or, the more reliable, SVD-decompositions, if `fast = false`. For efficiency purposes, the reduction is only
 partially performed, without accumulating the performed orthogonal transformations.
 
-The keyword arguements `atol1`, `atol2`  and `rtol` specify the absolute tolerance for the nonzero
+The keyword arguments `atol1`, `atol2`  and `rtol` specify the absolute tolerance for the nonzero
 elements of `M`, the absolute tolerance for the nonzero elements of `N`, and the relative tolerance for the nonzero elements of `M` and `N`, respectively. 
 The default relative tolerance is `n*ϵ`, where `n` is the size of the smallest dimension of `M`, and `ϵ` is the 
 machine epsilon of the element type of `M`. 

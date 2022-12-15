@@ -342,7 +342,7 @@ function pmzeros1(P::AbstractArray{T,3}; fast = false, atol::Real = zero(real(T)
    info.nrank -= size(A,1)
    return val, iz, info 
 end
-pmzeros1(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) where {T} =
+pmzeros1(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number,AbstractVecOrMat{<:Number}}; kwargs...) =
        pmzeros1(poly2pm(P); kwargs...)
 """
     pmpoles1(P; fast = false, atol::Real = 0, rtol::Real = atol>0 ? 0 : n*ϵ) -> (val, ip, id)
