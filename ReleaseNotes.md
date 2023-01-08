@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.7.5
+Patch release to address some warnings due to not used variables.
+
 ## Version 1.7.4
 
 Patch release to address hidden character length arguments issue discussed in [JuliaLang/julia#32870](https://github.com/JuliaLang/julia/issues/32870). 

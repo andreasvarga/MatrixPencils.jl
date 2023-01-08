@@ -607,7 +607,7 @@ function pm2lps(P::AbstractArray{T,3}; contr::Bool = false, obs::Bool = false) w
    end
    return A, E, B, F, C, G, D, H
 end
-pm2lps(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number}; kwargs...) where {T} =
+pm2lps(P::Union{AbstractVecOrMat{<:Polynomial},Polynomial,Number}; kwargs...) =
          pm2lps(poly2pm(P); kwargs...)
 """
     ls2pm(A, E, B, C, D; fast = true, atol1 = 0, atol2 = 0, gaintol = 0, rtol = min(atol1,atol2) > 0 ? 0 : n*ϵ, val) -> P
