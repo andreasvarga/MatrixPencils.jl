@@ -519,16 +519,10 @@ function pm2ls(P::AbstractArray{T,3}; minimal::Bool = false, contr::Bool = false
    end
    return A, E, B, C, D
 end
-# pm2ls(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
-#          pm2ls(poly2pm(P); kwargs...)
 pm2ls(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
          pm2ls(poly2pm(P); kwargs...)
 pm2ls(P::AbstractVecOrMat{T}; kwargs...) where {T <: Number} = pm2ls(poly2pm(P); kwargs...)
 pm2ls(P::Number; kwargs...) = pm2ls(poly2pm(P); kwargs...)
-# pm2ls(P::Union{AbstractVecOrMat{T},Number}; kwargs...) where {T <: Number} =
-#          pm2ls(poly2pm(P); kwargs...)
-# pm2ls(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
-#          pm2ls(poly2pm(P); kwargs...)
 """
      pm2lps(P; contr = false, obs = false) -> (A, E, B, F, C, G, D, H)
 
