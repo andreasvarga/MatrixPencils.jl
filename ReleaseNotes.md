@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.7.6
+Patch release to eliminate unbound type parameters and fulfill all Aqua quality checks.
+
 ## Version 1.7.5
 Patch release to address some warnings due to not used variables.
 

@@ -494,12 +494,16 @@ Otherwise, `Q` is set to `nothing`.
 The performed orthogonal or unitary right transformations are accumulated in the matrix `Z` if `withZ = true`. 
 If `withZ = false`, `Z` contains the upper triangular matrix `Z11`.   
 """
-function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractVecOrMat{T1}, F::AbstractVecOrMat{T1}, 
-                     C::Union{AbstractMatrix{T1},T2}, G::Union{AbstractMatrix{T1},T2},
-                     D::Union{AbstractVecOrMat{T1},T2}, H::Union{AbstractVecOrMat{T1},T2}; 
+function sklf_right!(A::MT1, E::MT1, B::MT1, F::MT1, C::MT2, G::MT2, D::MT2, H::MT2;  
                      fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), atol3::Real = zero(real(T1)), 
                      rtol::Real = ((size(A,1)+2)*eps(real(float(one(T1)))))*iszero(max(atol1,atol2,atol3)), 
-                     withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat, T2 <: Missing}
+                     withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat, MT1<:AbstractMatrix{T1}, MT2<:Union{AbstractMatrix{T1},Missing}}
+# function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractVecOrMat{T1}, F::AbstractVecOrMat{T1}, 
+#                      C::Union{AbstractMatrix{T1},T2}, G::Union{AbstractMatrix{T1},T2},
+#                      D::Union{AbstractVecOrMat{T1},T2}, H::Union{AbstractVecOrMat{T1},T2}; 
+#                      fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), atol3::Real = zero(real(T1)), 
+#                      rtol::Real = ((size(A,1)+2)*eps(real(float(one(T1)))))*iszero(max(atol1,atol2,atol3)), 
+#                      withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat, T2 <: Missing}
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
@@ -614,17 +618,17 @@ The performed orthogonal or unitary right transformations are accumulated in the
 Otherwise, `Z` is set to `nothing`.   
 """
 function sklf_left!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMatrix{T1}, G::AbstractMatrix{T1}, 
-                     B::Union{AbstractVecOrMat{T1},T2}, F::Union{AbstractVecOrMat{T1},T2},
-                     D::Union{AbstractVecOrMat{T1},T2}, H::Union{AbstractVecOrMat{T1},T2}; 
+                     B::Union{<:AbstractVecOrMat{T1},Missing}, F::Union{<:AbstractVecOrMat{T1},Missing},
+                     D::Union{<:AbstractVecOrMat{T1},Missing}, H::Union{<:AbstractVecOrMat{T1},Missing}; 
                      fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), atol3::Real = zero(real(T1)), 
                      rtol::Real = ((size(A,1)+2)*eps(real(float(one(T1)))))*iszero(max(atol1,atol2,atol3)), 
-                     withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat, T2 <: Missing}
+                     withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat}
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    p, n1 = size(C)
    n == n1 || throw(DimensionMismatch("A and C must have the same number of columns"))
    (p,n) == size(G) || throw(DimensionMismatch("C and G must have the same dimensions"))
-   if !ismissing(C) 
+   if !ismissing(B) 
       n2, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
       n == n2 || throw(DimensionMismatch("A and B must have the same number of rows"))
       n2, m2 = typeof(F) <: AbstractVector ? (length(F),1) : size(F)

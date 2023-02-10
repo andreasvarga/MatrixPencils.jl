@@ -190,22 +190,31 @@ function lps2ls(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling}, B::A
    return blockdiag(A1,A2), blockdiag(E1,E2), [B1; B2], [C1 C2], D1
 end
 
-function blockdiag(mats::AbstractMatrix{T}...) where T
-    rows = Int[size(m, 1) for m in mats]
-    cols = Int[size(m, 2) for m in mats]
-    res = zeros(T, sum(rows), sum(cols))
-    m = 1
-    n = 1
-    for ind=1:length(mats)
-        mat = mats[ind]
-        i = rows[ind]
-        j = cols[ind]
-        res[m:m + i - 1, n:n + j - 1] = mat
-        m += i
-        n += j
-    end
-    return res
+# function blockdiag(mats::AbstractMatrix{T}...) where T
+#     rows = Int[size(m, 1) for m in mats]
+#     cols = Int[size(m, 2) for m in mats]
+#     res = zeros(T, sum(rows), sum(cols))
+#     m = 1
+#     n = 1
+#     for ind=1:length(mats)
+#         mat = mats[ind]
+#         i = rows[ind]
+#         j = cols[ind]
+#         res[m:m + i - 1, n:n + j - 1] = mat
+#         m += i
+#         n += j
+#     end
+#     return res
+# end
+# taken from ControlSystems.jl
+@static if VERSION >= v"1.8.0-beta1"
+   blockdiag(mats...) = cat(mats..., dims=Val((1,2)))
+   blockdiag(mats::Union{<:Tuple, <:Base.Generator}) = cat(mats..., dims=Val((1,2)))
+else
+   blockdiag(mats...) = cat(mats..., dims=(1,2))
+   blockdiag(mats::Union{<:Tuple, <:Base.Generator}) = cat(mats..., dims=(1,2))
 end
+
 """
     lpseval(A, E, B, F, C, G, D, H, val; atol1, atol2, rtol, fast = true) -> Gval
 

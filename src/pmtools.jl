@@ -519,10 +519,14 @@ function pm2ls(P::AbstractArray{T,3}; minimal::Bool = false, contr::Bool = false
    end
    return A, E, B, C, D
 end
-pm2ls(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
+# pm2ls(P::Union{AbstractVecOrMat{Polynomial{T}},Polynomial{T},AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
+#          pm2ls(poly2pm(P); kwargs...)
+pm2ls(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
          pm2ls(poly2pm(P); kwargs...)
-pm2ls(P::Union{AbstractVecOrMat{T},Number}; kwargs...) where {T <: Number} =
-         pm2ls(poly2pm(P); kwargs...)
+pm2ls(P::AbstractVecOrMat{T}; kwargs...) where {T <: Number} = pm2ls(poly2pm(P); kwargs...)
+pm2ls(P::Number; kwargs...) = pm2ls(poly2pm(P); kwargs...)
+# pm2ls(P::Union{AbstractVecOrMat{T},Number}; kwargs...) where {T <: Number} =
+#          pm2ls(poly2pm(P); kwargs...)
 # pm2ls(P::Union{AbstractVecOrMat{Polynomial{T,X}},Polynomial{T,X}}; kwargs...) where {T,X} =
 #          pm2ls(poly2pm(P); kwargs...)
 """
@@ -855,9 +859,12 @@ function spm2ls(T::Union{AbstractArray{T1,3},AbstractArray{T1,2}},U::Union{Abstr
    end
    return Ar, Er, Br, Cr, Dr
 end
-spm2ls(T::Union{AbstractVecOrMat{Polynomial{T1}},Polynomial{T1},Number,AbstractMatrix{T1}}, U::Union{AbstractVecOrMat{Polynomial{T2}},Polynomial{T2},Number,AbstractVecOrMat{T2}}, 
-       V::Union{AbstractVecOrMat{Polynomial{T3}},Polynomial{T3},Number,AbstractVecOrMat{T3}}, W::Union{AbstractVecOrMat{Polynomial{T4}},Polynomial{T4},Number,AbstractVecOrMat{T4}}; kwargs...) where {T1, T2, T3, T4} =
-       spm2ls(poly2pm(T),poly2pm(U),poly2pm(V),poly2pm(W); kwargs...)
+spm2ls(T::TP1, U::TP2, V::TP3, W::TP4; kwargs...) where 
+     {TP1 <: Union{AbstractVecOrMat{<:Polynomial},<:Polynomial,AbstractVecOrMat{<:Number},Number}, 
+      TP2 <: Union{AbstractVecOrMat{<:Polynomial},<:Polynomial,AbstractVecOrMat{<:Number},Number}, 
+      TP3 <: Union{AbstractVecOrMat{<:Polynomial},<:Polynomial,AbstractVecOrMat{<:Number},Number}, 
+      TP4 <: Union{AbstractVecOrMat{<:Polynomial},<:Polynomial,AbstractVecOrMat{<:Number},Number}} =
+      spm2ls(poly2pm(T),poly2pm(U),poly2pm(V),poly2pm(W); kwargs...)
 """
      spm2lps(T, U, V, W; fast = true, contr = false, obs = false, minimal = false, atol = 0, rtol) -> (A, E, B, F, C, G, D, H)
 
