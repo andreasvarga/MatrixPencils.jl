@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.7.7
+Patch release to fix issue [MatrixPencils#11](https://github.com/andreasvarga/MatrixPencils.jl/issues/11).
+
 ## Version 1.7.6
 Patch release to eliminate unbound type parameters and fulfill all Aqua quality checks.
 

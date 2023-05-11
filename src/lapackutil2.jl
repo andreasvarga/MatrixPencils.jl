@@ -1,6 +1,7 @@
 module LapackUtil2
 
-const liblapack = VERSION < v"1.7" ? Base.liblapack_name : "libblastrampoline"
+#const liblapack = VERSION < v"1.7" ? Base.liblapack_name : "libblastrampoline" * (Sys.iswindows() ? "-5" : "")
+const liblapack = Base.liblapack_name
 
 import LinearAlgebra.BLAS.@blasfunc
 
