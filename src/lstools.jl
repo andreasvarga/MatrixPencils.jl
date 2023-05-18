@@ -1341,30 +1341,34 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
       lmul!(sc,MA)
       lmul!(sc,MB)
       lmul!(sc,MC)
-      t = sqrt(sumcr/sumM); dleft = fill(t,n); dright = fill(t,n)
+      t = sqrt(sumcr/sumM); Dl = Diagonal(fill(t,n)); Dr = Diagonal(fill(t,n))
       # Scale left and right to make row and column sums equal to r and c
       conv = false
       for i = 1:maxiter
           conv = true
           cr = sum(MA,dims=1)
           withC && (cr .+= sum(MC,dims=1))
-          dr = reshape(cr,n)./c; 
-          rdiv!(MA,Diagonal(dr)); rdiv!(MC,Diagonal(dr)) 
-          er = minimum(dr)/maximum(dr); dright ./= dr
+          dr = Diagonal(reshape(cr,n)./c) 
+          rdiv!(MA,dr); rdiv!(MC,dr) 
+          er = minimum(dr.diag)/maximum(dr) 
+          rdiv!(Dr,dr)
           cl = sum(MA,dims=2)
           withB && (cl .+= sum(MB,dims=2))
-          dl = reshape(cl,n)./r;
-          ldiv!(Diagonal(dl),MA); ldiv!(Diagonal(dl),MB)
-          el = minimum(dl)/maximum(dl); dleft ./= dl
+          dl = Diagonal(reshape(cl,n)./r)
+          ldiv!(dl,MA); ldiv!(dl,MB)
+          el = minimum(dl.diag)/maximum(dl) 
+          rdiv!(Dl,dl)
           max(1-er,1-el) < tol/2 && break
           conv = false
       end
       conv || (@warn "the iterative algorithm did not converge in $maxiter iterations")
       # Finally scale the two scalings to have equal maxima
-      scaled = sqrt(maximum(dright)/maximum(dleft))
-      dleft .*= scaled; dright ./= scaled
-      pow2 && (dleft = radix .^(round.(Int,log2.(dleft))); dright = radix .^(round.(Int,log2.(dright))))
-      Dl = Diagonal(dleft); Dr = Diagonal(dright)
+      scaled = sqrt(maximum(Dr)/maximum(Dl))
+      rmul!(Dl,scaled); rmul!(Dr,1/scaled)
+      if pow2
+         Dl = Diagonal(radix .^(round.(Int,log2.(Dl.diag))))
+         Dr = Diagonal(radix .^(round.(Int,log2.(Dr.diag))))
+      end
       lmul!(Dl,A); rmul!(A,Dr)
       lmul!(Dl,E); rmul!(E,Dr)
       lmul!(Dl,B)
