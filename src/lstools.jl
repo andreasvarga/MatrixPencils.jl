@@ -1057,3 +1057,317 @@ function lpsminreal(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix, F::
    end
    return Ar[ir,ir], Er[ir,ir], Br[ir,:], Fr[ir,:], Cr[:,ir], Gr[:,ir], Dr, Hr, V, W, nuc, nuo
 end
+"""
+     lsbalance!(A, B, C; withB = true, withC = true, maxred = 16) -> D
+
+Reduce the 1-norm of a system matrix 
+
+             S =  ( A  B )
+                  ( C  0 )
+
+corresponding to a standard system triple `(A,B,C)` by balancing. 
+This involves a diagonal similarity transformation `inv(D)*A*D` 
+to make the rows and columns of 
+
+                  diag(inv(D),I) * S * diag(D,I)
+     
+as close in norm as possible.
+     
+The balancing can be optionally performed on the following 
+particular system matrices:   
+
+        S = A, if withB = false and withC = false ,
+        S = ( A  B ), if withC = false,     or    
+        S = ( A ), if withB = false .
+            ( C )      
+
+The keyword argument `maxred = s` specifies the maximum allowed reduction in the 1-norm of
+`S` (in an iteration) if zero rows or columns are present. 
+`s` must be a positive power of `2`, otherwise  `s` is rounded to the nearest power of 2.   
+
+_Note:_ This function is a translation of the SLICOT routine `TB01ID.f`, which 
+represents an extensiom of the LAPACK family `*GEBAL.f` and also includes  
+the fix proposed in [1]. 
+
+[1]  R.James, J.Langou and B.Lowery. "On matrix balancing and eigenvector computation."
+     ArXiv, 2014, http://arxiv.org/abs/1401.5766
+"""
+function lsbalance!(A::AbstractMatrix{T1}, B::AbstractVecOrMat{T1}, C::AbstractMatrix{T1}; 
+                   withB = true, withC = true, maxred = 16) where {T1}
+    n = LinearAlgebra.checksquare(A)
+    n1, m = size(B,1), size(B,2)
+    n1 == n || throw(DimensionMismatch("A and B must have the same number of rows"))
+    n == size(C,2) || throw(DimensionMismatch("A and C must have the same number of columns"))
+    T = real(T1)
+    ZERO = zero(T)
+    ONE = one(T)
+    SCLFAC = T(2.)
+    FACTOR = T(0.95); 
+    maxred > ONE || throw(ArgumentError("maxred must be greater than 1, got maxred = $maxred"))
+    MAXR = T(maxred)
+    MAXR = T(2.) ^round(Int,log2(MAXR))
+    # Compute the 1-norm of the required part of matrix S and exit if it is zero.
+    SNORM = ZERO
+    for j = 1:n
+        CO = sum(abs,view(A,:,j))
+        withC && (CO += sum(abs,view(C,:,j)))
+        SNORM = max( SNORM, CO )
+    end
+    if withB
+       for j = 1:m 
+           SNORM = max( SNORM, sum(abs,view(B,:,j)) )
+       end
+    end
+    D = fill(ONE,n)
+    SNORM == ZERO && (return D)
+
+    SFMIN1 =  T <: BlasFloat ? safemin(T) / eps(T) : safemin(Float64) / eps(Float64)
+    SFMAX1 = ONE / SFMIN1
+    SFMIN2 = SFMIN1*SCLFAC
+    SFMAX2 = ONE / SFMIN2
+
+    SRED = maxred
+    SRED <= ZERO && (SRED = MAXR)
+
+    MAXNRM = max( SNORM/SRED, SFMIN1 )
+
+    # Balance the system matrix.
+
+    # Iterative loop for norm reduction.
+    NOCONV = true
+    while NOCONV
+        NOCONV = false
+        for i = 1:n
+            Aci = view(A,:,i)
+            Ari = view(A,i,:)
+            Ci = view(C,:,i)
+            Bi = view(B,i,:)
+
+            CO = norm(Aci)
+            RO = norm(Ari)
+            CA = abs(argmax(abs,Aci))
+            RA = abs(argmax(abs,Ari))
+
+            if withC
+               CO = hypot(CO, norm(Ci))
+               CA = max(CA,abs(argmax(abs,Ci)))
+            end
+            if withB
+                RO = hypot(RO, norm(Bi))
+                RA = max( RA, abs(argmax(abs,Bi)))
+            end
+            #  Special case of zero CO and/or RO.
+            CO == ZERO && RO == ZERO && continue
+            if CO == ZERO 
+               RO <= MAXNRM && continue
+               CO = MAXNRM
+            end
+            if RO == ZERO
+               CO <= MAXNRM && continue
+               RO = MAXNRM
+            end
+
+            #  Guard against zero CO or RO due to underflow.
+            G = RO / SCLFAC
+            F = ONE
+            S = CO + RO
+            while ( CO < G && max( F, CO, CA ) < SFMAX2 && min( RO, G, RA ) > SFMIN2 ) 
+                F  *= SCLFAC
+                CO *= SCLFAC
+                CA *= SCLFAC
+                G  /= SCLFAC
+                RO /= SCLFAC
+                RA /= SCLFAC   
+            end
+            G = CO / SCLFAC
+
+            while ( G >= RO && max( RO, RA ) < SFMAX2 && min( F, CO, G, CA ) > SFMIN2 )
+                F  /= SCLFAC
+                CO /= SCLFAC
+                CA /= SCLFAC
+                G  /= SCLFAC
+                RO *= SCLFAC
+                RA *= SCLFAC
+            end
+
+            # Now balance.
+            CO+RO >= FACTOR*S && continue
+            if F < ONE && D[i] < ONE 
+               F*D[i] <= SFMIN1 && continue
+            end
+            if F > ONE && D[i] > ONE 
+               D[i] >= SFMAX1 / F  && continue
+            end
+            G = ONE / F
+            D[i] *= F
+            NOCONV = true
+       
+            lmul!(G,Ari)
+            rmul!(Aci,F)
+            lmul!(G,Bi)
+            rmul!(Ci,F)
+        end
+    end
+    return Diagonal(D)
+end       
+"""
+    qs = lsbalqual(A, B, C; SysMat = false) 
+
+Compute the 1-norm based scaling quality of a standard system triple `(A,B,C)`.
+
+If `SysMat = false`, the resulting `qs` is computed as 
+
+        qs = max(qS(A),qS(B),qS(C)) ,
+
+where `qS(⋅)` is the scaling quality measure defined in Definition 5.5 of [1] for 
+nonnegative matrices. This definition has been extended to also cover matrices with
+zero rows or columns.  
+
+If `SysMat = true`, the resulting `qs` is computed as 
+
+        qs = qS(S) ,
+
+where `S` is the system matrix defined as        
+
+             S =  ( A  B )
+                  ( C  0 )
+
+A large value of `qs` indicates a possible poorly scaled state-space model.   
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+"""
+function lsbalqual(A::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::AbstractMatrix{T}; SysMat = false) where {T}
+    return SysMat ? qS1([A B; C zeros(T,size(C,1),size(B,2))]) : max(qS1(A),qS1(B),qS1(C))
+end 
+"""
+    qs = lsbalqual(A, E, B, C; SysMat = false) 
+
+Compute the 1-norm based scaling quality of a descriptor system triple `(A-λE,B,C)`.
+
+If `SysMat = false`, the resulting `qs` is computed as 
+
+        qs = max(qS(A),qS(E),qS(B),qS(C)) ,
+
+where `qS(⋅)` is the scaling quality measure defined in Definition 5.5 of [1] for 
+nonnegative matrices. This definition has been extended to also cover matrices with
+zero rows or columns.  
+
+If `SysMat = true`, the resulting `qs` is computed as 
+
+        qs = qS(S) ,
+
+where `S` is the system matrix defined as        
+
+             S =  ( abs(A)+abs(E)  abs(B) )
+                  (    abs(C)        0    )
+
+A large value of `qs` indicates a possible poorly scaled state-space model.   
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+"""
+function lsbalqual(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScaling{Bool}}, B::AbstractVecOrMat{T}, C::AbstractMatrix{T}; SysMat = false) where {T}
+    (!(typeof(E) <: AbstractMatrix) || isequal(E,I)) && (return lsbalqual(A,B,C; SysMat))
+    return SysMat ? qS1([abs.(A).+abs.(E) B; C zeros(T,size(C,1),size(B,2))]) : 
+                    max(qS1(A),qS1(E),qS1(B),qS1(C))
+end 
+
+"""
+     lsbalance!(A, E, B, C; withB = true, withC = true, maxiter = 100, tol = 1) -> (D1,D2)
+
+Reduce the 1-norm of the matrix 
+
+             S =  ( abs(A)+abs(E)  abs(B) )
+                  (    abs(C)        0    )
+
+corresponding to a descriptor system triple `(A-λE,B,C)` by row and column balancing. 
+This involves diagonal similarity transformations `D1*(A-λE)*D2` applied
+iteratively to `abs(A)+abs(E)` to make the rows and columns of 
+                             
+                  diag(D1,I)  * S * diag(D2,I)
+     
+as close in norm as possible.
+     
+The balancing can be performed optionally on the following 
+particular system matrices:   
+
+        S = abs(A)+abs(E), if withB = false and withC = false ,
+        S = ( abs(A)+abs(E)  abs(B) ), if withC = false,     or    
+        S = ( abs(A)+abs(E) ), if withB = false .
+            (   abs(C)     )       
+
+The keyword argument `maxiter = k` specifies the maximum number of iterations `k` 
+allowed in the balancing algorithm. 
+
+The keyword argument `tol = τ`, with `τ ≤ 1`,  specifies the tolerance used in the stopping criterion.   
+
+If the keyword argument `pow2 = true` is specified, then the components of the resulting 
+optimal `D1` and `D2` are replaced by their nearest integer powers of 2, in which case the 
+scaling of matrices is done exactly in floating point arithmetic. 
+If `pow2 = false`, the optimal values `D1` and `D2` are returned.
+
+_Note:_ This function is an extension of the MATLAB function `rowcolsums.m` of [1]. 
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+"""
+function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScaling{Bool}}, B::AbstractVecOrMat{T}, C::AbstractMatrix{T}; 
+                    withB = true, withC = true, maxred = 16, maxiter = 100, tol = 1, pow2 = true) where {T}
+    radix = real(T)(2.)
+    emat = (typeof(E) <: AbstractMatrix)
+    eident = !emat || isequal(E,I) 
+    n = LinearAlgebra.checksquare(A)
+    emat && (n,n) != size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
+    n == size(B,1) || throw(DimensionMismatch("A and B must have compatible dimensions"))
+    n == size(C,2) || throw(DimensionMismatch("A and C must have compatible dimensions"))
+ 
+    n == 0 && (return T[], T[])
+  
+    if eident 
+       D = lsbalance!(A, B, C; withB, withC, maxred)
+       return inv(D), D
+    else
+      MA = abs.(A)+abs.(E)   
+      MB = abs.(B)   
+      MC = abs.(C)   
+      r = fill(T(n),n); c = copy(r)
+      # Scale the matrix to have total sum(sum(M))=sum(c)=sum(r);
+      sumcr = sum(c) 
+      sumM = sum(MA[:]) 
+      withB && (sumM += sum(MB[:]))
+      withC && (sumM += sum(MC[:]))
+      MAd = MA*(sumcr/sumM)
+      MBd = MB*(sumcr/sumM)
+      MCd = MC*(sumcr/sumM)
+      t = sqrt(sumcr/sumM); dleft = fill(t,n); dright = fill(t,n)
+      # Scale left and right to make row and column sums equal to r and c
+      conv = false
+      for i = 1:maxiter
+          conv = true
+          cr = sum(MAd,dims=1)
+          withC && (cr .+= sum(MCd,dims=1))
+          dr = reshape(cr,n)./c; 
+          rdiv!(MAd,Diagonal(dr)); rdiv!(MCd,Diagonal(dr)) 
+          er = minimum(dr)/maximum(dr); dright ./= dr
+          cl = sum(MAd,dims=2)
+          withB && (cl .+= sum(MBd,dims=2))
+          dl = reshape(cl,n)./r;
+          ldiv!(Diagonal(dl),MAd); ldiv!(Diagonal(dl),MBd)
+          el = minimum(dl)/maximum(dl); dleft ./= dl
+          max(1-er,1-el) < tol/2 && break
+          conv = false
+      end
+      conv || (@warn "the iterative algorithm did not converge in $maxiter iterations")
+      # Finally scale the two scalings to have equal maxima
+      scaled = sqrt(maximum(dright)/maximum(dleft))
+      dleft .*= scaled; dright ./= scaled
+      pow2 && (dleft = radix .^(round.(Int,log2.(dleft))); dright = radix .^(round.(Int,log2.(dright))))
+      Dl = Diagonal(dleft); Dr = Diagonal(dright)
+      lmul!(Dl,A); rmul!(A,Dr)
+      lmul!(Dl,E); rmul!(E,Dr)
+      lmul!(Dl,B)
+      rmul!(C,Dr)
+      return Diagonal(dleft), Diagonal(dright)   
+   end
+end

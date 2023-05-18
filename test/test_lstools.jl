@@ -939,10 +939,105 @@ sys = (A2,E2,B2,F2,C2,G2,D2,H2);
 
 
 end
-
+end
 end
 
+@testset "lsbalance! & lsbalqual" begin
 
+# example in https://github.com/andreasvarga/MatrixPencils.jl/issues/12
+
+A = [-6.537773175952662 0.0 0.0 0.0 -9.892378564622923e-9 0.0; 
+     0.0 -6.537773175952662 0.0 0.0 0.0 -9.892378564622923e-9; 
+     2.0163803998106024e8 2.0163803998106024e8 -0.006223894167415392 -1.551620418759878e8 0.002358202548321148 0.002358202548321148;
+     0.0 0.0 5.063545034365582e-9 -0.4479539754649166 0.0 0.0; 
+     -2.824060629317756e8 2.0198389074625736e8 -0.006234569427701143 -1.5542817673286995e8 -0.7305736722226711 0.0023622473513548576; 
+     2.0198389074625736e8 -2.824060629317756e8 -0.006234569427701143 -1.5542817673286995e8 0.0023622473513548576 -0.7305736722226711];
+
+B = [0.004019511633336128; 0.004019511633336128; 0.0; 0.0; 297809.51426114445; 297809.51426114445]
+
+C = [0.0 0.0 0.0 1.0 0.0 0.0]
+
+# scale A, B and C
+AA = copy(A); BB = copy(B); CC = copy(C);
+qsorigABC = lsbalqual(A,B,C)
+qsorigSM = lsbalqual(A,B,C; SysMat = true)
+D = lsbalance!(AA,BB,CC)
+@test AA == D\A*D && BB == D\B && CC == C*D
+qsfinABC = lsbalqual(AA,BB,CC)
+qsfinSM = lsbalqual(AA,BB,CC; SysMat = true)
+@test qsfinABC <= qsfinSM && 100000*qsfinABC < qsorigABC && 100000*qsfinSM < qsorigSM 
+
+# scale only A and compare with GEBAL
+AA = copy(A); BB = copy(B); CC = copy(C);
+D = lsbalance!(AA,BB,CC; withB = false, withC = false)
+AA1 = copy(A);
+ilo, ihi, D1 = LAPACK.gebal!('S', AA1)
+@test D == Diagonal(D1) && AA == AA1
+
+# apply to upper triangular A
+AA = copy(triu(A)); BB = copy(B); CC = copy(C);
+qsorigABC = lsbalqual(triu(A),B,C)
+D = lsbalance!(AA,BB,CC)
+@test AA == D\triu(A)*D && BB == D\B && CC == C*D
+qsfinABC = lsbalqual(AA,BB,CC)
+@test 100000*qsfinABC <= qsorigABC  
+
+
+AA = copy(A); BB = copy(B); CC = copy(C);
+D1, D = lsbalance!(AA,I,BB,CC)
+@test AA == D\A*D && BB == D\B && CC == C*D && D1*D == I
+
+
+n = 10; m = 3; p = 2; k = 10
+T = rand(n,n);
+T[1, 2 : n] = 10^(k)*T[1, 2 : n]
+T[4:n, 3] = 10^(k)*T[4:n, 3]
+D = round.(Int,1. ./ rand(n))
+A = T*Diagonal(D); E = T;
+ev = eigvals(A,E)
+
+# maxiter = 100; tol = 0.01;
+# Md,dleft,dright = MatrixPencils.rowcolsums(abs.(A).+abs.(E)) 
+
+# evs = eigvals(Diagonal(dleft)*A*Diagonal(dright),Diagonal(dleft)*E*Diagonal(dright))
+# @test !(sort(ev) ≈ sort(D)) &&  sort(evs) ≈ sort(D)
+
+B = rand(n,m); B[1,:] = 10^(k)*B[1,:]; 
+C = rand(p,n); C[:, 3] = 10^(k)*C[:, 3];
+
+AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
+qsorigABC = lsbalqual(A,E,B,C)
+qsorigSM = lsbalqual(A,E,B,C; SysMat = true)
+#@time d1, d2 = lsbalance!(AA,EE,BB,CC; withB = false, withC = false)
+@time D1, D2 = lsbalance!(AA,EE,BB,CC)
+@test AA == D1*A*D2 && EE == D1*E*D2 && BB == D1*B && CC == C*D2
+
+qsfinABC = lsbalqual(AA,EE,BB,CC)
+qsfinSM = lsbalqual(AA,EE,BB,CC; SysMat = true)
+@test qsfinABC < 100000*qsorigABC && 100000*qsfinSM < qsorigSM 
+
+evs = eigvals(AA,EE)
+@test !(sort(ev) ≈ sort(D)) &&  sort(evs) ≈ sort(D)
+
+# eigenvalue oriented scaling of only A and E
+AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
+qsorigABC = lsbalqual(A,E,B,C)
+qsorigSM = lsbalqual(A,E,B,C; SysMat = true)
+@time D1, D2 = lsbalance!(AA,EE,BB,CC; withB = false, withC = false)
+@test AA == D1*A*D2 && EE == D1*E*D2 && BB == D1*B && CC == C*D2
+
+qsfinABC = lsbalqual(AA,EE,BB,CC)
+qsfinSM = lsbalqual(AA,EE,BB,CC; SysMat = true)
+@test qsfinABC < 100000*qsorigABC && 100000*qsfinSM < qsorigSM 
+
+evs = eigvals(AA,EE)
+@test sort(evs) ≈ sort(D)
+
+
+# optimal scalings
+AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
+@time D1, D2 = lsbalance!(AA,EE,BB,CC,pow2 = false)
+@test AA ≈ D1*A*D2 && EE ≈ D1*E*D2 && BB ≈ D1*B && CC ≈ C*D2
 
 
 end

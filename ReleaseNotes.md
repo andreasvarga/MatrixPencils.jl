@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.7.8
+This patch release includes new functions `lsbalance!` for scaling descriptor systems and `lsbalqual` for the evaluation of the scaling quality of descriptor state space models. Several bug fixes have been also performed. 
+
 ## Version 1.7.7
 Patch release to fix issue [MatrixPencils#11](https://github.com/andreasvarga/MatrixPencils.jl/issues/11).
 

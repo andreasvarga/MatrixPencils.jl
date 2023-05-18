@@ -6,6 +6,7 @@ const BlasComplex = Union{ComplexF64,ComplexF32}
 
 using LinearAlgebra
 using Polynomials
+import LinearAlgebra: copy_oftype
 
 include("lapackutil2.jl")
 import .LapackUtil2: larfg!, larfgl!, larf!, gghrd!, hgeqz!, tgexc!, tgsen!, lanv2, lag2, safemin, tgsyl!
@@ -28,7 +29,7 @@ export lpmfd2ls, rpmfd2ls, lpmfd2lps, rpmfd2lps, pminv2ls, pminv2lps
 export rmkstruct, rmzeros, rmzeros1, rmpoles, rmpoles1, rmrank 
 export saloc, salocd, salocinf, salocinfd, ordeigvals, isqtriu, eigselect1, eigselect2, saloc2
 export fihess, fischur, fischursep, sfischursep, fiblkdiag, gsblkdiag, ssblkdiag
-import LinearAlgebra: copy_oftype
+export lsbalance!, lsbalqual
 
 include("klftools.jl")
 include("regtools.jl")
@@ -45,5 +46,4 @@ include("lputil.jl")
 include("slputil.jl")
 include("gsfstab.jl")
 include("gsep.jl")
- 
 end

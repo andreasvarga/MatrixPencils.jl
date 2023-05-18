@@ -303,10 +303,6 @@ for the nonzero elements of `M` and `N`. The default relative tolerance is `n*ϵ
 machine epsilon of the element type of `M`. 
 For efficiency purpose, the reduction to the relevant KLF is only partially performed 
 using rank decisions based on rank revealing SVD-decompositions. 
-
-!!! compat "Julia 1.1"
-    The use of `atol` and `rtol` keyword arguments in rank determinations requires at least Julia 1.1. 
-    To enforce compatibility with Julia 1.0, the newer function rank in Julia 1.1 has been explicitly included. 
 """
 function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,UniformScaling{Bool},Missing}, 
    B::Union{AbstractVecOrMat,Missing}, C::Union{AbstractMatrix,Missing}, D::Union{AbstractVecOrMat,Missing}; 
@@ -389,7 +385,7 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
       (!ismissing(C) && eltype(C) != T) && (C = convert(Matrix{T},C))
       (!ismissing(D) && eltype(D) != T) && (D = convert(Matrix{T},D))
       if eident 
-         scale = opnorm(A,1)*rand()
+         scale = max(opnorm(A,1),1)*rand()
          return rank([A+scale*E B; C D], atol = atol1, rtol = rtol)
       else
          nrmN = opnorm(E,1)
@@ -399,12 +395,12 @@ function sprank(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifor
          return rank([A+scale*E B; C D], atol = max(atol1,atol2), rtol = rtol)
       end
    else
-      M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol2, rtol = rtol, 
+      M, N, Q, Z, n, m, p = sreduceBF(A, E, B, C, D, atol = atol1, rtol = rtol, 
                                       fast = false, withQ = false, withZ = false)
       mM, nM = size(M)
       
       n == min(mM,nM) && (return n)
-      tol1 = max(atol1, rtol*opnorm(M,1))
+      tol1 = max(atol1, atol2, 4*rtol*max(opnorm(M,1),opnorm(N,1)))
       mrinf = 0
       nrinf = 0
       while m > 0 
