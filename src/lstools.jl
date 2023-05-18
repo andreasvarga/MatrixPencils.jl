@@ -1337,23 +1337,24 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
       sumM = sum(MA[:]) 
       withB && (sumM += sum(MB[:]))
       withC && (sumM += sum(MC[:]))
-      MAd = MA*(sumcr/sumM)
-      MBd = MB*(sumcr/sumM)
-      MCd = MC*(sumcr/sumM)
+      sc = sumcr/sumM
+      lmul!(sc,MA)
+      lmul!(sc,MB)
+      lmul!(sc,MC)
       t = sqrt(sumcr/sumM); dleft = fill(t,n); dright = fill(t,n)
       # Scale left and right to make row and column sums equal to r and c
       conv = false
       for i = 1:maxiter
           conv = true
-          cr = sum(MAd,dims=1)
-          withC && (cr .+= sum(MCd,dims=1))
+          cr = sum(MA,dims=1)
+          withC && (cr .+= sum(MC,dims=1))
           dr = reshape(cr,n)./c; 
-          rdiv!(MAd,Diagonal(dr)); rdiv!(MCd,Diagonal(dr)) 
+          rdiv!(MA,Diagonal(dr)); rdiv!(MC,Diagonal(dr)) 
           er = minimum(dr)/maximum(dr); dright ./= dr
-          cl = sum(MAd,dims=2)
-          withB && (cl .+= sum(MBd,dims=2))
+          cl = sum(MA,dims=2)
+          withB && (cl .+= sum(MB,dims=2))
           dl = reshape(cl,n)./r;
-          ldiv!(Diagonal(dl),MAd); ldiv!(Diagonal(dl),MBd)
+          ldiv!(Diagonal(dl),MA); ldiv!(Diagonal(dl),MB)
           el = minimum(dl)/maximum(dl); dleft ./= dl
           max(1-er,1-el) < tol/2 && break
           conv = false
@@ -1368,6 +1369,25 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
       lmul!(Dl,E); rmul!(E,Dr)
       lmul!(Dl,B)
       rmul!(C,Dr)
-      return Diagonal(dleft), Diagonal(dright)   
+      return Dl, Dr  
    end
+end
+"""
+    qs = qS1(M) 
+
+Compute the 1-norm based scaling quality `qs = qS(abs(M))` of a matrix `M`, 
+where `qS(⋅)` is the scaling quality measure defined in Definition 5.5 of [1] for 
+nonnegative matrices. Nonzero rows and columns in `M` are allowed.   
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+"""
+function qS1(M)
+    temp = sum(abs,M,dims=1)
+    tmax = maximum(temp)
+    rmax = tmax == 0 ? one(eltype(M)) : tmax/minimum(temp[temp .!= 0])
+    temp = sum(abs,M,dims=2)
+    tmax = maximum(temp)
+    cmax = tmax == 0 ? one(eltype(M)) : tmax/minimum(temp[temp .!= 0])
+    return max(rmax,cmax)
 end

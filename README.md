@@ -88,6 +88,8 @@ The current version of the package includes the following functions:
 * **lseval**   Evaluation of the value of the rational matrix corresponding to a descriptor system based linearization.
 * **lpseval**  Evaluation of the value of the rational matrix corresponding to a pencil based linearization.
 * **lps2ls**  Conversion of a pencil based linearization into a descriptor system based linearization.
+* **lsbalance!** Scaling of a descriptor system based linearization. 
+* **lsbalqual** Evaluation of the scaling quality of descriptor system based linearizations.
 
 **Manipulation of polynomial matrices** 
 
