@@ -1274,7 +1274,7 @@ function lsbalqual(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScali
 end 
 
 """
-     lsbalance!(A, E, B, C; withB = true, withC = true, maxiter = 100, tol = 1) -> (D1,D2)
+     lsbalance!(A, E, B, C; withB = true, withC = true, pow2, maxiter = 100, tol = 1) -> (D1,D2)
 
 Reduce the 1-norm of the matrix 
 
@@ -1322,7 +1322,7 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
     n == size(B,1) || throw(DimensionMismatch("A and B must have compatible dimensions"))
     n == size(C,2) || throw(DimensionMismatch("A and C must have compatible dimensions"))
  
-    n == 0 && (return T[], T[])
+    n == 0 && (return Diagonal(T[]), Diagonal(T[]))
   
     if eident 
        D = lsbalance!(A, B, C; withB, withC, maxred)
@@ -1334,13 +1334,11 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
       r = fill(T(n),n); c = copy(r)
       # Scale the matrix to have total sum(sum(M))=sum(c)=sum(r);
       sumcr = sum(c) 
-      sumM = sum(MA[:]) 
-      withB && (sumM += sum(MB[:]))
-      withC && (sumM += sum(MC[:]))
+      sumM = sum(MA) 
+      withB && (sumM += sum(MB))
+      withC && (sumM += sum(MC))
       sc = sumcr/sumM
-      lmul!(sc,MA)
-      lmul!(sc,MB)
-      lmul!(sc,MC)
+      lmul!(1/sc,c); lmul!(1/sc,r)
       t = sqrt(sumcr/sumM); Dl = Diagonal(fill(t,n)); Dr = Diagonal(fill(t,n))
       # Scale left and right to make row and column sums equal to r and c
       conv = false
@@ -1348,7 +1346,7 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
           conv = true
           cr = sum(MA,dims=1)
           withC && (cr .+= sum(MC,dims=1))
-          dr = Diagonal(reshape(cr,n)./c) 
+          dr = Diagonal(reshape(cr,n)./c)
           rdiv!(MA,dr); rdiv!(MC,dr) 
           er = minimum(dr.diag)/maximum(dr) 
           rdiv!(Dr,dr)
@@ -1358,6 +1356,7 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
           ldiv!(dl,MA); ldiv!(dl,MB)
           el = minimum(dl.diag)/maximum(dl) 
           rdiv!(Dl,dl)
+         #  @show i, er, el
           max(1-er,1-el) < tol/2 && break
           conv = false
       end

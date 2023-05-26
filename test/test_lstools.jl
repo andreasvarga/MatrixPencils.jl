@@ -987,27 +987,168 @@ AA = copy(A); BB = copy(B); CC = copy(C);
 D1, D = lsbalance!(AA,I,BB,CC)
 @test AA == D\A*D && BB == D\B && CC == C*D && D1*D == I
 
+# TB01ID EXAMPLE PROGRAM DATA
+A = [   0.0  1.0000e+000          0.0          0.0          0.0
+-1.5800e+006 -1.2570e+003          0.0          0.0          0.0
+3.5410e+014          0.0 -1.4340e+003          0.0 -5.3300e+011
+       0.0          0.0          0.0          0.0  1.0000e+000
+       0.0          0.0          0.0 -1.8630e+004 -1.4820e+000];
+B = [  0.0          0.0
+      1.1030e+002          0.0
+       0.0          0.0
+       0.0          0.0
+       0.0  8.3330e-003];
+C = [ 1.0000e+000          0.0          0.0          0.0          0.0
+       0.0          0.0  1.0000e+000          0.0          0.0
+       0.0          0.0          0.0  1.0000e+000          0.0
+6.6640e-001          0.0 -6.2000e-013          0.0          0.0
+       0.0          0.0 -1.0000e-003  1.8960e+006  1.5080e+002];
+qsorigABC = lsbalqual(A,B,C)
+qsorigSM = lsbalqual(A,B,C; SysMat = true)
+
+AA = copy(A); BB = copy(B); CC = copy(C);
+D = lsbalance!(AA,BB,CC)
+@test AA == D\A*D && BB == D\B && CC == C*D
+qsfinABC = lsbalqual(AA,BB,CC)
+qsfinSM = lsbalqual(AA,BB,CC; SysMat = true)
+@test qsfinABC <= qsfinSM && 1000*qsfinABC < qsorigABC && 1000*qsfinSM < qsorigSM 
+
+# MATLAB result is less satisfactory
+A = [0   2.0480e+03            0            0            0
+    -7.7148e+02  -1.2570e+03            0            0            0
+     6.4410e+02            0  -1.4340e+03            0  -1.5512e+01
+          0            0            0            0   1.2800e+02
+          0            0            0  -1.4555e+02  -1.4820e+00];
+B = [       0            0
+   2.2589e+05            0
+            0            0
+            0            0
+            0   2.1844e+03];
+C = [   2.3842e-07            0            0            0            0
+0            0   1.3107e+05            0            0
+0            0            0   2.9802e-08            0
+1.5888e-07            0  -8.1265e-08            0            0
+0            0  -1.3107e+02   5.6505e-02   5.7526e-04];
+qsorigABC = lsbalqual(A,B,C)
+qsorigSM = lsbalqual(A,B,C; SysMat = true)
+
+AA = copy(A); BB = copy(B); CC = copy(C);
+D = lsbalance!(AA,BB,CC)
+@test AA == D\A*D && BB == D\B && CC == C*D
+qsfinABC = lsbalqual(AA,BB,CC)
+qsfinSM = lsbalqual(AA,BB,CC; SysMat = true)
+@test qsfinABC <= qsfinSM && 10*qsfinABC < qsorigABC && 10*qsfinSM < qsorigSM 
+
+# warnsys example from MATLAB prescale 
+# load numdemo warnsys 
+
+A1 = [-3.6111e+05            0            0            0  -2.5000e+02            0            0            0            0   1.3629e+12            0            0
+1.0000e+00            0            0            0            0            0            0            0            0            0            0            0
+         0            0  -3.6111e+05            0            0  -2.5000e+02            0            0            0            0            0            0
+         0            0   1.0000e+00            0            0            0            0            0            0            0            0            0
+1.5632e+08   4.3423e+12            0            0            0            0            0            0            0            0            0            0
+         0            0   1.5632e+08   4.3423e+12            0            0            0            0            0            0            0            0
+         0            0            0            0            0            0  -1.0053e+06  -4.8669e+05            0            0            0            0
+         0            0            0            0            0            0   4.8669e+05            0            0            0            0            0
+         0            0            0            0            0            0  -9.9274e+05  -4.8661e+05            0            0            0            0
+         0            0            0            0            0            0            0            0   1.0000e+00            0            0            0
+         0            0            0            0            0            0            0            0            0            0  -1.0053e+06  -4.8669e+05
+         0            0            0            0            0            0            0            0            0            0   4.8669e+05            0
+         0            0            0            0            0            0            0            0            0            0  -9.9274e+05  -4.8661e+05
+         0            0            0            0            0            0            0            0            0            0            0            0
+         0            0            0            0   1.0000e+08            0            0            0            0            0            0            0
+         0            0            0            0            0   1.0000e+08            0            0            0            0            0            0
+         0            0            0            0            0            0            0            0            0            0            0            0];
+A2 = [            0            0            0            0            0
+0            0            0            0            0
+0   1.3629e+12            0            0            0
+0            0            0            0            0
+0            0            0            0            0
+0            0            0            0            0
+0            0  -1.1364e-02            0            0
+0            0            0            0            0
+0            0  -1.1364e-02            0            0
+0            0            0            0            0
+0            0            0            0            0
+0            0            0            0            0
+0            0            0            0            0
+1.0000e+00            0            0            0            0
+0            0  -1.0000e+07  -1.0000e+07   1.0000e+07
+0            0  -1.0000e+07  -1.0000e+07   1.0000e+07
+0            0   1.3889e+05   1.3889e+05  -1.3889e+05];
+A = [A1 A2];
+B = [     0.
+0
+0
+0
+0
+0
+0
+0
+0
+0
+1
+0
+1
+0
+0
+0
+0];
+C1 = [            0            0            0            0            0            0            0            0            0            0            0            0
+];
+C2 = [            0            0            0   1.1364e-02            0]
+C = [C1 C2];
+qsorigABC = lsbalqual(A,B,C)
+qsorigSM = lsbalqual(A,B,C; SysMat = true)
+
+AA = copy(A); BB = copy(B); CC = copy(C);
+D = lsbalance!(AA,BB,CC)
+@test AA == D\A*D && BB == D\B && CC == C*D
+qsfinABC = lsbalqual(AA,BB,CC)
+qsfinSM = lsbalqual(AA,BB,CC; SysMat = true)
+@test qsfinABC <= qsfinSM && 100000*qsfinABC < qsorigABC && 100000*qsfinSM < qsorigSM 
+
+# anil example from MATLAB prescale 
+# load numdemo anil
+A1 = [-3.4698e+07  -9.9264e+11  -3.2488e+16  -7.5886e+20  -1.2408e+25  -2.3952e+29  -2.5256e+33  -4.0288e+37  -2.9886e+41  -3.8863e+45  -2.0963e+49  -2.1520e+53 -8.4938e+56  -6.4812e+60  -1.8401e+64  -9.4353e+67  -1.7730e+71  -5.2558e+74  -3.9629e+77  -8.5612e+80]
+A = [A1; I zeros(19,1)];
+B = [1;zeros(19)];
+C = [           0            0            0   6.8179e+19   2.0483e+23   4.8230e+28   1.4477e+32   1.3324e+37   3.8535e+40   1.8274e+45   4.9592e+48   1.3074e+53 3.2383e+56   4.7158e+60   1.0155e+64   7.7931e+67   1.2745e+71   4.8525e+74   3.2088e+77   8.6210e+80]
+qsorigABC = lsbalqual(A,B,C)
+qsorigSM = lsbalqual(A,B,C; SysMat = true)
+
+AA = copy(A); BB = copy(B); CC = copy(C);
+D = lsbalance!(AA,BB,CC)
+@test AA == D\A*D && BB == D\B && CC == C*D
+qsfinABC = lsbalqual(AA,BB,CC)
+qsfinSM = lsbalqual(AA,BB,CC; SysMat = true)
+@test qsfinABC <= qsfinSM && 1.e50*qsfinABC < qsorigABC && 1.e50*qsfinSM < qsorigSM 
+
+# small example for which MATLAB does nothing
+A = [3.;;]; B = [1.e5;;]; C = [4.e-5;;]; 
+AA = copy(A); BB = copy(B); CC = copy(C);
+@time D = lsbalance!(AA,BB,CC)
+@test AA == D\A*D && BB == D\B && CC == C*D
+
 
 n = 10; m = 3; p = 2; k = 10
 T = rand(n,n);
 T[1, 2 : n] = 10^(k)*T[1, 2 : n]
 T[4:n, 3] = 10^(k)*T[4:n, 3]
-D = round.(Int,1. ./ rand(n))
+D = sort(round.(Int,1. ./ rand(n)))
 A = T*Diagonal(D); E = T;
-ev = eigvals(A,E)
-
-# maxiter = 100; tol = 0.01;
-# Md,dleft,dright = MatrixPencils.rowcolsums(abs.(A).+abs.(E)) 
-
-# evs = eigvals(Diagonal(dleft)*A*Diagonal(dright),Diagonal(dleft)*E*Diagonal(dright))
-# @test !(sort(ev) ≈ sort(D)) &&  sort(evs) ≈ sort(D)
+ev = sort(eigvals(A,E),by = real)
+corig = norm(abs.(ev-D)./sqrt.(1. .+ ev .^2)./sqrt.(1. .+ D .^2))
 
 B = rand(n,m); B[1,:] = 10^(k)*B[1,:]; 
 C = rand(p,n); C[:, 3] = 10^(k)*C[:, 3];
+# B = rand(n,m); B[6,:] = 10^(k)*B[6,:]; 
+# C = rand(p,n); C[:, 2] = 10^(k)*C[:, 2];
 
-AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
+
 qsorigABC = lsbalqual(A,E,B,C)
 qsorigSM = lsbalqual(A,E,B,C; SysMat = true)
+AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
 #@time d1, d2 = lsbalance!(AA,EE,BB,CC; withB = false, withC = false)
 @time D1, D2 = lsbalance!(AA,EE,BB,CC)
 @test AA == D1*A*D2 && EE == D1*E*D2 && BB == D1*B && CC == C*D2
@@ -1015,14 +1156,15 @@ qsorigSM = lsbalqual(A,E,B,C; SysMat = true)
 qsfinABC = lsbalqual(AA,EE,BB,CC)
 qsfinSM = lsbalqual(AA,EE,BB,CC; SysMat = true)
 @test qsfinABC < 100000*qsorigABC && 100000*qsfinSM < qsorigSM 
-
-evs = eigvals(AA,EE)
-@test !(sort(ev) ≈ sort(D)) &&  sort(evs) ≈ sort(D)
+evs = sort(eigvals(AA,EE),by = real)
+@test evs ≈ D
+cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
+@test ev ≈ D ? cofin/10 < corig :  cofin < corig 
 
 # eigenvalue oriented scaling of only A and E
-AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
 qsorigABC = lsbalqual(A,E,B,C)
 qsorigSM = lsbalqual(A,E,B,C; SysMat = true)
+AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
 @time D1, D2 = lsbalance!(AA,EE,BB,CC; withB = false, withC = false)
 @test AA == D1*A*D2 && EE == D1*E*D2 && BB == D1*B && CC == C*D2
 
@@ -1030,14 +1172,27 @@ qsfinABC = lsbalqual(AA,EE,BB,CC)
 qsfinSM = lsbalqual(AA,EE,BB,CC; SysMat = true)
 @test qsfinABC < 100000*qsorigABC && 100000*qsfinSM < qsorigSM 
 
-evs = eigvals(AA,EE)
-@test sort(evs) ≈ sort(D)
+evs = sort(eigvals(AA,EE),by=real)
+@test evs ≈ D
 
 
 # optimal scalings
 AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
 @time D1, D2 = lsbalance!(AA,EE,BB,CC,pow2 = false)
 @test AA ≈ D1*A*D2 && EE ≈ D1*E*D2 && BB ≈ D1*B && CC ≈ C*D2
+qsfinABC = lsbalqual(AA,EE,BB,CC)
+qsfinSM = lsbalqual(AA,EE,BB,CC; SysMat = true)
+evs = sort(eigvals(AA,EE),by=real)
+cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
+
+
+# small example for which MATLAB does nothing
+A = [0.;;]; E = [3.;;]; B = [1.e5;;]; C = [4.e5;;]; 
+AA = copy(A); EE = copy(E); BB = copy(B); CC = copy(C);
+@time D1, D2 = lsbalance!(AA,EE,BB,CC,pow2 = false)
+@test AA ≈ D1*A*D2 && EE ≈ D1*E*D2 && BB ≈ D1*B && CC ≈ C*D2
+
+
 
 
 end

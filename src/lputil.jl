@@ -1,4 +1,162 @@
 """
+    pbalance!(M, N; r, c, regpar, shift, maxiter, tol, pow2) -> (Dl, Dr)
+
+Balance the `m×n` matrix pencil `M - λN` by reducing the 1-norm of the matrix `T := abs(M)+abs(N)`
+by row and column balancing. 
+This involves similarity transformations with diagonal matrices `Dl` and `Dr` applied
+to `T` to make the rows and columns of `Dl*T*Dr` as close in norm as possible.
+The modified [Sinkhorn–Knopp algorithm](https://en.wikipedia.org/wiki/Sinkhorn%27s_theorem) described in [1] 
+is employed to reduce `T` to an approximately doubly stochastic matrix. 
+The targeted row and column sums can be specified using the keyword arguments `r = rs` and `c = cs`, 
+where `rs` and `cs` are `m-` and `n-`dimensional positive vectors, 
+representing the desired row and column sums, respectively (Default: `rs = ones(m)` and `cs = ones(n)`).
+
+The resulting `Dl` and `Dr` are diagonal scaling matrices.  
+If the keyword argument `pow2 = true` is specified, then the components of the resulting 
+optimal `Dl` and `Dr` are replaced by their nearest integer powers of 2. 
+If `pow2 = false`, the optimal values `Dl` and `Dr` are returned.
+The resulting `Dl*M*Dr` and `Dl*N*Dr` overwrite `M` and `N`, respectively
+
+A regularization-based scaling is performed if a nonzero regularization parameter `α` is specified
+via the keyword argument `regpar = α`.  
+If `diagreg = true`, then the balancing algorithm is performed on
+the extended symmetric matrix `[ α^2*I  T; T' α^2*I ]`, while if `diagreg = false` (default),   
+the balancing algorithm is performed on the matrix `[ (α/m)^2*em*em'  T; T' (α/n)^2*en*en' ]`, 
+where `em` and `en` are `m-` and `n-`dimensional vectors with elements equal to one.  
+If `α = 0` and `shift = γ > 0` is specified, then the algorithm is performed on
+the rank-one perturbation `T+γ*em*en`. 
+
+The keyword argument `tol = τ`, with `τ ≤ 1`,  specifies the tolerance used in the stopping criterion. 
+The iterative process is stopped as soon as the incremental scalings are `tol`-close to the identity. 
+
+The keyword argument `maxiter = k` specifies the maximum number of iterations `k` 
+allowed in the balancing algorithm. 
+
+_Method:_ This function employs the regularization approaches proposed in [1], modified 
+to handle matrices with zero rows or zero columns. The alternative shift based regularization 
+has been proposed in [2].  
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+
+[2] P.A.Knight, The Sinkhorn–Knopp algorithm: Convergence and applications, SIAM J. Matrix
+    Anal. Appl., 30 (2008), pp. 261–275.   
+"""
+function pbalance!(M::AbstractMatrix{T}, N::AbstractMatrix{T}; regpar = 0, shift = 0, diagreg = false, 
+                   r = fill(one(T),size(M,1)), c = fill(one(T),size(M,2)),                 
+                   maxiter = 100, tol = 1, pow2 = true) where {T}
+   m, n = size(M)
+   (m,n) != size(N) && throw(DimensionMismatch("M and N must have the same dimensions"))
+   if m == 0 && n == 0 
+      return Diagonal(T[]), Diagonal(T[])
+   elseif n == 0 
+      return Diagonal(ones(T,m)), Diagonal(T[])
+   elseif m == 0
+      return Diagonal(T[]), Diagonal(ones(T,n))
+   end
+   α = regpar
+   if α == 0
+      Dl, Dr = rcsumsbal!(abs.(M)+abs.(N); shift, r, c, maxiter, tol)
+   else
+      W = abs.(M)+abs.(N)
+      rc = [r;c]
+      if diagreg
+         dleft, dright = rcsumsbal!([α^2*I W; W' α^2*I]; r = rc, c = rc, maxiter, tol)
+      else
+         dleft, dright = rcsumsbal!([fill((α/m)^2,m,m) W; W' fill((α/n)^2,n,n)]; r = rc, c = rc, maxiter, tol)
+      end
+      Dl = Diagonal(dleft.diag[1:m]); Dr = Diagonal(dright.diag[m+1:m+n])
+   end
+   if pow2 
+      radix = real(T)(2.)
+      Dl.diag .= radix .^(round.(Int,log2.(Dl.diag)))
+      Dr.diag .= radix .^(round.(Int,log2.(Dr.diag)))
+   end
+   lmul!(Dl,M); rmul!(M,Dr)
+   lmul!(Dl,N); rmul!(N,Dr)
+   return Dl, Dr
+end
+"""
+    rcsumsbal!(M; shift, r, c, maxiter, tol) -> (Dl,Dr)
+
+Perform the Sinkhorn-Knopp-like algorithm to scale 
+a non-negative matrix `M` such that `Dl*M*Dr`
+has column sums equal to a positive row vector `cs` and row sums equal to a 
+positive column vector `rs`, where `sum(c) = sum(r)`. 
+If shift = γ > 0 is specified, the algorithm is performed on
+the rank-one perturbation `M+γ*e1*e2`,  where `e1` and `e2` are vectors 
+of ones of appropriate dimensions. 
+The iterative process is stopped as soon as the incremental
+scalings are `tol`-close to the identity.  
+`maxiter` is the maximum number of allowed iterations and `tol` is the
+tolerance for the transformation updates. 
+
+The resulting `Dl*M*Dr` overwrites `M` and is a matrix with equal row sums and 
+equal column sums. `Dl` and `Dr` are the diagonal scaling matrices. 
+
+_Note:_ This function is based on the MATLAB function `rowcolsums.m` of [1], modified 
+to handle matrices with zero rows or columns. The implemented shift based regularization 
+has been proposed in [2].  
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+
+[2] P.A.Knight, The Sinkhorn–Knopp algorithm: Convergence and applications, SIAM J. Matrix
+    Anal. Appl., 30 (2008), pp. 261–275.   
+"""
+function rcsumsbal!(M::AbstractMatrix{T}; r::AbstractVector{T} = fill(T(size(M,1)),size(M,1)), 
+                                          c::AbstractVector{T} = fill(T(size(M,2)),size(M,2)), maxiter = 100, tol = 1., shift = 0, pow2 = true) where {T}
+   m, n = size(M); 
+   any(M .< 0) && throw(ArgumentError("matrix M must have nonnegative elements"))
+   m == length(r) || throw(ArgumentError("dimension of row sums vector r must be equal to row size of M"))
+   n == length(c) || throw(ArgumentError("dimension of column sums vector c must be equal to column size of M"))
+   shift < 0 && throw(ArgumentError("the shift must be nonnegative"))
+
+   radix = real(T)(2.)
+   # handle zero rows and columns  
+   sumr = reshape(sum(M,dims=2),m)
+   indr = findall(!iszero,sumr); indrz = findall(iszero,sumr); m1 = length(indr); nrows = m1 == m
+   sumc = reshape(sum(M,dims=1),n)
+   indc = findall(!iszero,sumc); indcz = findall(iszero,sumc); n1 = length(indc); ncols = n1 == n
+   # exclude zero rows and columns: no copying performed if all rows/columns are nonzero
+   M1 = (nrows && ncols) ? M : view(M,indr,indc)
+   r1 = nrows ? r : view(r,indr)
+   c1 = ncols ? c : view(c,indc)
+   # scale the matrix to have total sum(sum(M))=sum(c)=sum(r);
+   sumcr = sum(c1); 
+   sumM = sum(M1); 
+   sc = sumcr/sumM
+   lmul!(sc,M1)
+   t = sqrt(sc); 
+   dleft = Vector{T}(undef,m); 
+   dleft1 = nrows ? dleft : view(dleft,indr)
+   fill!(dleft1,t); fill!(view(dleft,indrz),one(T))
+   dright = Vector{T}(undef,n); 
+   dright1 = ncols ? dright : view(dright,indc)
+   fill!(dright1,t); fill!(view(dright,indcz),one(T))
+   m1 == 0 && n1 == 0 && (return Diagonal(dleft), Diagonal(dright))
+
+   # Scale left and right to make row and column sums equal to r and c
+   conv = false
+   for i = 1:maxiter
+       conv = true
+       dr = reshape(sum(M1,dims=1) .+ m1*shift,n1) ./ c1; #@show dr
+       rdiv!(M1,Diagonal(dr)); 
+       er = minimum(dr)/maximum(dr); dright1 ./= dr
+       dl = reshape(sum(M1,dims=2) .+ n1*shift,m1) ./r1; #@show dl
+       ldiv!(Diagonal(dl),M1); 
+       el = minimum(dl)/maximum(dl); dleft1 ./= dl
+       #@show i, er, el
+       max(1-er,1-el) < tol/2 && break
+       conv = false
+   end
+   conv || (@warn "the iterative algorithm did not converge in $maxiter iterations")
+   # Finally scale the two scalings to have equal maxima
+   scaled = sqrt(maximum(dright1)/maximum(dleft1))
+   dleft1 .= dleft1*scaled; dright1 .= dright1/scaled
+   return Diagonal(dleft), Diagonal(dright)
+end
+"""
     _preduceBF!(M, N, Q, Z, L::Union{AbstractMatrix,Missing}, R::Union{AbstractMatrix,Missing}; 
                 fast = true, atol = 0, rtol, roff = 0, coff = 0, rtrail = 0, ctrail = 0, 
                 withQ = true, withZ = true) -> n, m, p

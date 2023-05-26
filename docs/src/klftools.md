@@ -1,6 +1,7 @@
 # Manipulation of general linear matrix pencils
 | Function | Description |
 | :--- | :--- |
+| **[`pbalance!`](@ref)** |Balancing arbitrary matrix pencils.  |
 | **[`klf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
 | **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and finite Kronecker structures |
 | **[`klf_rightinf`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and infinite Kronecker structures |
@@ -18,6 +19,7 @@
 | **[`klf_left_refineinf!`](@ref)** |   Refine the Kronecker-like form by enforcing upper triangular shapes of blocks in its infinite regular part |
 
 ```@docs
+pbalance!
 klf
 klf_right
 klf_rightinf

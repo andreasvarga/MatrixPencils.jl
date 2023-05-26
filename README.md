@@ -33,6 +33,7 @@ The current version of the package includes the following functions:
 
 **Manipulation of general linear matrix pencils**
 
+* **pbalance!** Balancing arbitrary matrix pencils.  
 * **preduceBF**  Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
 * **klf**   Computation of the Kronecker-like form exhibiting the full Kronecker structure.
 * **klf_left**  Computation of the Kronecker-like form exhibiting the left and finite Kronecker structures.
@@ -50,6 +51,7 @@ The current version of the package includes the following functions:
 
 **Manipulation of regular linear matrix pencils**
 
+* **regbalance!** Balancing regular matrix pencils.  
 * **isregular**   Checking the regularity of a pencil.
 * **isunimodular** Checking the unimodularity of a pencil.
 * **fisplit**  Finite-infinite eigenvalue splitting.
@@ -80,6 +82,7 @@ The current version of the package includes the following functions:
 
 **Manipulation of linearizations of polynomial or rational matrices**
 
+* **lsbalance!** Scaling of a descriptor system based linearization. 
 * **lsminreal** Computation of minimal order linearizations of the form `[A-λE B; C D]`.
 * **lsminreal2** Computation of minimal order linearizations of the form `[A-λE B; C D]` (potentially more efficient).
 * **lpsminreal**  Computation of strong minimal pencil based linearizations of the form `[A-λE B-λF; C-λG D-λH]`.
@@ -88,7 +91,6 @@ The current version of the package includes the following functions:
 * **lseval**   Evaluation of the value of the rational matrix corresponding to a descriptor system based linearization.
 * **lpseval**  Evaluation of the value of the rational matrix corresponding to a pencil based linearization.
 * **lps2ls**  Conversion of a pencil based linearization into a descriptor system based linearization.
-* **lsbalance!** Scaling of a descriptor system based linearization. 
 * **lsbalqual** Evaluation of the scaling quality of descriptor system based linearizations.
 
 **Manipulation of polynomial matrices** 

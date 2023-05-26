@@ -1,6 +1,7 @@
 # Computations involving regular matrix pencils
 | Function | Description |
 | :--- | :--- |
+| **[`regbalance!`](@ref)** | Balancing regular matrix pencils.  |
 | **[`isregular`](@ref)** | Checking the regularity of a pencil |
 | **[`isunimodular`](@ref)** | Checking the unimodularity of a pencil |  
 | **[`fisplit`](@ref)** | Finite-infinite eigenvalue splitting |
@@ -19,6 +20,7 @@
 | **[`ordeigvals`](@ref)** | Order-preserving computation of eigenvalues of a Schur matrix or a generalized Schur pair.   |
 
 ```@docs
+regbalance!
 ordeigvals
 isregular
 isunimodular

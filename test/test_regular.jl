@@ -1,11 +1,203 @@
 module Test_regular
 
 using LinearAlgebra
+using SparseArrays
 using MatrixPencils
 using Test
 
 
 @testset "Regular Matrix Pencils Utilities" begin
+
+@testset "regbalance!" begin
+
+n = 50;  k = 11; 
+for k in 11:5:41
+
+lambda = exp.(im.*rand(n));
+la = real(lambda); li = imag(lambda) 
+D = sort(la./li)
+
+La = Diagonal(la); Li = Diagonal(li); 
+Tl = randn(n,n).^k; Tr = randn(n,n).^k;
+A = Tl*La*Tr; E = Tl*Li*Tr;
+ev = sort(eigvals(A,E),by=real)
+if any(isinf.(ev))
+   corig = Inf
+else
+   corig = norm(abs.(ev-D)./sqrt.(1. .+ ev .^2)./sqrt.(1. .+ D .^2))
+end
+
+qsorig = qS1(abs.(A)+abs.(E))
+AA = copy(A); EE = copy(E); 
+@time D1, D2 = regbalance!(AA,EE)
+@test AA == D1*A*D2 && EE == D1*E*D2 
+qsfin = qS1(abs.(AA)+abs.(EE))
+@test qsfin < qsorig 
+evs = sort(eigvals(AA,EE),by=real)
+#@test evs ≈ D
+# compute the chordal distance between exact and computed eigenvalues
+cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
+#println("k = $k cofin = $cofin")
+@test cofin < corig 
+end
+
+
+
+n = 50;  k = 10; 
+for k in (10,20)
+
+kappa = 10^k
+lambda = exp.(im.*rand(n));
+la = real(lambda); li = imag(lambda) 
+D = sort(la./li)
+La = Diagonal(la); Li = Diagonal(li); 
+
+
+
+factor = kappa^(-1/(n-1)); 
+sigma = factor.^(0:n-1)
+Dl = Diagonal(sigma); Dr = Diagonal(sigma);
+Tl = Dl*qr(rand(n,n)).Q
+Tr = qr(rand(n,n)).Q*Dr
+
+A = Tl*La*Tr; E = Tl*Li*Tr;
+ev = sort(eigvals(A,E),by=real)
+if any(isinf.(ev))
+   corig = Inf
+else
+   corig = norm(abs.(ev-D)./sqrt.(1. .+ ev .^2)./sqrt.(1. .+ D .^2))
+end
+qsorig = qS1(abs.(A)+abs.(E))
+AA = copy(A); EE = copy(E); 
+@time D1, D2 = regbalance!(AA,EE)
+@test AA == D1*A*D2 && EE == D1*E*D2 
+qsfin = qS1(abs.(AA)+abs.(EE))
+@test qsfin < qsorig 
+evs = sort(eigvals(AA,EE),by=real)
+# compute the chordal distance between exact and computed eigenvalues
+cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
+#println("k = $k cofin = $cofin")
+@test cofin < corig
+end 
+
+
+# examples from Dopico et al. SIMAX, 43:1213-1237, 2022.    
+n = 50; k = 10; 
+for k in (-16 : 5 : 15)
+
+T = rand(n,n);
+T[1, 2 : n] = 10. ^(k)*T[1, 2 : n]
+T[4:n, 3] = 10. ^(k)*T[4:n, 3]
+D = sort(round.(Int,1. ./ rand(n)))
+A = T*Diagonal(D); E = T;
+ev = sort(eigvals(A,E),by=real)
+#println("norm(evs-ev) = $(norm(ev-D))")
+# compute the chordal distance between exact and computed eigenvalues
+corig = norm(abs.(ev-D)./sqrt.(1. .+ ev .^2)./sqrt.(1. .+ D .^2))
+#println("k = $k corig = $corig")
+
+# maxiter = 100; tol = 0.01;
+# dleft,dright = MatrixPencils.rowcolsums(abs.(A).+abs.(E)) 
+
+# evs = eigvals(Diagonal(dleft)*A*Diagonal(dright),Diagonal(dleft)*E*Diagonal(dright))
+# @test !(sort(ev) ≈ sort(D)) &&  sort(evs) ≈ sort(D)
+
+# M = abs.(A)+abs.(E); M[2,:] .= 0; M[4,:] .= 0; M[:,4] .= 0;
+# MM = copy(M);
+# dleft, dright = rcsumsbal!(MM)
+# @test dleft*M*dright ≈ MM
+# @test 100000*qS1(MM) < qS1(M)
+
+
+qsorig = qS1(abs.(A)+abs.(E))
+AA = copy(A); EE = copy(E); 
+@time D1, D2 = regbalance!(AA,EE)
+@test AA == D1*A*D2 && EE == D1*E*D2 
+qsfin = qS1(abs.(AA)+abs.(EE))
+@test qsfin < qsorig 
+#println("qsorig/qsfin = $(qsorig/qsfin)")
+@test 2. .^round.(Int,log2.(D1.diag)) == D1.diag && 2. .^round.(Int,log2.(D2.diag)) == D2.diag
+evs = sort(eigvals(AA,EE),by=real)
+#@test evs ≈ D
+# compute the chordal distance between exact and computed eigenvalues
+cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
+#println("k = $k cofin = $cofin")
+#@test cofin < corig 
+@test ev ≈ D ? cofin/10 < corig :  cofin < corig 
+
+
+AA = copy(A); EE = copy(E); 
+@time D1, D2 = regbalance!(AA,EE; pow2 = false)
+@test AA ≈ D1*A*D2 && EE ≈ D1*E*D2 
+qsfin = max(qS1(AA),qS1(EE))
+@test qsfin < qsorig 
+#println("qsorig/qsfin = $(qsorig/qsfin)")
+evs = sort(eigvals(AA,EE),by=real)
+@test evs ≈ D
+cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
+#println("k = $k cofin = $cofin")
+end
+
+#  Example 1, Ward 1981, pp.148f 
+
+A = [-2.0e+1 -1.0e+4 -2.0e+0 -1.0e+6 -1.0e+1 -2.0e+5
+6.0e-3 4.0e+0 6.0e-4 2.0e+2 3.0e-3 3.0e+1
+-2.0e-1 -3.0e+2 -4.0e-2 -1.0e+4 0.0e+0 3.0e+3
+6.0e-5 4.0e-2 9.0e-6 9.0e+0 3.0e-5 5.0e-1
+6.0e-2 5.0e+1 8.0e-3 -4.0e+3 8.0e-2 0.0e+0
+0.0e+0 1.0e+3 7.0e-1 -2.0e+5 1.3e+1 -6.0e+4 ];
+
+E = [-2.0e+1 -1.0e+4 2.0e+0 -2.0e+6 1.0e+1 -1.0e+5
+5.0e-3 3.0e+0 -2.0e-4 4.0e+2 -1.0e-3 3.0e+1
+0.0e+0 -1.0e+2 -8.0e-2 2.0e+4 -4.0e-1 0.0e+0
+5.0e-5 3.0e-2 2.0e-6 4.0e+0 2.0e-5 1.0e-1
+4.0e-2 3.0e+1 -1.0e-3 3.0e+3 -1.0e-2 6.0e+2
+-1.0e+0 0.0e+0 4.0e-1 -1.0e+5 4.0e+0 2.0e+4 ]; 
+
+D = collect(1.:1.:6.)  # exact eigenvalues
+
+qsorig = qS1(abs.(A)+abs.(E))
+AA = copy(A); EE = copy(E); 
+@time D1, D2 = regbalance!(AA,EE; pow2 = false)
+@test AA ≈ D1*A*D2 && EE ≈ D1*E*D2 
+qsfin = qS1(abs.(AA)+abs.(EE))
+ev = sort(eigvals(A,E),by=real)
+corig = norm(abs.(ev-D)./sqrt.(1. .+ ev .^2)./sqrt.(1. .+ D .^2))
+#println("corig = $corig")
+evs = sort(eigvals(AA,EE),by=real)
+cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
+#println("cofin = $cofin")
+@test 100000*cofin < corig && 100000*qsfin < qsorig 
+
+
+# Example 3 (graded matrix), see Ward, 1981, pp.148f
+
+A = [    1.0000e+00   1.0000e+01            0            0            0            0            0
+1.0000e+01   1.0000e+02   1.0000e+03            0            0            0            0
+         0   1.0000e+03   1.0000e+04   1.0000e+05            0            0            0
+         0            0   1.0000e+05   1.0000e+06   1.0000e+07            0            0
+         0            0            0   1.0000e+07   1.0000e+08   1.0000e+09            0
+         0            0            0            0   1.0000e+09   1.0000e+10   1.0000e+11
+         0            0            0            0            0   1.0000e+11   1.0000e+12];
+E = 1. *Matrix(I(7)); 
+qsorig = qS1(abs.(A)+abs.(E))
+AA = copy(A); EE = copy(E); 
+@time D1, D2 = regbalance!(AA,EE; pow2 = false)
+@test AA ≈ D1*A*D2 && EE ≈ D1*E*D2 
+qsfin = qS1(abs.(AA)+abs.(EE))
+@test 100000*qsfin < qsorig 
+
+
+As = sparse(A); Es = sparse(E)
+qsorig = qS1(abs.(As)+abs.(Es))
+AA = copy(As); EE = copy(Es); 
+@time D1, D2 = regbalance!(AA,EE; pow2 = false)
+@test AA ≈ D1*As*D2 && EE ≈ D1*Es*D2 
+qsfin = qS1(abs.(AA)+abs.(EE))
+@test 100000*qsfin < qsorig 
+
+end
+
 
 @testset "_svdlikeAE" begin
 

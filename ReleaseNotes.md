@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 1.7.9
+This patch release includes the new functions `regbalance!`, for balancing  regular matrix pencils, and
+`pbalance!`, for balancing  arbitrary matrix pencils in conjunction with several regularization approaches.  
+
 ## Version 1.7.8
 This patch release includes new functions `lsbalance!` for scaling descriptor systems and `lsbalqual` for the evaluation of the scaling quality of descriptor state space models. Several bug fixes have been also performed. 
 

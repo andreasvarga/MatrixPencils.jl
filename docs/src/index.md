@@ -26,6 +26,8 @@ A set of functions is provided to address pencil manipulation problems for struc
 A set of functions is available for the manipulation of polynomial matrices specified via their coefficient matrices in a monomial basis. All funtions also support matrix, vector or scalar of elements of the `Polynomial` type
 provided by the [Polynomials](https://github.com/JuliaMath/Polynomials.jl) package. Several linearization functions are available which allow the extension of pencil manipulation techniques to matrix polynomials. Some straightforward applications are covered such as the computation of finite and infinite eigenvalues, zeros and poles, the determination of the normal rank, the determination of Kronecker indices and finite and infinite eigenvalue structure, checks of regularity and unimodularity. The implementations follow the computational framework and results developed in [10] and are described in [11].
 
+Balancing techniques for matrix pencils can significantly enhance the reliability of computations and improve the accuracy of computed eigenvalues and zeros. Balancing approaches relying on the Sinkhorn-Knopp algorithm have been proposed in [15] and served as basis for several functions for balancing matrix pencils.  
+
 The available functions in the `MatrixPencils.jl` package cover both real and complex numerical data.
 The current version of the package includes the following functions:
 
@@ -33,6 +35,7 @@ The current version of the package includes the following functions:
 
 | Function | Description |
 | :--- | :--- |
+| **[`pbalance!`](@ref)** |Balancing arbitrary matrix pencils.  |
 | **[`preduceBF`](@ref)** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
 | **[`klf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
 | **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and finite Kronecker structures |
@@ -55,6 +58,7 @@ The current version of the package includes the following functions:
 
 | Function | Description |
 | :--- | :--- |
+| **[`regbalance!`](@ref)** |Balancing regular matrix pencils  |
 | **[`isregular`](@ref)** | Checking the regularity of a pencil |
 | **[`isunimodular`](@ref)** | Checking the unimodularity of a pencil |  
 | **[`fisplit`](@ref)** | Finite-infinite eigenvalue splitting |
@@ -94,6 +98,7 @@ The current version of the package includes the following functions:
 
 | Function | Description |
 | :--- | :--- |
+| **[`lsbalance!`](@ref)** | Scaling of a descriptor system based linearization |
 | **[`lsminreal`](@ref)** | Computation of irreducible descriptor system based linearizations  |
 | **[`lsminreal2`](@ref)** | Computation of irreducible descriptor system based linearizations (potentially more efficient)|
 | **[`lpsminreal`](@ref)** | Computation of strongly minimal pencil based linearizations |
@@ -102,7 +107,6 @@ The current version of the package includes the following functions:
 | **[`lseval`](@ref)** | Evaluation of the value of the rational matrix corresponding to a descriptor system based linearization  |
 | **[`lpseval`](@ref)** | Evaluation of the value of the rational matrix corresponding to a pencil based linearization |
 | **[`lps2ls`](@ref)** | Conversion of a pencil based linearization into a descriptor system based linearization |
-| **[`lsbalance!`](@ref)** | Scaling of a descriptor system based linearization |
 | **[`lsbalqual`](@ref)** | Evaluation of the scaling quality of descriptor system based linearizations |
 
 
@@ -224,3 +228,6 @@ the Index Sum Theorem, Linear Algebra and Its Applications, vol. 459, pp. 264-33
 to a specified region. In M. A. Kaashoek, J. H. van Schuppen, and A. C. M. Ran (Eds.),
 Signal Processing, Scattering and Operator Theory, and Numerical Methods, Proc. of MTNS 1989,
 Amsterdam, The Netherlands, vol. 3, pp. 469–477. Birhhäuser, Boston, 1990.
+
+[15] F.M.Dopico, M.C.Quintana and P. van Dooren, "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+

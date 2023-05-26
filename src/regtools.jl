@@ -896,3 +896,76 @@ function sfisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
       return ν[1:i], (ni, nf, ni2)                                             
    end
 end
+"""
+     regbalance!(A, E; maxiter = 100, tol = 1, pow2 = true) -> (Dl,Dr)
+
+Balance the regular pair `(A,E)` by reducing the 1-norm of the matrix `M := abs(A)+abs(E)`
+by row and column balancing. 
+This involves diagonal similarity transformations `Dl*(A-λE)*Dr` applied
+iteratively to `M` to make the rows and columns of `Dl*M*Dr` as close in norm as possible.
+The [Sinkhorn–Knopp algorithm](https://en.wikipedia.org/wiki/Sinkhorn%27s_theorem) is used 
+to reduce `M` to a doubly stochastic matrix. 
+
+The resulting `Dl` and `Dr` are diagonal scaling matrices.  
+If the keyword argument `pow2 = true` is specified, then the components of the resulting 
+optimal `Dl` and `Dr` are replaced by their nearest integer powers of 2. 
+If `pow2 = false`, the optimal values `Dl` and `Dr` are returned.
+The resulting `Dl*A*Dr` and `Dl*E*Dr` overwrite `A` and `E`, respectively
+    
+The keyword argument `tol = τ`, with `τ ≤ 1`,  specifies the tolerance used in the stopping criterion. 
+The iterative process is stopped as soon as the incremental scalings are `tol`-close to the identity. 
+
+The keyword argument `maxiter = k` specifies the maximum number of iterations `k` 
+allowed in the balancing algorithm. 
+
+_Note:_ This function is based on the MATLAB function `rowcolsums.m` of [1], modified such that
+the scaling operations are directly applied to `A` and `E`.  
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+"""
+function regbalance!(A::AbstractMatrix{T}, E::AbstractMatrix{T}; maxiter = 100, tol = 1, pow2 = true) where {T}
+   n = LinearAlgebra.checksquare(A)
+   (n,n) != size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
+
+   n <= 1 && (return Diagonal(ones(T,n)), Diagonal(ones(T,n)))
+ 
+   radix = real(T)(2.)
+   t = T(n)
+   pow2 && (t = radix^(round(Int,log2(t)))) 
+   c = fill(t,n); 
+   # Scale the matrix M = abs(A)+abs(E) to have total sum(sum(M)) = sum(c)
+   sumcr = sum(c) 
+   sumM = sum(abs,A) + sum(abs,E)
+   sc = sumcr/sumM
+   pow2 && (sc = radix^(round(Int,log2(sc)))) 
+   t = sqrt(sc) 
+   ispow2(t) || (sc *= 2; t = sqrt(sc))
+   lmul!(sc,A); lmul!(sc,E)
+   Dl = Diagonal(fill(t,n)); Dr = Diagonal(fill(t,n))
+
+   # Scale left and right to make row and column sums equal to r and c
+   conv = false
+   for i = 1:maxiter
+       conv = true
+       cr = sum(abs,A,dims=1) + sum(abs,E,dims=1) 
+       dr = pow2 ? Diagonal(radix .^(round.(Int,log2.(reshape(cr,n)./c)))) : Diagonal(reshape(cr,n)./c)
+       rdiv!(A,dr); rdiv!(E,dr) 
+       er = minimum(dr.diag)/maximum(dr) 
+       rdiv!(Dr,dr)
+       cl = sum(abs,A,dims=2) + sum(abs,E,dims=2)
+       dl = pow2 ? Diagonal(radix .^(round.(Int,log2.(reshape(cl,n)./c)))) : Diagonal(reshape(cl,n)./c)
+       ldiv!(dl,A); ldiv!(dl,E)
+       el = minimum(dl.diag)/maximum(dl) 
+       rdiv!(Dl,dl)
+       max(1-er,1-el) < tol/2 && break
+       conv = false
+   end
+   conv || (@warn "the iterative algorithm did not converge in $maxiter iterations")
+   # Finally scale the two scalings to have equal maxima
+   scaled = sqrt(maximum(Dr)/maximum(Dl))
+   pow2 && (scaled = radix^(round(Int,log2(scaled)))) 
+   rmul!(Dl,scaled); rmul!(Dr,1/scaled)
+   return Dl, Dr  
+end
+
