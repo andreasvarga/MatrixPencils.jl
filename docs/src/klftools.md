@@ -2,6 +2,7 @@
 | Function | Description |
 | :--- | :--- |
 | **[`pbalance!`](@ref)** |Balancing arbitrary matrix pencils.  |
+| **[`pbalqual`](@ref)** |Balancing quality of a matrix pencils.  |
 | **[`klf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
 | **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and finite Kronecker structures |
 | **[`klf_rightinf`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and infinite Kronecker structures |
@@ -20,6 +21,7 @@
 
 ```@docs
 pbalance!
+pbalqual
 klf
 klf_right
 klf_rightinf

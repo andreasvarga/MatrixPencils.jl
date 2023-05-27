@@ -1273,32 +1273,6 @@ function lsbalqual(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScali
                     max(qS1(A),qS1(E),qS1(B),qS1(C))
 end 
 """
-    qs = pbalqual(M, N) 
-
-Compute the 1-norm based scaling quality of a matrix pencil `M-λN`.
-
-The resulting `qs` is computed as 
-
-        qs = qS(abs(M)+abs(N)) ,
-
-where `qS(⋅)` is the scaling quality measure defined in Definition 5.5 of [1] for 
-nonnegative matrices. This definition has been extended to also cover matrices with
-zero rows or columns. If N = I, qs = qs(M) is computed. 
-
-A large value of `qs` indicates a possible poorly scaled matrix pencil.   
-
-[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
-    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
-"""
-function pbalqual(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScaling{Bool}}) where {T}
-   if (!(typeof(E) <: AbstractMatrix) || isequal(E,I)) 
-      return qS1(A)
-   else
-      return qS1(abs.(A).+abs.(E))
-   end
-end 
-
-"""
      lsbalance!(A, E, B, C; withB = true, withC = true, pow2, maxiter = 100, tol = 1) -> (D1,D2)
 
 Reduce the 1-norm of the matrix 

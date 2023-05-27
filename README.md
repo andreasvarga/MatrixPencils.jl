@@ -34,6 +34,7 @@ The current version of the package includes the following functions:
 **Manipulation of general linear matrix pencils**
 
 * **pbalance!** Balancing linear matrix pencils.  
+* **pbalqual**  Balancing quality of a matrix pencils.  
 * **preduceBF**  Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
 * **klf**   Computation of the Kronecker-like form exhibiting the full Kronecker structure.
 * **klf_left**  Computation of the Kronecker-like form exhibiting the left and finite Kronecker structures.
