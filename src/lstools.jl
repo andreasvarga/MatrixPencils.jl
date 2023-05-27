@@ -1272,6 +1272,31 @@ function lsbalqual(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScali
     return SysMat ? qS1([abs.(A).+abs.(E) B; C zeros(T,size(C,1),size(B,2))]) : 
                     max(qS1(A),qS1(E),qS1(B),qS1(C))
 end 
+"""
+    qs = pbalqual(M, N) 
+
+Compute the 1-norm based scaling quality of a matrix pencil `M-λN`.
+
+The resulting `qs` is computed as 
+
+        qs = qS(abs(M)+abs(N)) ,
+
+where `qS(⋅)` is the scaling quality measure defined in Definition 5.5 of [1] for 
+nonnegative matrices. This definition has been extended to also cover matrices with
+zero rows or columns. If N = I, qs = qs(M) is computed. 
+
+A large value of `qs` indicates a possible poorly scaled matrix pencil.   
+
+[1] F.M.Dopico, M.C.Quintana and P. van Dooren, 
+    "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
+"""
+function pbalqual(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScaling{Bool}}) where {T}
+   if (!(typeof(E) <: AbstractMatrix) || isequal(E,I)) 
+      return qS1(A)
+   else
+      return qS1(abs.(A).+abs.(E))
+   end
+end 
 
 """
      lsbalance!(A, E, B, C; withB = true, withC = true, pow2, maxiter = 100, tol = 1) -> (D1,D2)
@@ -1331,7 +1356,7 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
       MA = abs.(A)+abs.(E)   
       MB = abs.(B)   
       MC = abs.(C)   
-      r = fill(T(n),n); c = copy(r)
+      r = fill(real(T)(n),n); c = copy(r)
       # Scale the matrix to have total sum(sum(M))=sum(c)=sum(r);
       sumcr = sum(c) 
       sumM = sum(MA) 
@@ -1386,6 +1411,7 @@ nonnegative matrices. Nonzero rows and columns in `M` are allowed.
     "Diagonal scalings for the eigenstructure of arbitrary pencils", SIMAX, 43:1213-1237, 2022. 
 """
 function qS1(M)
+    (size(M,1) == 0 || size(M,2) == 0) && (return one(real(eltype(M))))
     temp = sum(abs,M,dims=1)
     tmax = maximum(temp)
     rmax = tmax == 0 ? one(eltype(M)) : tmax/minimum(temp[temp .!= 0])

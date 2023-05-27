@@ -29,7 +29,7 @@ export lpmfd2ls, rpmfd2ls, lpmfd2lps, rpmfd2lps, pminv2ls, pminv2lps
 export rmkstruct, rmzeros, rmzeros1, rmpoles, rmpoles1, rmrank 
 export saloc, salocd, salocinf, salocinfd, ordeigvals, isqtriu, eigselect1, eigselect2, saloc2
 export fihess, fischur, fischursep, sfischursep, fiblkdiag, gsblkdiag, ssblkdiag
-export pbalance!, regbalance!, lsbalance!, lsbalqual, qS1, rcsumsbal!
+export pbalance!, regbalance!, lsbalance!, lsbalqual, pbalqual, qS1, rcsumsbal!
 
 include("klftools.jl")
 include("regtools.jl")

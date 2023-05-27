@@ -21,7 +21,7 @@ pkg> test MatrixPencils
 
 ## About
 
-The Kronecker-canonical form of a linear pencil `M − λN` basically characterizes the right and left singular structure and the eigenvalue structure of the pencil. The computation of the Kronecker-canonical form may involve the use of ill-conditioned similarity transformations and, therefore, is potentially numerically unstable. Fortunately, alternative staircase forms, called *Kronecker-like forms* (KLFs), can be determined by employing exclusively orthogonal or unitary similarity transformations and allow to obtain basically the same (or only a part of) structural information on the pencil `M − λN`. Various KLFs can serve to address, in a numerically reliable way, the main applications of the Kronecker form,
+The Kronecker-canonical form of a linear matrix pencil `M − λN` basically characterizes the right and left singular structure and the eigenvalue structure of the pencil. The computation of the Kronecker-canonical form may involve the use of ill-conditioned similarity transformations and, therefore, is potentially numerically unstable. Fortunately, alternative staircase forms, called *Kronecker-like forms* (KLFs), can be determined by employing exclusively orthogonal or unitary similarity transformations and allow to obtain basically the same (or only a part of) structural information on the pencil `M − λN`. Various KLFs can serve to address, in a numerically reliable way, the main applications of the Kronecker form,
 such as the computation of minimal left or right nullspace bases, the computation of eigenvalues and zeros, the determination of the normal rank of polynomial and rational matrices, the computation of various factorizations of rational matrices, as well as the solution of linear equations with polynomial or rational matrices. The KLFs are also instrumental for solving computational problems in the analysis of generalized systems described by linear differential- or difference-algebraic equations (also known as descriptor systems).
 
 This collection of Julia functions is an attemp to implement high performance numerical software to compute a range of
@@ -33,7 +33,7 @@ The current version of the package includes the following functions:
 
 **Manipulation of general linear matrix pencils**
 
-* **pbalance!** Balancing arbitrary matrix pencils.  
+* **pbalance!** Balancing linear matrix pencils.  
 * **preduceBF**  Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular.
 * **klf**   Computation of the Kronecker-like form exhibiting the full Kronecker structure.
 * **klf_left**  Computation of the Kronecker-like form exhibiting the left and finite Kronecker structures.

@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.7.10
+This patch release includes the new function `pbalqual` and fixes some small bugs.
+
 ## Version 1.7.9
 This patch release includes the new functions `regbalance!`, for balancing  regular matrix pencils, and
 `pbalance!`, for balancing  arbitrary matrix pencils in conjunction with several regularization approaches.  
