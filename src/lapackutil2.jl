@@ -1,16 +1,29 @@
 module LapackUtil2
 
 #const liblapack = VERSION < v"1.7" ? Base.liblapack_name : "libblastrampoline" * (Sys.iswindows() ? "-5" : "")
-const liblapack = Base.liblapack_name
 
 import LinearAlgebra.BLAS.@blasfunc
 
-import LinearAlgebra: BlasFloat, BlasReal, BlasComplex, BlasInt, LAPACKException, 
+using LinearAlgebra
+import LinearAlgebra: libblastrampoline, BlasFloat, BlasReal, BlasComplex, BlasInt, LAPACKException, 
        DimensionMismatch, SingularException, PosDefException, chkstride1, checksquare
 
 using Base: iszero, has_offset_axes
+using LinearAlgebra.LAPACK
 
 export larfg!, larfgl!, larf!
+
+#const liblapack = Base.liblapack_name
+
+@static if VERSION < v"1.7"
+    using LinearAlgebra.LAPACK: liblapack
+elseif VERSION < v"1.9"
+    const liblapack = "libblastrampoline"
+else
+    const liblapack = LinearAlgebra.libblastrampoline
+end
+
+@show liblapack
 
 function chkside(side::AbstractChar)
     # Check that left/right hand side multiply is correctly specified
@@ -25,6 +38,7 @@ end
 
 for (fn, elty) in ((:dlanv2_, :Float64),
                    (:slanv2_, :Float32))
+                   
     @eval begin
         function lanv2(A::$elty, B::$elty, C::$elty, D::$elty)
            """

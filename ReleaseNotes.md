@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 1.7.12
+Version bump to allow using both `OpenBLAS` and `MKL`.  
+The Julia  `_dlanv2` replaces (temporarily) the wrapper for `dlanv2` 
+(this will be changed back after[MKL#138](https://github.com/JuliaLinearAlgebra/MKL.jl/issues/138) is fixed)
+
+## Version 1.7.11
+Version bump to include `Polynomials.jl` v4.0. 
+
 ## Version 1.7.10
 This patch release includes the new function `pbalqual` and fixes some small bugs.
 

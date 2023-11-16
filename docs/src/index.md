@@ -36,7 +36,7 @@ The current version of the package includes the following functions:
 | Function | Description |
 | :--- | :--- |
 | **[`pbalance!`](@ref)** |Balancing arbitrary matrix pencils.  |
-| **[`pbalqual`](@ref)** |Balancing quality of a matrix pencils.  |
+| **[`pbalqual`](@ref)** |Evaluation of the balancing quality of a matrix pencils.  |
 | **[`preduceBF`](@ref)** | Reduction to the basic condensed form  `[B A-λE; D C]` with `E` upper triangular and nonsingular. |
 | **[`klf`](@ref)** |   Computation of the Kronecker-like form exhibiting the full Kronecker structure |
 | **[`klf_right`](@ref)** |   Computation of the Kronecker-like form exhibiting the right and finite Kronecker structures |
@@ -100,6 +100,7 @@ The current version of the package includes the following functions:
 | Function | Description |
 | :--- | :--- |
 | **[`lsbalance!`](@ref)** | Scaling of a descriptor system based linearization |
+| **[`lsbalqual`](@ref)** | Evaluation of the scaling quality of descriptor system based linearizations |
 | **[`lsminreal`](@ref)** | Computation of irreducible descriptor system based linearizations  |
 | **[`lsminreal2`](@ref)** | Computation of irreducible descriptor system based linearizations (potentially more efficient)|
 | **[`lpsminreal`](@ref)** | Computation of strongly minimal pencil based linearizations |
@@ -108,8 +109,6 @@ The current version of the package includes the following functions:
 | **[`lseval`](@ref)** | Evaluation of the value of the rational matrix corresponding to a descriptor system based linearization  |
 | **[`lpseval`](@ref)** | Evaluation of the value of the rational matrix corresponding to a pencil based linearization |
 | **[`lps2ls`](@ref)** | Conversion of a pencil based linearization into a descriptor system based linearization |
-| **[`lsbalqual`](@ref)** | Evaluation of the scaling quality of descriptor system based linearizations |
-
 
 **Manipulation of polynomial matrices** 
 

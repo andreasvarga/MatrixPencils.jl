@@ -1045,7 +1045,8 @@ function ordeigvals(A::AbstractMatrix{T}) where T
                αi[i+1] = -ei
             else
                # an arbitrary 2x2 block
-               αr[i], αi[i], αr[i+1], αi[i+1] = lanv2(A[i,i], A[i,i+1], A[i+1,i], A[i+1,i+1])
+               # αr[i], αi[i], αr[i+1], αi[i+1] = lanv2(A[i,i], A[i,i+1], A[i+1,i], A[i+1,i+1])
+               αr[i], αi[i], αr[i+1], αi[i+1] = _lanv2(A[i,i], A[i,i+1], A[i+1,i], A[i+1,i+1])
             end
             i +=1
          end
@@ -1053,6 +1054,87 @@ function ordeigvals(A::AbstractMatrix{T}) where T
       return iszero(αi) ? αr : Complex.(αr,αi)
    end
 end
+function _lanv2(a::T,b::T,c::T,d::T) where {T <: Real}
+   # compute the eigenvalues of a real 2x2 [a b; c d] in e1r, e1i, e2r, e2i 
+   # extracted from the translation from LAPACK::dlanv2 by Ralph Smith
+   # Copyright:
+   # Univ. of Tennessee
+   # Univ. of California Berkeley
+   # Univ. of Colorado Denver
+   # NAG Ltd.
+   ZERO = zero(T)
+   ONE = one(T)
+   sgn(x) = (x < 0) ? -ONE : ONE # fortran sign differs from Julia
+   half = ONE / 2
+   small = 4eps(T) # how big discriminant must be for easy reality check
+   if c==0
+   elseif b==0
+       # swap rows/cols
+       a,b,c,d = d,-c,ZERO,a
+   elseif ((a-d) == 0) && (b*c < 0)
+       # nothing to do
+   else
+       asubd = a-d
+       p = half*asubd
+       bcmax = max(abs(b),abs(c))
+       bcmis = min(abs(b),abs(c)) * sgn(b) * sgn(c)
+       scale = max(abs(p), bcmax)
+       z = (p / scale) * p + (bcmax / scale) * bcmis
+       # if z is of order machine accuracy: postpone decision
+       if z >= small
+           # real eigenvalues
+           z = p + sqrt(scale) * sqrt(z) * sgn(p)
+           a = d + z
+           d -= (bcmax / z) * bcmis
+           b -= c
+           c = ZERO
+       else
+           # complex or almost equal real eigenvalues
+           σ = b + c
+           τ = hypot(σ, asubd)
+           cs = sqrt(half * (ONE + abs(σ) / τ))
+           sn = -(p / (τ * cs)) * sgn(σ)
+           # apply rotations
+           aa = a*cs + b*sn
+           bb = -a*sn + b*cs
+           cc = c*cs + d*sn
+           dd = -c*sn + d*cs
+           a = aa*cs + cc*sn
+           b = bb*cs + dd*sn
+           c = -aa*sn + cc*cs
+           d = -bb*sn + dd*cs
+           midad = half * (a+d)
+           a = midad
+           d = a
+           if (c != 0)
+               if (b != 0)
+                   if b*c >= 0
+                       # real eigenvalues
+                       sab = sqrt(abs(b))
+                       sac = sqrt(abs(c))
+                       p = sab*sac*sgn(c)
+                       a = midad + p
+                       d = midad - p
+                       b -= c
+                       c = 0
+                   end
+               else
+                   b,c = -c,ZERO
+               end
+           end
+       end
+   end
+
+   w1r,w2r = a, d
+   if c==0
+       w1i,w2i = ZERO,ZERO
+   else
+       rti = sqrt(abs(b))*sqrt(abs(c))
+       w1i,w2i = rti,-rti
+   end
+   return w1r,w1i,w2r,w2i
+end
+
 """
     ordeigvals(A, B) -> (ev, α, β)
 
