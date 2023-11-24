@@ -13,8 +13,6 @@ using LinearAlgebra.LAPACK
 
 export larfg!, larfgl!, larf!
 
-#const liblapack = Base.liblapack_name
-
 @static if VERSION < v"1.7"
     using LinearAlgebra.LAPACK: liblapack
 elseif VERSION < v"1.9"
@@ -22,8 +20,6 @@ elseif VERSION < v"1.9"
 else
     const liblapack = LinearAlgebra.libblastrampoline
 end
-
-@show liblapack
 
 function chkside(side::AbstractChar)
     # Check that left/right hand side multiply is correctly specified
