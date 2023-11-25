@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.7.13
+Version bump to address [PR#1](https://github.com/andreasvarga/MatrixPencils.jl/pull/16).  
+
 ## Version 1.7.12
 Version bump to allow using both `OpenBLAS` and `MKL`.  
 The Julia  `_dlanv2` replaces (temporarily) the wrapper for `dlanv2` 
