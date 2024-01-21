@@ -1209,7 +1209,8 @@ function lsbalance!(A::AbstractMatrix{T1}, B::AbstractVecOrMat{T1}, C::AbstractM
         end
     end
     return Diagonal(D)
-end       
+end   
+lsbalance!(A::AbstractMatrix{T1}; maxred = 16) where {T1} = lsbalance!(A,zeros(T1,size(A,1),0),zeros(T1,0,size(A,2)); maxred, withB=false, withC=false)  
 """
     qs = lsbalqual(A, B, C; SysMat = false) 
 

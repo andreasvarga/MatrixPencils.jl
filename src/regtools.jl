@@ -929,9 +929,9 @@ function regbalance!(A::AbstractMatrix{T}, E::AbstractMatrix{T}; maxiter = 100, 
    (n,n) != size(E) && throw(DimensionMismatch("A and E must have the same dimensions"))
 
    n <= 1 && (return Diagonal(ones(T,n)), Diagonal(ones(T,n)))
- 
-   radix = real(T)(2.)
-   t = T(n)
+   TR = real(T)
+   radix = TR(2.)
+   t = TR(n)
    pow2 && (t = radix^(round(Int,log2(t)))) 
    c = fill(t,n); 
    # Scale the matrix M = abs(A)+abs(E) to have total sum(sum(M)) = sum(c)
