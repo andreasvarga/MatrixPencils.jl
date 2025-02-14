@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.8.1
+Fix issue [#17](https://github.com/andreasvarga/MatrixPencils.jl/issues/17).   
+
 ## Version 1.8
 Version bump to address all Aqua tests and compatibility with Julia 1.8 and higher.  
 

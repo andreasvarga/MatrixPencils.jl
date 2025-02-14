@@ -298,8 +298,8 @@ IEEE Transactions on Automatic Control, vol. AC-26, pp. 111-129, 1981.
 function rm2ls(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3}; minimal::Bool = false, contr::Bool = false, obs::Bool = false, noseig::Bool = false, 
                 fast::Bool = true, atol::Real = zero(real(T1)), 
                 rtol::Real = (min(size(NUM)...)*eps(real(float(one(T1)))))*iszero(atol)) where {T1,T2}
-    Ap, Bp, Cp, D = rm2lspm(NUM, DEN, contr = contr, obs = obs, atol = atol, rtol = rtol)
     minimal && (contr = true; obs = true; noseig = true;)
+    Ap, Bp, Cp, D = rm2lspm(NUM, DEN, contr = contr, obs = obs, atol = atol, rtol = rtol)
     if ndims(D) == 2
         A, B, C  = lsminreal(Ap, Bp, Cp, contr = contr, obs = obs, fast = fast, atol = atol, rtol = rtol)
         E = I

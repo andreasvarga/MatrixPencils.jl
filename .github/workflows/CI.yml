@@ -3,10 +3,24 @@ on:
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - '*.md'
+      - '.github/workflows/TagBot.yml'
+      - '.github/workflows/Documentation.yml'
+      - 'docs/*'
   push:
     branches:
       - master
-    tags: '*'
+    # tags: '*'
+    paths-ignore:
+      - '*.md'
+      - '.github/workflows/TagBot.yml'
+      - '.github/workflows/Documentation.yml'
+      - 'docs/*'
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   test:
     name: Tests, Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
@@ -28,8 +42,8 @@ jobs:
         arch:
           - x64
     steps:
-      - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
@@ -43,9 +57,11 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
+      - uses: julia-actions/julia-buildpkg@latest
+      - uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v4
         with:
           file: lcov.info 
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
