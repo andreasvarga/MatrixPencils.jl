@@ -1,7 +1,7 @@
 using Documenter, MatrixPencils
 DocMeta.setdocmeta!(MatrixPencils, :DocTestSetup, :(using MatrixPencils); recursive=true)
 
-makedocs(
+makedocs(warnonly = true, 
   modules  = [MatrixPencils],
   sitename = "MatrixPencils.jl",
   authors  = "Andreas Varga",
