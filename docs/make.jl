@@ -30,4 +30,5 @@ makedocs(
 deploydocs(
   repo = "github.com/andreasvarga/MatrixPencils.jl.git",
   target = "build",
+  devbranch = "master"
 )
