@@ -30,11 +30,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - "lts"
           - '1' 
-          # - '1.6' 
-          # - '1.7' 
-          # - '1.8' 
-          # - '1.9' 
           # - 'nightly' 
         os:
           - ubuntu-latest
@@ -47,7 +44,7 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - uses: actions/cache@v1
+      - uses: actions/cache@v3
         env:
           cache-name: cache-artifacts
         with:
