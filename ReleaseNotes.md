@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.8.2
+Fix issue [#18](https://github.com/andreasvarga/MatrixPencils.jl/issues/18).   
+
 ## Version 1.8.1
 Fix issue [#17](https://github.com/andreasvarga/MatrixPencils.jl/issues/17).   
 

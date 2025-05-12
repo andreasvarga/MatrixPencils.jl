@@ -103,13 +103,21 @@ function polgcdvw(a::Vector{T}, b::Vector{S}; atol::Real = 0, rtol::Real = Base.
 
     atol == 0 ? tol = rtol : tol = atol
     # determine the degree of GCD as the nullity of the Sylvester matrix 
-    nd = na1 + nb1 - 2 - rank([convmtx(a1,nb1-1) convmtx(b1,na1-1)], atol = tol)
-    nd == 0 && (switch ? (return [one(R)], b1, a1, zero(R)) : (return [one(R)], a1, b1, zero(R))) 
-    # determine [w; -v] from an orthogonal/unitary nullspace basis of dimension 1 
-    # of a reduced Sylvester matrix using the last row of Vt from its (partial) SVD 
-    _, sv, Vt = LAPACK.gesvd!('N', 'A', [convmtx(a1,nb1-nd) convmtx(b1,na1-nd)])
-    k = na1 + nb1 -2*nd - count(x -> x > tol, sv) # expected nullity k = 1
-    k == 1 || error("GCD computation failure")
+    k = 0
+    nit = 1
+    Vt = 0
+    nd = 0
+    while k != 1 && nit < 10
+       nd = na1 + nb1 - 2 - rank([convmtx(a1,nb1-1) convmtx(b1,na1-1)], atol = tol)
+       nd == 0 && (switch ? (return [one(R)], b1, a1, zero(R)) : (return [one(R)], a1, b1, zero(R))) 
+       # determine [w; -v] from an orthogonal/unitary nullspace basis of dimension 1 
+       # of a reduced Sylvester matrix using the last row of Vt from its (partial) SVD 
+       _, sv, Vt = LAPACK.gesvd!('N', 'A', [convmtx(a1,nb1-nd) convmtx(b1,na1-nd)])
+       k = na1 + nb1 -2*nd - count(x -> x > tol, sv) # expected nullity k = 1
+       tol *= 10
+       nit += 1
+    end 
+    k == 1 || error("GCD computation failure: change tolerance if possible")
     wv = Vt[end,:] 
     # wv = LAPACK.gesvd!('N', 'A', [convmtx(a1,nb1-nd) convmtx(b1,na1-nd)])[3][end,:] 
     eltype(wv) <: Complex && (wv = conj(wv))  
@@ -125,6 +133,7 @@ function polgcdvw(a::Vector{T}, b::Vector{S}; atol::Real = 0, rtol::Real = Base.
     else
        δ = norm( [a1; b1] - [ conv(v,d); conv(w,d) ])
     end
+    δ < max(norm(a1),norm(b1))*sqrt(eps(eltype(δ))) || @warn "Possible inaccurate GCD computation: change tolerance if possible"
 
     switch ? (return d, w, v, δ) : (return d, v, w, δ)
 end 
@@ -211,7 +220,6 @@ function pollcm(a::Vector{T}, b::Vector{S}; atol::Real = 0, rtol::Real = Base.rt
     nb1 == 0 && (return zeros(S,1))
     na1 == 1 && (return b)
     nb1 == 1 && (return a)
-     
     return conv(a, polgcdvw(a, b, atol = atol, rtol = rtol, maxnit = maxnit)[3])
 end    
 function conv(a::Vector{T}, b::Vector{S}) where {T <: Number, S <: Number }

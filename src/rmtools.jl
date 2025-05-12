@@ -44,7 +44,6 @@ function rm2lspm(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3}; contr::Bool 
     p, m, knum = size(NUM)
     p1, m1, kden = size(DEN)
     (p,m) == (p1, m1) || error("Numerator and denominator polynomial matrices must have the same size")
-
     degQ1 = 0
     degD1 = 0
     n = 0
