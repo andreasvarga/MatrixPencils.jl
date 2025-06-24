@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 1.8.3
+Make structured pencil applications `sklfapps.jl` and structured pencil reductions`lputil.jl` generic.    
+
 ## Version 1.8.2
 Fix issue [#18](https://github.com/andreasvarga/MatrixPencils.jl/issues/18).   
 

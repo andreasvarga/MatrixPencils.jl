@@ -1450,10 +1450,14 @@ end
 function eigvalsnosort!(M; kwargs...)
    return eigvals!(M; sortby=nothing, kwargs...)
 end
-function eigvalsnosort!(M, N; kwargs...)
+function eigvalsnosort!(M::AbstractMatrix{T}, N::AbstractMatrix{T}; kwargs...) where {T <: BlasFloat}
    ev = eigvals!(M, N; sortby=nothing, kwargs...)
-   eltype(M) <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
-   return ev
+   T <: Complex || (ev[imag.(ev) .> 0] = conj(ev[imag.(ev) .< 0]))
+   return isreal(ev) ? real(ev) : ev
+end
+function eigvalsnosort!(M::AbstractMatrix{T}, N::AbstractMatrix{T}) where {T}
+   ev = schur!(complex(M), complex(N)).values
+   return isreal(ev) ? real(ev) : ev
 end
 
 

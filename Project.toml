@@ -1,14 +1,22 @@
 name = "MatrixPencils"
 uuid = "48965c70-4690-11ea-1f13-43a2532b2fa8"
 authors = ["Andreas Varga <varga.andreas@gmail.com>"]
-version = "1.8.2"
+version = "1.8.3"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
+[extras]
+GenericLinearAlgebra = "14197337-ba66-59df-a3e3-ca00e7dcff7a"
+GenericSchur = "c145ed77-6b09-5dd9-b285-bf645a82121e"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
 [compat]
+GenericLinearAlgebra = "0.3"
+GenericSchur = "0.5"
 LinearAlgebra = "1"
 Polynomials = "2.0, 3, 4"
 Random = "1"
@@ -16,9 +24,6 @@ SparseArrays = "1"
 Test = "1"
 julia = "1.8"
 
-[extras]
-SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["SparseArrays", "Test"]
+test = ["GenericSchur", "GenericLinearAlgebra", "SparseArrays", "Test"]

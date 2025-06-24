@@ -4,6 +4,8 @@ using Random
 using LinearAlgebra
 using MatrixPencils
 using Test
+using GenericLinearAlgebra
+using GenericSchur
 
 
 @testset "Structured Matrix Pencils Applications" begin
@@ -34,11 +36,19 @@ D = [
    0.0   0.0]; 
 M2 = [A B; C D]; N2 = [E zeros(6,2); zeros(3,8)];
 
+Ab, Eb, Bb, Cb, Db = BigFloat.(A), E, BigFloat.(B), BigFloat.(C), BigFloat.(D)
+
 # Kronecker structure
 kinfo  = spkstruct(A, E, B, C, D, atol1 = 1.e-7, atol2 = 1.e-7)
 @test (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8)
 
 kinfo  = spkstruct(A, E, view(B,:,1), C, view(D,:,1), atol1 = 1.e-7, atol2 = 1.e-7)
+@test (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1,2], [2], 2, 7)
+
+kinfo  = spkstruct(Ab, Eb, Bb, Cb, Db, atol1 = 1.e-7, atol2 = 1.e-7)
+@test (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8)
+
+kinfo  = spkstruct(Ab, Eb, view(Bb,:,1), Cb, view(Db,:,1), atol1 = 1.e-7, atol2 = 1.e-7)
 @test (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1,2], [2], 2, 7)
 
 # zeros
@@ -50,6 +60,14 @@ kinfo  = spkstruct(A, E, view(B,:,1), C, view(D,:,1), atol1 = 1.e-7, atol2 = 1.e
 @test sort(real(val)) ≈ [-1, 2, Inf] && iz == [1] && 
       (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1, 2], [2], 2, 7)
 
+@time val, iz, kinfo  = spzeros(Ab, Eb, Bb, Cb, Db)
+@test sort(real(val)) ≈ [-1, 2, Inf,Inf] && iz == [1, 1] && 
+      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8)
+
+@time val, iz, kinfo  = spzeros(Ab, Eb, view(Bb,:,1), Cb, view(Db,:,1))
+@test sort(real(val)) ≈ [-1, 2, Inf] && iz == [1] && 
+      (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1, 2], [2], 2, 7)
+
 @time val, kinfo  = speigvals(A, E, B, C, D)
 @test sort(real(val)) ≈ [-1, 2, Inf, Inf, Inf, Inf] && 
 (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8) 
@@ -58,9 +76,22 @@ kinfo  = spkstruct(A, E, view(B,:,1), C, view(D,:,1), atol1 = 1.e-7, atol2 = 1.e
 @test sort(real(val)) ≈ [-1, 2, Inf, Inf] && 
 (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1, 2], [2], 2, 7) 
 
+@time val, kinfo  = speigvals(Ab, Eb, Bb, Cb, Db)
+@test sort(real(val)) ≈ [-1, 2, Inf, Inf, Inf, Inf] && 
+(kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [2], [2, 2], 2, 8) 
+
+@time val, kinfo  = speigvals(Ab, Eb, view(Bb,:,1), Cb, view(Db,:,1))
+@test sort(real(val)) ≈ [-1, 2, Inf, Inf] && 
+(kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == (Int64[], [1, 2], [2], 2, 7) 
+
 @test sprank(A, E, B, C, D, fastrank = true) == 8 && sprank(A, E, B, C, D, fastrank = false) == 8
 
 @test sprank(A, E, view(B,:,1), C, view(D,:,1), fastrank = true) == 7 && sprank(A, E, view(B,:,1), C, view(D,:,1), fastrank = false) == 7
+
+@test sprank(Ab, Eb, Bb, Cb, Db, fastrank = true) == 8 && sprank(Ab, Eb, Bb, Cb, Db, fastrank = false) == 8
+
+@test sprank(Ab, Eb, view(Bb,:,1), Cb, view(Db,:,1), fastrank = true) == 7 && sprank(Ab, Eb, view(Bb,:,1), Cb, view(Db,:,1), fastrank = false) == 7
+
 
 # output decoupling zeros
 kinfo  = spkstruct(A, E, missing, C, missing, atol1 = 1.e-7, atol2 = 1.e-7)

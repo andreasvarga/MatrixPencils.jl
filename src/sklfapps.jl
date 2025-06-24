@@ -79,7 +79,7 @@ function spzeros(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifo
       # Step 3: Particular case of the dual PREDUCE algorithm 
       ired = mrinf+1:mM-rtrail
       jred = nrinf+1:nM-ctrail
-      ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1, fast = fast, withQ = false, withZ = false)
+      ρ = _preduce4!(n, 0, p, view(M,ired,jred),view(N,ired,jred), Q, Z, tol1; fast = fast, withQ = false, withZ = false)
       j += 1
       rtrail += p
       ctrail += ρ
