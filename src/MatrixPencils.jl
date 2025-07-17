@@ -6,7 +6,7 @@ const BlasComplex = Union{ComplexF64,ComplexF32}
 
 using LinearAlgebra
 using Polynomials
-import LinearAlgebra: copy_oftype
+import LinearAlgebra: copy_oftype, BlasInt
 
 include("lapackutil2.jl")
 import .LapackUtil2: larfg!, larfgl!, larf!, gghrd!, hgeqz!, tgexc!, tgsen!, lanv2, lag2, safemin, tgsyl!

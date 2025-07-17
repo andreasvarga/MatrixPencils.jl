@@ -26,6 +26,26 @@ function _qrE!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, Q::Union{AbstractMatr
    ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,E,τ,B)
    triu!(E)
 end
+function _qrE!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, Q::Union{AbstractMatrix{T},Nothing}, 
+               B::Union{AbstractVecOrMat{T},Missing} = missing; withQ::Bool = true) where {T}
+   
+   # fast return for dimensions 0 or 1
+   size(A,1) <= 1 && return
+   T <: Complex ? tran = 'C' : tran = 'T'
+   # compute in-place the QR-decomposition E = Q1*E1 
+   #_, τ = LinearAlgebra.LAPACK.geqrf!(E) 
+   F = qr!(E)
+   # A <- Q1'*A
+   #LinearAlgebra.LAPACK.ormqr!('L',tran,E,τ,A)
+   lmul!(F.Q',A)
+   # Q <- Q*Q1
+   #withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E,τ,Q)
+   withQ && rmul!(Q,F.Q)
+   # B <- Q1'*B
+   #ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,E,τ,B)
+   ismissing(B) || lmul!(F.Q',B)
+   triu!(E)
+end
 """
     _svdlikeAE!(A, E, Q, Z, B, C; svdA = true, fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (rE, rA22)
 
@@ -196,6 +216,166 @@ function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
       # C <- C*V
       ismissing(C) || (C[:,i22] = C[:,i22]*Vt')
       A22[:,:] = [ Diagonal(S[1:rA22]) zeros(T,rA22,n3); zeros(T,n3,n2) ]
+   end
+   return rE, rA22   
+end  
+function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
+                     Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
+                     B::Union{AbstractVecOrMat{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                     svdA::Bool = true, fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                     rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
+                     withQ::Bool = true, withZ::Bool = true) where {T}
+
+   # fast returns for null dimensions
+   n = size(A,1)
+   if n == 0 
+      return 0, 0
+   end
+   T <: Complex ? tran = 'C' : tran = 'T'
+   
+   if fast
+      # compute in-place the QR-decomposition E*P1 = Q1*[E1;0] with column pivoting 
+      #_, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(E)
+      F = qr!(E,ColumnNorm())
+      tol = max(atol2, rtol*abs(E[1,1]))
+      rE = count(x -> x > tol, abs.(diag(E))) 
+      jpvt = F.p
+      n2 = n-rE
+      i1 = 1:rE
+      # A <- Q1'*A
+      # LinearAlgebra.LAPACK.ormqr!('L',tran,E,τ,A)
+      lmul!(F.Q',A)
+      # A <- A*P1
+      A[:,:] = A[:,jpvt]      
+      # Q <- Q*Q1
+      # withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E,τ,Q)
+      withQ && rmul!(Q,F.Q)
+      # Z <- Z*P1
+      withZ && (Z[:,:] = Z[:,jpvt])
+      # B <- Q1'*B
+      # ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,E,τ,B)
+      ismissing(B) || lmul!(F.Q',B)
+      # E = [E1;0] 
+      E[:,:] = [ triu(E[i1,:]); zeros(T,n2,n) ]
+      # C <- C*P1
+      ismissing(C) || (C[:,:] = C[:,jpvt])
+      
+      # compute in-place the complete orthogonal decomposition E*Z1 = [E11 0; 0 0] with E11 nonsingular and UT
+      E1 = view(E,i1,:)
+      #_, tau = LinearAlgebra.LAPACK.tzrzf!(E1)
+      F = qr(reverse(E1,dims=1)')
+      rmul!(E1,F.Q)
+      #E1[:,:] = [ triu(E[i1,i1]) zeros(T,rE,n2)  ] 
+      i22 = rE+1:n
+      triu!(reverse!(view(E,i1,i1),dims=2)); fill!(view(E,i1,i22),zero(T))
+      #jp = [n2+1:n;i1]
+      # A <- A*Z1
+      #LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,A)
+      rmul!(A,F.Q)
+      reverse!(view(A,:,i1),dims=2)
+      #withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,Z)
+      withZ && (rmul!(Z,F.Q); reverse!(view(Z,:,i1),dims=2))
+      # C <- C*Z1
+      #ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,C); 
+      ismissing(C) || (rmul!(C,F.Q); reverse!(view(C,:,i1),dims=2)) 
+      n2 == 0 && (return rE, 0)
+      tolA = max(atol1, rtol*opnorm(A,1))
+      svdA || (return rE, rank(view(A,i22,i22), atol = tolA))
+      # assume 
+      #    A = [A11 A12]
+      #        [A21 A22]
+      # compute in-place the QR-decomposition A22*P2 = Q2*[R2;0] with column pivoting 
+      A22 = view(A,i22,i22)
+      #_, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(A22)
+      F = qr!(A22,ColumnNorm())
+      rA22 = count(x -> x > tolA, abs.(diag(A22))) 
+      jpvt = F.p
+      n3 = n2-rA22
+      i2 = rE+1:rE+rA22
+      i3 = rE+rA22+1:n
+      # A21 <- Q2'*A21
+      #LinearAlgebra.LAPACK.ormqr!('L',tran,A22,τ,view(A,i22,i1))
+      lmul!(F.Q',view(A,i22,i1))
+      # A12 <- A12*P1
+      A[i1,i22] = A[i1,i22[jpvt]]      
+      # Q <- Q*Q2
+      #withQ && LinearAlgebra.LAPACK.ormqr!('R','N',A22,τ,view(Q,:,i22))
+      withQ && rmul!(view(Q,:,i22),F.Q)
+      # Z <- Z*P2
+      withZ && (Z[:,i22] = Z[:,i22[jpvt]])
+      # B <- Q2'*B
+      #ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,A22,τ,view(B,i22,:))
+      ismissing(B) ||  lmul!(F.Q',view(B,i22,:))
+      # A22 = [R2;0] 
+      A22[:,:] = [ triu(A[i2,i22]); zeros(T,n3,n2) ]
+      # R <- R*P1
+      ismissing(C) || (C[:,i22] = C[:,i22[jpvt]])
+      # compute in-place the complete orthogonal decomposition R2*Z2 = [A2 0; 0 0] with A22 nonsingular and UT
+      A2 = view(A,i2,i22)
+      #_, tau = LinearAlgebra.LAPACK.tzrzf!(A2)
+      F = qr(reverse(A2,dims=1)')
+      i12 = 1:rE+rA22
+      # rmul!(A2,F.Q)
+      rmul!(view(A,i12,i22),F.Q)
+      reverse!(view(A,1:rE+rA22,i2),dims=2)
+      # A2[:,:] = [ triu(A[i2,i2]) zeros(T,rA22,n3)  ] 
+      triu!(view(A,i2,i2)); fill!(view(A,i2,rE+rA22+1:n),zero(T))
+      # A12 <- A12*Z2
+      #LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(A,i1,i22))
+      #withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(Z,:,i22))
+      withZ && (rmul!(view(Z,:,i22),F.Q); reverse!(view(Z,:,i2),dims=2))
+      # C <- C*Z2
+      #ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(C,:,i22)); 
+      ismissing(C) || (rmul!(view(C,:,i22),F.Q); reverse!(view(C,:,i2),dims=2))      
+   else
+      # compute the complete orthogonal decomposition of E using the SVD-decomposition
+      # U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',E)
+      F = svd!(E,full = true)
+      tolE = max(atol2, rtol*F.S[1])
+      rE = count(x -> x > tolE, F.S) 
+      n2 = n-rE
+      # A <- A*V
+      A[:,:] = A[:,:]*F.Vt'
+      # A <- U'*A
+      A[:,:] = F.U'*A[:,:]
+      # Q <- Q*U
+      withQ && (Q[:,:] = Q[:,:]*F.U)
+      # Z <- Q*V
+      withZ && (Z[:,:] = Z[:,:]*F.Vt')
+      # B <- U'*B
+      ismissing(B) || (B[:,:] = F.U'*B[:,:])
+      # C <- C*V
+      ismissing(C) || (C[:,:] = C[:,:]*F.Vt')
+      E[:,:] = [ Diagonal(F.S[1:rE]) zeros(T,rE,n2) ; zeros(T,n2,n) ]
+      n2 == 0 && (return rE, 0)
+      i22 = rE+1:n
+      tolA = max(atol1, rtol*opnorm(A,1))
+      svdA || (return rE, rank(view(A,i22,i22), atol = tolA))
+      # assume 
+      #    A = [A11 A12]
+      #        [A21 A22]
+      # compute the complete orthogonal decomposition of A22 using the SVD-decomposition
+      A22 = view(A,i22,i22)
+      #U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',A22)
+      F = svd!(A22,full = true)
+      rA22 = count(x -> x > tolA, F.S) 
+      n3 = n2-rA22
+      i1 = 1:rE
+      i2 = rE+1:rE+rA22
+      i3 = rE+rA22+1:n
+      # A12 <- A12*V
+      A[i1,i22] = A[i1,i22]*F.Vt'
+      # A21 <- U'*A21
+      A[i22,i1] = F.U'*A[i22,i1]
+      # Q <- Q*U
+      withQ && (Q[:,i22] = Q[:,i22]*F.U)
+      # Z <- Q*V
+      withZ && (Z[:,i22] = Z[:,i22]*F.Vt')
+      # B <- U'*B
+      ismissing(B) || (B[i22,:] = F.U'*B[i22,:])
+      # C <- C*V
+      ismissing(C) || (C[:,i22] = C[:,i22]*F.Vt')
+      A22[:,:] = [ Diagonal(F.S[1:rA22]) zeros(T,rA22,n3); zeros(T,n3,n2) ]
    end
    return rE, rA22   
 end  
@@ -474,7 +654,6 @@ function fisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
    if n == 0 
       return ν, (0, 0)
    end
-   T <: Complex ? tran = 'C' : tran = 'T'
 
    # Step 0: Reduce to the standard form
    nf, m1, p1 = _preduceBF!(A, E, Q, Z, B, C; atol = atol2, rtol = rtol, fast = fast) 
@@ -533,6 +712,118 @@ function fisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
          p1 -= τ 
       end
 
+      klf_right_refineinf!(view(ν,1:i), A, E, Z, C; withZ = withZ)
+      # the following code can be used to make the supradiagonal blocks of E upper triangular
+      # but it is not necessary in this context
+      # k2 = ni 
+      # for k = i:-1:1
+      #     nk = ν[k]
+      #     k1 = k2-nk+1
+      #     kk = k1:k2
+      #     if nk > 1
+      #        Ak = view(A,kk,kk)
+      #        tau = similar(A,nk)
+      #        LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+      #        LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(A,1:k1-1,kk))
+      #        withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+      #        LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(E,1:k1-1,kk))
+      #        ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+      #        triu!(Ak)
+      #     end
+      #     if k > 1 
+      #        nk1 = ν[k-1]
+      #        k1e = k1 - nk1
+      #        k2e = k1 - 1
+      #        kke = k1e:k2e
+      #        if nk1 > 1
+      #           Ek = view(E,kke,kk)
+      #           tau = similar(A,nk)
+      #           LinearAlgebra.LAPACK.geqrf!(Ek,tau)
+      #           LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(A,kke,k1e:n))
+      #           withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ek,tau,view(Q,:,kke)) 
+      #           LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(E,kke,k2+1:n))
+      #           ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(B,kke,:))
+      #           triu!(Ek)
+      #        end
+      #     end
+      #     k2 = k1-1
+      # end        
+   
+      return ν[1:i], (ni, nf)                                             
+   end
+end
+function fisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
+                  Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
+                  B::Union{AbstractVecOrMat{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                  fast::Bool = true, finite_infinite::Bool = false, 
+                  atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                  rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
+                  withQ::Bool = true, withZ::Bool = true) where {T}
+
+   # fast returns for null dimensions
+   n = size(A,1)
+   ν = Vector{Int}(undef,n)
+   if n == 0 
+      return ν, (0, 0)
+   end
+
+   # Step 0: Reduce to the standard form
+   nf, m1, p1 = _preduceBF!(A, E, Q, Z, B, C; atol = atol2, rtol = rtol, fast = fast) 
+        
+   tolA = max(atol1, rtol*opnorm(A,1))     
+   
+   if finite_infinite
+
+      # Reduce A-λE to the Kronecker-like form by splitting the finite-infinite structures
+      #
+      #                  | Af - λ Ef |     *      |
+      #      At - λ Et = |-----------|------------|,
+      #                  |    0      | Ai -  λ Ei |
+      # 
+      # where Ai - λ Ei is in a staircase form.  
+
+      i = 0
+      ni = 0
+      while p1 > 0
+         # Step 1 & 2: Dual algorithm PREDUCE
+         τ, ρ  = _preduce2!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                            rtrail = ni, ctrail = ni, withQ = withQ, withZ = withZ)
+         ρ+τ == p1 || error("A-λE is not regular")
+         ni += p1
+         nf -= ρ
+         i += 1
+         ν[i] = p1
+         p1 = ρ
+         m1 -= τ 
+      end
+      reverse!(view(ν,1:i))
+      klf_left_refineinf!(view(ν,1:i), A, E, Q, B; roff = nf, coff = nf, withQ = withQ)
+      return ν[1:i], (nf, ni)                                             
+   else
+
+      # Reduce A-λE to the Kronecker-like form by splitting the infinite-finite structures
+      #
+      #                  | Ai - λ Ei |    *      |
+      #      At - λ Et = |-----------|-----------|
+      #                  |    0      | Af - λ Ef |
+      #
+      # where Ai - λ Ei is in a staircase form.  
+
+      i = 0
+      ni = 0
+      while m1 > 0
+         # Steps 1 & 2: Standard algorithm PREDUCE
+         τ, ρ = _preduce1!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                           roff = ni, coff = ni, withQ = withQ, withZ = withZ)
+         ρ+τ == m1 || error("A-λE is not regular")
+         ni += m1
+         nf -= ρ
+         i += 1
+         ν[i] = m1
+         m1 = ρ
+         p1 -= τ 
+      end
+ 
       klf_right_refineinf!(view(ν,1:i), A, E, Z, C; withZ = withZ)
       # the following code can be used to make the supradiagonal blocks of E upper triangular
       # but it is not necessary in this context
@@ -872,6 +1163,210 @@ function sfisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
              LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(E,1:k1-1,kk))
              ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
              triu!(Ak)
+          end
+         #  the following code can be used to make the supradiagonal blocks of E upper triangular
+         #  but it is not necessary in this context
+         #  if k > 1 
+         #     nk1 = ν[k-1]
+         #     k1e = k1 - nk1
+         #     k2e = k1 - 1
+         #     kke = k1e:k2e
+         #     if nk1 > 1
+         #        Ek = view(E,kke,kk)
+         #        tau = similar(A,nk)
+         #        LinearAlgebra.LAPACK.geqrf!(Ek,tau)
+         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(A,kke,k1e:n))
+         #        withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ek,tau,view(Q,:,kke)) 
+         #        LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(E,kke,k2+1:n))
+         #        ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ek,tau,view(B,kke,:))
+         #        triu!(Ek)
+         #     end
+         k2 = k1-1
+      end        
+   
+      return ν[1:i], (ni, nf, ni2)                                             
+   end
+end
+function sfisplit!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, 
+                  Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing},
+                  B::Union{AbstractVecOrMat{T},Missing} = missing, C::Union{AbstractMatrix{T},Missing} = missing; 
+                  fast::Bool = true, finite_infinite::Bool = false, 
+                  atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                  rtol::Real = (size(A,1)*eps(real(float(one(T)))))*iszero(min(atol1,atol2)), 
+                  withQ::Bool = true, withZ::Bool = true) where {T}
+
+   # fast returns for null dimensions
+   n = size(A,1)
+   ν = Vector{Int}(undef,n)
+   if n == 0 
+      return ν, (0, 0, 0)
+   end
+
+   # Step 0: Reduce to the standard form
+   nf, m1, p1 = _preduceBF!(A, E, Q, Z, B, C; atol = atol2, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ) 
+        
+   tolA = max(atol1, rtol*opnorm(A,1))     
+   Q === nothing && (withQ = false)
+   Z === nothing && (withZ = false)
+   
+   if finite_infinite
+      # Reduce A-λE to the form 
+      #
+      #                  | Ai1  |    *      |
+      #      At - λ Et = |------|-----------|
+      #                  |  0   | A2 - λ E2 |
+      #
+      # where Ai1 is upper triangular and nonsingular and E2 upper triangular.  
+      τ, ρ = _preduce1!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                        roff = 0, coff = 0, withQ = withQ, withZ = withZ)
+      ρ+τ == m1 || error("A-λE is not regular")
+      nf -= ρ
+      ni1 = m1
+      m1 = ρ
+      p1 -= τ 
+      if ni1 > 1
+         kk = 1:ni1
+         Ak = view(A,kk,kk)
+         # tau = similar(A,ni1)
+         # LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+         F = qr(reverse(Ak,dims=1)')
+         #withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+         withZ && (rmul!(view(Z,:,kk),F.Q); reverse!(view(Z,:,kk),dims=2))
+         #ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+         ismissing(C) || (rmul!(view(C,:,kk),F.Q); reverse!(view(C,:,kk),dims=2)) 
+         #triu!(Ak)
+         Ak[:,:] = reverse(reverse(F.R,dims=1),dims=2)'
+      end
+
+      # Reduce A2-λE2 to the Kronecker-like form by splitting the finite-infinite structures
+      #
+      #                  | Af - λ Ef |     *       |
+      #      A2 - λ E2 = |-----------|-------------|,
+      #                  |    0      | Ai2 - λ Ei2 |
+      # 
+      # where Ai2 - λ Ei2 is in a staircase form with Ai2 nonsingular and upper triangular and
+      # Ei2 upper triangular and nilpotent.   
+
+      i = 0
+      ni = 0
+      while p1 > 0
+         # Step 1 & 2: Dual algorithm PREDUCE
+         τ, ρ  = _preduce2!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                            roff = ni1, coff = ni1, rtrail = ni, ctrail = ni, withQ = withQ, withZ = withZ)
+         ρ+τ == p1 || error("A-λE is not regular")
+         ni += p1
+         nf -= ρ
+         i += 1
+         ν[i] = p1
+         p1 = ρ
+         m1 -= τ 
+      end
+      k1 = ni1+nf+1
+      reverse!(view(ν,1:i))
+      for k = 1:i
+          nk = ν[k]
+          k2 = k1+nk-1
+          kk = k1:k2
+          if nk > 1
+             Ak = view(A,kk,kk)
+             #  tau = similar(A,nk)
+             #  LinearAlgebra.LAPACK.geqrf!(Ak,tau)
+             F = qr!(Ak)
+             #LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(A,kk,k2+1:n))
+             lmul!(F.Q',view(A,kk,k2+1:n))
+             # withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ak,tau,view(Q,:,kk))
+             withQ && rmul!(view(Q,:,kk),F.Q)
+             # LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(E,kk,k2+1:n))
+             lmul!(F.Q',view(E,kk,k2+1:n))
+             #ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(B,kk,:))
+             ismissing(B) || lmul!(F.Q',view(B,kk,:))
+             triu!(Ak)
+          end
+          k1 = k2+1
+      end        
+      return ν[1:i], (ni1, nf, ni)                                             
+   else
+      # Reduce A-λE to the form 
+      #
+      #                  | A1 - λ E1 |  *   |
+      #      At - λ Et = |-----------|------|,
+      #                  |    0      | Ai2  |
+      # 
+      # where Ai2 is upper triangular and nonsingular and E1 is upper triangular.
+      τ, ρ  = _preduce2!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                         rtrail = 0, ctrail = 0, withQ = withQ, withZ = withZ)
+      ρ+τ == p1 || error("A-λE is not regular")
+      ni2 = p1
+      nf -= ρ
+      p1 = ρ
+      m1 -= τ 
+      if ni2 > 1
+         kk = n-ni2+1:n
+         Ak = view(A,kk,kk)
+         # tau = similar(A,ni2)
+         # LinearAlgebra.LAPACK.geqrf!(Ak,tau)
+         # #LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(A,kk,k2+1:n))
+         # withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ak,tau,view(Q,:,kk))
+         # #LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(E,kk,k2+1:n))
+         # ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(B,kk,:))
+         # triu!(Ak)
+         F = qr!(Ak)
+         # LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(A,kk,k2+1:n))
+         # lmul!(F.Q',view(A,kk,k2+1:n))
+         # withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Ak,tau,view(Q,:,kk))
+         withQ && rmul!(view(Q,:,kk),F.Q)
+         # LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(E,kk,k2+1:n))
+         # lmul!(F.Q',view(E,kk,k2+1:n))
+         #ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,Ak,tau,view(B,kk,:))
+         ismissing(B) || lmul!(F.Q',view(B,kk,:))
+         triu!(Ak)
+       end
+
+      # Reduce A1-λE1 to the Kronecker-like form by splitting the infinite-finite structures
+      #
+      #                  | Ai1 - λ Ei1 |    *      |
+      #      A1 - λ E1 = |-------------|-----------|
+      #                  |    0        | Af - λ Ef |
+      #
+      # where Ai1 - λ Ei1 is in a staircase form with Ai1 nonsingular and upper triangular and
+      # Ei1 upper triangular and nilpotent.   
+
+      i = 0
+      ni = 0
+      while m1 > 0
+         # Steps 1 & 2: Standard algorithm PREDUCE
+         τ, ρ = _preduce1!(nf, m1, p1, A, E, Q, Z, tolA, B, C; fast = fast, 
+                           roff = ni, coff = ni, rtrail = ni2, ctrail = ni2, withQ = withQ, withZ = withZ)
+         ρ+τ == m1 || error("A-λE is not regular")
+         ni += m1
+         nf -= ρ
+         i += 1
+         ν[i] = m1
+         m1 = ρ
+         p1 -= τ 
+      end
+
+      k2 = ni 
+      for k = i:-1:1
+          nk = ν[k]
+          k1 = k2-nk+1
+          kk = k1:k2
+          if nk > 1
+             Ak = view(A,kk,kk)
+             #  tau = similar(A,nk)
+             #  LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+            #  LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(A,1:k1-1,kk))
+            #  withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+            #  LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(E,1:k1-1,kk))
+            #  ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+            #  triu!(Ak)
+             F = qr(reverse(Ak,dims=1)')
+             #withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Z,:,kk)) 
+             withZ && (rmul!(view(Z,:,kk),F.Q); reverse!(view(Z,:,kk),dims=2))
+             #ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(C,:,kk)) 
+             ismissing(C) || (rmul!(view(C,:,kk),F.Q); reverse!(view(C,:,kk),dims=2)) 
+             #triu!(Ak)
+             Ak[:,:] = reverse(reverse(F.R,dims=1),dims=2)'
           end
          #  the following code can be used to make the supradiagonal blocks of E upper triangular
          #  but it is not necessary in this context

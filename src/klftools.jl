@@ -1391,6 +1391,43 @@ function klf_right_refineinf!(νi::AbstractVector{Int}, M::AbstractMatrix{T1}, N
    end        
    return 
 end
+function klf_right_refineinf!(νi::AbstractVector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Z::Union{AbstractMatrix{T1},Nothing},
+   R::Union{AbstractMatrix{T1},Missing}; roff::Int = 0, coff::Int = 0, withZ::Bool = true) where {T1}
+   nb = length(νi)
+   nb == 0 && return 
+   # T1 <: Complex ? tran = 'C' : tran = 'T'
+   ni = sum(νi)
+
+   ki2 = roff+ni
+   kj2 = coff+ni
+   for k = nb:-1:1
+       nk = νi[k]
+       ki1 = ki2-nk+1
+       kj1 = kj2-nk+1
+       kki = ki1:ki2
+       kkj = kj1:kj2
+       if nk > 1
+          Mk = view(M,kki,kkj)
+          #  tau = similar(M,nk)
+          #  LinearAlgebra.LAPACK.gerqf!(Mk,tau)
+          F = qr(reverse(Mk,dims=1)')
+          #LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(M,1:ki1-1,kkj))
+          rmul!(view(M,1:ki1-1,kkj),F.Q)
+          reverse!(view(M,1:ki1-1,kkj),dims=2)
+          #withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(Z,:,kkj)) 
+          withZ && (rmul!(view(Z,:,kkj),F.Q); reverse!(view(Z,:,kkj),dims=2))
+          #LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(N,1:ki1-1,kkj))
+          rmul!(view(N,1:ki1-1,kkj),F.Q); reverse!(view(N,1:ki1-1,kkj),dims=2)
+          # ismissing(R) || LinearAlgebra.LAPACK.ormrq!('R',tran,Mk,tau,view(R,:,kkj)) 
+          ismissing(R) || (rmul!(view(R,:,kkj),F.Q); reverse!(view(R,:,kkj),dims=2)) 
+          #triu!(Mk)
+          Mk[:,:] = reverse(reverse(F.R,dims=1),dims=2)'
+       end
+       ki2 = ki1-1
+       kj2 = kj1-1
+   end        
+   return 
+end
 """
     klf_left_refineinf!(νi, M, N, Q, L; roff = 0, coff = 0, withQ = true) 
 
@@ -1436,6 +1473,41 @@ function klf_left_refineinf!(νi::AbstractVector{Int}, M::AbstractMatrix{T1}, N:
           withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Mk,tau,view(Q,:,kki))
           ismissing(L) || LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(L,kki,:))
           LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(N,kki,kj2+1:n))
+          triu!(Mk)
+       end
+       ki1 = ki2+1
+       kj1 = kj2+1
+   end        
+   return 
+end
+function klf_left_refineinf!(νi::AbstractVector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Q::Union{AbstractMatrix{T1},Nothing},
+   L::Union{AbstractMatrix{T1},Missing}; roff::Int = 0, coff::Int = 0, withQ::Bool = true) where {T1}
+   nb = length(νi)
+   nb == 0 && return 
+   # T1 <: Complex ? tran = 'C' : tran = 'T'
+   n = size(M,2)
+
+   ki1 = roff+1
+   kj1 = coff+1
+   for k = 1:nb
+       nk = νi[k]
+       ki2 = ki1+nk-1
+       kj2 = kj1+nk-1
+       kki = ki1:ki2
+       kkj = kj1:kj2
+       if nk > 1
+          Mk = view(M,kki,kkj)
+          #  tau = similar(M,nk)
+          #  LinearAlgebra.LAPACK.geqrf!(Mk,tau)
+          F = qr!(Mk)
+          #LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(M,kki,kj2+1:n))
+          lmul!(F.Q',view(M,kki,kj2+1:n))
+          # withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Mk,tau,view(Q,:,kki))
+          withQ && rmul!(view(Q,:,kki),F.Q)
+          #ismissing(L) || LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(L,kki,:))
+          ismissing(L) || lmul!(F.Q',view(L,kki,:))
+          #LinearAlgebra.LAPACK.ormqr!('L',tran,Mk,tau,view(N,kki,kj2+1:n))
+          lmul!(F.Q',view(N,kki,kj2+1:n))
           triu!(Mk)
        end
        ki1 = ki2+1

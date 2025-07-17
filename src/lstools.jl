@@ -1,11 +1,11 @@
-function rcond(A::DenseMatrix,tola::Real = 0)
-   T = eltype(A)
-   T1 = T <: BlasFloat ? T : T1 = promote_type(T,Float64)
+function rcond(A::DenseMatrix{T},tola::Real = 0) where {T <: Union{BlasInt,BlasFloat}}
+   T1 = promote_type(T,Float64)
    nrmA = opnorm(A,1)
    nrmA <= tola && return zero(real(T1))
    istriu(A) ? (return LinearAlgebra.LAPACK.trcon!('1','U','N',copy_oftype(A,T1))) : 
        (return LinearAlgebra.LAPACK.gecon!('1', LinearAlgebra.LAPACK.getrf!(copy_oftype(A,T1))[1],real(T1)(nrmA)) ) 
 end
+rcond(A::DenseMatrix{T},tola::Real = 0) where {T} = 1/cond(A,1)
 """
     lseval(A, E, B, C, D, val; atol1, atol2, rtol, fast = true) -> Gval
 

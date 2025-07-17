@@ -603,7 +603,6 @@ function _preduce1!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
    mM = roff + npp + rtrail
    nM = coff + npm + ctrail
    mM, nM = size(M)
-   Q = Matrix{T}(I,mM,mM); Z = Matrix{T}(I,nM,nM); withQ = true; withZ = true; 
    # Step 1:
    ia = roff+1:roff+n
    ja = coff+m+1:nM
@@ -872,6 +871,7 @@ function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
          # DT, τau, jpvt = LinearAlgebra.LAPACK.geqp3!(copy(D'))
          F = qr!(copy(D'),ColumnNorm())
       end
+      jpvt = F.p
       rmul!(BE,F.Q)  # BE*Q
       # LinearAlgebra.LAPACK.ormqr!('R','N',DT,τau,BE)
       #jt = m:-1:1
@@ -891,7 +891,7 @@ function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
       #LinearAlgebra.LAPACK.ormqr!('R','N',DT,τau,EE)
       #EE[:,:] = EE[:,jt]      # BE*Q*P2
       #D[:,:] = [ zeros(p,m-τ)  QR.R[τ:-1:1,p:-1:1]' ]
-      D[:,:] = [ zeros(T,p,m-τ)  reverse(reverse(triu(F.R),dims=1),dims=2)' ]
+      D[:,:] = τ > 0 ? [ zeros(T,p,m-τ)  reverse(reverse(triu(F.R),dims=1),dims=2)' ] : zeros(T,p,m)
       C[:,:] = C[jpvt,:]
       C[:,:] = reverse(C,dims=1)
 

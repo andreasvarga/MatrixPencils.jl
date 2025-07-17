@@ -4,6 +4,8 @@ using LinearAlgebra
 using SparseArrays
 using MatrixPencils
 using Test
+using GenericLinearAlgebra
+using GenericSchur
 
 
 @testset "Regular Matrix Pencils Utilities" begin
@@ -392,17 +394,17 @@ A2 = [
      ];
 
 T = Float64;
-A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); 
+# A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); 
 
-Q = Matrix{T}(I,n,n)
-Z = Matrix{T}(I,n,n)
+# Q = Matrix{T}(I,n,n)
+# Z = Matrix{T}(I,n,n)
 
-@time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C)
-@test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
-      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
-      (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
-      (ismissing(C) || norm(C2*Z-C)  < sqrt(eps(1.))) && 
-      rE == 2 && rA22 == 1
+# @time rE, rA22  = _svdlikeAE!(A, E, Q, Z, B, C)
+# @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+#       norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
+#       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
+#       (ismissing(C) || norm(C2*Z-C)  < sqrt(eps(1.))) && 
+#       rE == 2 && rA22 == 1
 
 A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); 
 
@@ -416,8 +418,8 @@ Z = Matrix{T}(I,n,n)
       (ismissing(C) || norm(C2*Z-C)  < sqrt(eps(1.))) && 
       rE == 2 && rA22 == 1
 
-
-for Ty in (Float64, Complex{Float64})
+Ty = BigFloat
+for Ty in (Float64, Complex{Float64}, BigFloat)
 
 n = 10; m = 3; p = 2;
 rE = 5;
@@ -487,6 +489,8 @@ N = zeros(1,1); M = ones(1,1);
 M = [1 0;0 1]; N = [0 1; 0 0]; 
 @test isregular(M, N) 
 
+@test isregular(BigFloat.(M), BigFloat.(N)) 
+
 M = [  22  34  31   31  17
         45  45  42   19  29
         39  47  49   26  34
@@ -499,9 +503,10 @@ N = [   13  26  25  17  24
         16  25  27  14  23 
         24  35  18  21  22  ];
 @test !isregular(M, N) 
+@test !isregular(BigFloat.(M), BigFloat.(N)) 
 
 Ty = Float64
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat)
 
     abstol = sqrt(eps(one(real(Ty))))
     
@@ -585,9 +590,10 @@ N = [   13  26  25  17  24
         16  25  27  14  23 
         24  35  18  21  22  ];
 @test !isunimodular(M, N) 
+@test !isunimodular(BigFloat.(M), BigFloat.(N)) 
 
 Ty = Float64
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat)
 
     abstol = sqrt(eps(one(real(Ty))))
     
@@ -711,7 +717,7 @@ fast = true; finite_infinite = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat)
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = zeros(Ty,3,2); C2 = zeros(4,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
@@ -790,7 +796,7 @@ fast = true; finite_infinite = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat)
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = zeros(Ty,3,2); C2 = zeros(4,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 

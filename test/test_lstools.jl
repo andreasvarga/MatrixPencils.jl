@@ -270,10 +270,17 @@ D2 = [0.0  0.0
 0.0  1.0];
 
 sys = (A2,E2,B2,C2,D2);
+Ty = BigFloat
+sysb = (Ty.(A2),Ty.(E2),Ty.(B2),Ty.(C2),Ty.(D2))
 
 # compute minimal realization 
 sys1 = lsminreal(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
+
+#fails
+sys2 = lsminreal(sysb..., fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
+
 # an order reduction without enforcing controllability and observability may not be possible
 sys1 = lsminreal(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 !!

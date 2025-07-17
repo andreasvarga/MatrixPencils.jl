@@ -794,6 +794,87 @@ function sklf_right!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractVecO
 
    return Q, Z, νr[1:i], nc, nfu, niu
 end
+function sklf_right!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
+                   atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), atol3::Real = zero(real(T)), 
+                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2,atol3)), 
+                   withQ::Bool = true, withZ::Bool = true) where {T}
+   n = LinearAlgebra.checksquare(A)
+   n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+   n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
+   (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
+   
+   maxmn = max(m,n)
+   νr = Vector{Int}(undef,maxmn)
+   nfu = 0
+   niu = 0
+   tol1 = atol1
+   withQ ? Q = Matrix{T}(I,n,n) : Q = nothing
+   withZ ? Z = Matrix{T}(I,n,n) : Z = nothing
+ 
+   # fast returns for null dimensions
+   if m == 0 && n == 0 
+      return Q, Z, νr, n, nfu, niu
+   elseif n == 0 
+      νr[1] = 0
+      return Q, Z, νr[1:1], n, nfu, niu
+   end
+
+   tolA = max(atol1, rtol*opnorm(A,1))
+   typeof(B) <: AbstractVector ? tolB = max(atol3, rtol*norm(B,1)) : tolB = max(atol3, rtol*opnorm(B,1))
+
+   ρ1 = _sreduceB!(A, E, B, Q, tolB; fast = fast, withQ = withQ)
+   ρ1 == n && (return Q, Z, [ρ1], n, nfu, niu)
+
+   n1, m1, p1 = _preduceBF!(A, E, Q, Z, missing, C; roff = ρ1, atol = atol2, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ) 
+ 
+   mrinf = ρ1
+   nrinf = 0
+   rtrail = 0
+   ctrail = 0
+   niu = 0
+   while p1 > 0
+      # Step 1 & 2: Dual algorithm PREDUCE
+      τ, ρ  = _preduce2!(n1, m1, p1, A, E, Q, Z, tolA, missing, C; fast = fast, 
+                         roff = mrinf, coff = nrinf, rtrail = rtrail, ctrail = ctrail, withQ = withQ, withZ = withZ)
+      ρ+τ == p1 || error("| B | A-λE | has no full row rank")
+      ctrail += p1
+      rtrail += p1
+      niu += p1
+      n1 -= ρ
+      p1 = ρ
+      m1 -= τ 
+   end
+   
+   if ρ1 > 0
+      i = 1 
+      νr[1] = ρ1
+   else
+      return Q, Z, νr[1:0], 0, n1, niu
+   end
+   if m1 > 0
+      imA11 = 1:n-rtrail
+      A11 = view(A,imA11,1:n)
+      E11 = view(E,imA11,1:n)
+      ismissing(C) ? C1 = missing : (C1 = view(C,:,1:n))
+   end
+   nc = ρ1
+   nfu = n1
+   while m1 > 0
+      # Step 3: Particular case of the standard algorithm PREDUCE
+      ρ = _preduce3!(nfu, m1, A11, E11, Q, Z, tolA, missing, C1, fast = fast, coff = nrinf, roff = mrinf, ctrail = ctrail,  withQ = withQ, withZ = withZ)
+      ρ == 0 && break
+      i += 1
+      νr[i] = ρ
+      mrinf += ρ
+      nrinf += m1
+      nc += ρ
+      nfu -= ρ
+      m1 = ρ
+   end
+
+   return Q, Z, νr[1:i], nc, nfu, niu
+end
 """
     sklf_rightfin!(A, E, B, C; fast = true, atol1 = 0, atol2 = 0,  
                    rtol, withQ = true, withZ = true) -> (Q, Z, νr, nc, nuc)
@@ -1143,6 +1224,87 @@ function sklf_left!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, C::AbstractMatri
  
    return Q, Z, reverse(μl[1:j]), no, nfu, niu
 end
+function sklf_left!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractVecOrMat{T},Missing}; fast::Bool = true, 
+                   atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), atol3::Real = zero(real(T)), 
+                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2,atol3)), 
+                   withQ::Bool = true, withZ::Bool = true) where {T}
+   n = LinearAlgebra.checksquare(A)
+   n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
+   p, n1 = size(C)
+   n == n1 || throw(DimensionMismatch("A and C must have the same number of columns"))
+   (!ismissing(B) && n != size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
+   
+   maxpn = max(p,n)
+   μl = Vector{Int}(undef,maxpn)
+   nfu = 0
+   niu = 0
+   tol1 = atol1
+   withQ ? Q = Matrix{T}(I,n,n) : Q = nothing
+   withZ ? Z = Matrix{T}(I,n,n) : Z = nothing
+ 
+   # fast returns for null dimensions
+   if p == 0 && n == 0
+      return Q, Z, μl, n, nfu, niu
+   elseif n == 0
+      μl[1] = 0
+      return Q, Z, μl[1:1], n, nfu, niu
+   end
+
+   tolA = max(atol1, rtol*opnorm(A,1))
+   tolC = max(atol3, rtol*opnorm(C,Inf))
+
+   A1 = copy(A); E1 = copy(E); C1 = copy(C); B1 = copy(B);
+   ρ1 = _sreduceC!(A, E, C, Z, tolC; fast = fast, withZ = withZ)
+   ρ1 == n && (return Q, Z, [ρ1], n, nfu, niu)
+   
+   # reduce to basic form
+   n1, m1, p1 = _preduceBF!(A, E, Q, Z, B, missing; ctrail = ρ1, atol = atol2, rtol = rtol, fast = fast, withQ = withQ, withZ = withZ) 
+   
+   mrinf = 0
+   nrinf = 0
+   roff = 0
+   coff = 0
+   rtrail = 0
+   ctrail = ρ1
+   niu = 0
+   while m1 > 0
+      # Steps 1 & 2: Standard algorithm PREDUCE
+      τ, ρ = _preduce1!(n1, m1, p1, A, E, Q, Z, tolA, B, missing; fast = fast, 
+                        roff = roff, coff = coff, ctrail = ctrail, withQ = withQ, withZ = withZ)
+      ρ+τ == m1 || error("| C' | A'-λE' | has no full row rank")
+      roff += m1
+      coff += m1
+      niu += m1
+      n1 -= ρ
+      m1 = ρ
+      p1 -= τ 
+   end
+  
+   if ρ1 > 0
+      j = 1 
+      μl[1] = ρ1
+   else
+      return Q, Z, μl[1:0], 0, n1, niu
+   end
+   
+   no = ρ1
+   nfu = n1
+   while p1 > 0
+      # Step 3: Particular form of the dual algorithm PREDUCE
+      ρ = _preduce4!(nfu, 0, p1, A, E, Q, Z, tolA, B, missing; fast = fast, roff = roff, coff = coff, rtrail = rtrail, ctrail = ctrail, 
+                     withQ = withQ, withZ = withZ) 
+      ρ == 0 && break
+      j += 1
+      μl[j] = ρ
+      rtrail += p1
+      ctrail += ρ
+      no += ρ
+      nfu -= ρ
+      p1 = ρ
+   end
+ 
+   return Q, Z, reverse(μl[1:j]), no, nfu, niu
+end
 """
     sklf_leftfin!(A, E, C, B; fast = true, atol1 = 0, atol2 = 0,  
                   rtol, withQ = true, withZ = true) -> (Q, Z, μl, no, nuo)
@@ -1327,6 +1489,57 @@ function sklf_right!(A::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::Union{Abst
 
    return Q, νr[1:i], nc, nu
 end
+function sklf_right!(A::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
+                     atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                     rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
+                     withQ::Bool = true) where {T}
+   n = LinearAlgebra.checksquare(A)
+   n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
+   n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
+   (!ismissing(C) && n != size(C,2)) && throw(DimensionMismatch("A and C must have the same number of columns"))
+   
+   νr = Vector{Int}(undef,max(n,1))
+   nu = 0
+   tol1 = atol1
+   withQ ? Q = Matrix{T}(I,n,n) : Q = nothing
+ 
+   # fast returns for null dimensions
+   if m == 0 && n == 0
+      return Q, νr[1:0], 0, 0
+   elseif n == 0
+      νr[1] = 0
+      return Q, νr[1:1], 0, 0
+   elseif m == 0
+      return Q, νr[1:0], 0, n
+   end
+
+   tolA = max(atol1, rtol*opnorm(A,1))
+   typeof(B) <: AbstractVector ? tolB = max(atol2, rtol*norm(B,1)) : tolB = max(atol2, rtol*opnorm(B,1))
+      
+   i = 0
+   init = true
+   roff = 0
+   coff = 0
+   nc = 0
+   nu = n
+   while m > 0 && nc < n
+      init = (i == 0)
+      init ? tol = tolB : tol = tolA
+      # Step 3: Particular case of the standard algorithm PREDUCE
+      ρ = _sreduceBA!(nu, m, A, B, C, Q, tol, fast = fast, init = init, roff = roff, coff = coff, withQ = withQ)
+      ρ == 0 && break
+      i += 1
+      νr[i] = ρ
+      roff += ρ
+      init || (coff += m)
+      nc += ρ
+      nu -= ρ
+      m = ρ
+   end
+
+   return Q, νr[1:i], nc, nu
+end
+
 """
     sklf_right2!(A, B, m1, C; fast = true, atol1 = 0, atol2 = 0, rtol, withQ = true) -> (Q, νr, nc, nuc)
 
@@ -1484,6 +1697,56 @@ Otherwise, `Q` is set to `nothing`.
 """
 function sklf_left!(A::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractVecOrMat{T},Missing}; fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                    rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
+                   withQ::Bool = true) where {T}
+   n = LinearAlgebra.checksquare(A)
+   p, n1 = size(C)
+   n == n1 || throw(DimensionMismatch("A and C must have the same number of columns"))
+   (!ismissing(B) && n != size(B,1)) && throw(DimensionMismatch("A and B must have the same number of rows"))
+   
+   μl = Vector{Int}(undef,max(n,p))
+   nu = 0
+   tol1 = atol1
+   withQ ? Q = Matrix{T}(I,n,n) : Q = nothing
+ 
+   # fast returns for null dimensions
+   if p == 0 && n == 0
+      return Q, μl[1:0], 0, 0
+   elseif n == 0
+      μl[1] = 0
+      return Q, μl[1:1], 0, 0
+   elseif p == 0
+      return Q, μl[1:0], 0, n
+   end
+
+   tolA = max(atol1, rtol*opnorm(A,1))
+   tolC = max(atol2, rtol*opnorm(C,Inf))
+      
+   i = 0
+   init = true
+   rtrail = 0
+   ctrail = 0
+   no = 0
+   nu = n
+   while p > 0 && no < n
+      init = (i == 0)
+      init ? tol = tolC : tol = tolA
+      # Step 3: Particular case of the standard algorithm PREDUCE
+      ρ = _sreduceAC!(nu, p, A, C, B, Q, tol, fast = fast, init = init, rtrail = rtrail, ctrail = ctrail, withQ = withQ)
+      ρ == 0 && break
+      i += 1
+      μl[i] = ρ
+      ctrail += ρ
+      init || (rtrail += p)
+      no += ρ
+      nu -= ρ
+      p = ρ
+      #return Q, reverse(μl[1:i]), no, nu
+   end
+
+   return Q, reverse(μl[1:i]), no, nu
+end
+function sklf_left!(A::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractVecOrMat{T},Missing}; fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
+                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
                    withQ::Bool = true) where T <: BlasFloat
    n = LinearAlgebra.checksquare(A)
    p, n1 = size(C)
@@ -1532,6 +1795,7 @@ function sklf_left!(A::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{Abstrac
 
    return Q, reverse(μl[1:i]), no, nu
 end
+
 """
     gsklf(A, E, B, C, D; disc = false, jobopt = "none", offset = sqrt(ϵ), fast = true, atol1 = 0, atol2 = 0, rtol, 
          withQ = true, withZ = true) -> (F, G, Q, Z, dimsc, nmszer, nizer)
