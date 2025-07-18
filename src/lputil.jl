@@ -165,13 +165,12 @@ function rcsumsbal!(M::AbstractMatrix{T}; r::AbstractVector{T} = fill(T(size(M,1
    conv = false
    for i = 1:maxiter
        conv = true
-       dr = reshape(sum(M1,dims=1) .+ m1*shift,n1) ./ c1; #@show dr
+       dr = reshape(sum(M1,dims=1) .+ m1*shift,n1) ./ c1; 
        rdiv!(M1,Diagonal(dr)); 
        er = minimum(dr)/maximum(dr); dright1 ./= dr
-       dl = reshape(sum(M1,dims=2) .+ n1*shift,m1) ./r1; #@show dl
+       dl = reshape(sum(M1,dims=2) .+ n1*shift,m1) ./r1; 
        ldiv!(Diagonal(dl),M1); 
        el = minimum(dl)/maximum(dl); dleft1 ./= dl
-       #@show i, er, el
        max(1-er,1-el) < tol/2 && break
        conv = false
    end

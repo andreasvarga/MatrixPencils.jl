@@ -925,7 +925,7 @@ separation all infinite and nonzero finite eigenvalues of the pencil `M - λN`.
 function sklf_rightfin!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractVecOrMat{T}, C::Union{AbstractMatrix{T},Missing}; 
                         fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                         rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
-                        withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+                        withQ::Bool = true, withZ::Bool = true) where {T} 
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    n1, m = typeof(B) <: AbstractVector ? (length(B),1) : size(B)
@@ -1355,7 +1355,7 @@ separation all infinite and nonzero finite eigenvalues of the pencil `M - λN`.
 function sklf_leftfin!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, C::AbstractMatrix{T}, B::Union{AbstractVecOrMat{T},Missing}; 
                        fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                        rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
-                       withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+                       withQ::Bool = true, withZ::Bool = true) where {T}
 
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          

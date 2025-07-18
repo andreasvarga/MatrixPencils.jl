@@ -955,7 +955,7 @@ The rank decisions use the absolute tolerance `tol` for the nonzero elements of 
 function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractVecOrMat{T},C::Union{AbstractMatrix{T},Missing},
                       Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                       fast::Bool = true, init::Bool = true, roff::Int = 0, coff::Int = 0, 
-                      withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+                      withQ::Bool = true, withZ::Bool = true) where {T}
    (m == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
    ZERO = zero(T)
@@ -1052,16 +1052,25 @@ function _sreduceBAE!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B:
       withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
       E[ibt,ja] = SVD.U'*E[ibt,ja]
       A[ibt,ja] = SVD.U'*A[ibt,ja]
-      tau = similar(E,mn)
       init ? (jt1 = 1:mn) : (jt1 = coff+m+1:coff+m+mn)
       E11 = view(E,ibt,jt1)
-      LinearAlgebra.LAPACK.gerqf!(E11,tau)
-      T <: Complex ? tran = 'C' : tran = 'T'
-      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
-      withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
-      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
-      ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
-      triu!(E11)
+      if T <: BlasFloat
+         tau = similar(E,mn)
+         LinearAlgebra.LAPACK.gerqf!(E11,tau)
+         T <: Complex ? tran = 'C' : tran = 'T'
+         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
+         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
+         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
+         ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
+         triu!(E11)
+      else
+         F = qr(reverse(E11,dims=1)')
+         reverse!(rmul!(view(A,:,jt1),F.Q),dims=2)
+         withZ && reverse!(rmul!(view(Z,:,jt1),F.Q),dims=2)
+         reverse!(rmul!(view(E,1:roff,jt1),F.Q),dims=2)
+         ismissing(C) || reverse!(rmul!(view(C,:,jt1),F.Q),dims=2)
+         E11[:,:] = reverse(reverse(F.R,dims=1),dims=2)'
+      end
    end
    return ρ 
 end
@@ -1256,7 +1265,7 @@ The rank decisions use the absolute tolerance `tol` for the nonzero elements of 
 function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractVecOrMat{T},Missing},
                       Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
                       fast::Bool = true, init::Bool = true, rtrail::Int = 0, ctrail::Int = 0, 
-                      withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+                      withQ::Bool = true, withZ::Bool = true) where {T}
    (p == 0 || n == 0) && (return 0)
    mA, nA = size(A) 
    ZERO = zero(T)
@@ -1352,14 +1361,22 @@ function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},C:
       A[ia,jt] = A[ia,jt]*Z1
       E[ia,jt] = E[ia,jt]*Z1    # more efficient computation possible
       jt1 = n+1:nA
-      tau = similar(E,pn)
       E22 = view(E,jt,jt)
-      LinearAlgebra.LAPACK.geqrf!(E22,tau)
-      T <: Complex ? tran = 'C' : tran = 'T'
-      LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(A,jt,ja))
-      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E22,tau,view(Q,:,jt)) 
-      LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(E,jt,jt1))
-      ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(B,jt,:))
+      if T <: BlasFloat
+         tau = similar(E,pn)
+         LinearAlgebra.LAPACK.geqrf!(E22,tau)
+         T <: Complex ? tran = 'C' : tran = 'T'
+         LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(A,jt,ja))
+         withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E22,tau,view(Q,:,jt)) 
+         LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(E,jt,jt1))
+         ismissing(B) || LinearAlgebra.LAPACK.ormqr!('L',tran,E22,tau,view(B,jt,:))
+      else
+         F = qr!(E22)
+         lmul!(F.Q',view(A,jt,ja))
+         withQ && lmul!(view(Q,:,jt),F.Q) 
+         lmul!(F.Q',view(E,jt,jt1))
+         ismissing(B) || lmul!(F.Q',view(B,jt,:))
+      end
       triu!(E22)
    end
    return ρ 

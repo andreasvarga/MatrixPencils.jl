@@ -207,13 +207,8 @@ end
 #     return res
 # end
 # taken from ControlSystems.jl
-@static if VERSION >= v"1.8.0-beta1"
-   blockdiag(mats...) = cat(mats..., dims=Val((1,2)))
-   blockdiag(mats::Union{<:Tuple, <:Base.Generator}) = cat(mats..., dims=Val((1,2)))
-else
-   blockdiag(mats...) = cat(mats..., dims=(1,2))
-   blockdiag(mats::Union{<:Tuple, <:Base.Generator}) = cat(mats..., dims=(1,2))
-end
+blockdiag(mats...) = cat(mats..., dims=(1,2))
+blockdiag(mats::Union{<:Tuple, <:Base.Generator}) = cat(mats..., dims=(1,2))
 
 """
     lpseval(A, E, B, F, C, G, D, H, val; atol1, atol2, rtol, fast = true) -> Gval
@@ -1356,7 +1351,6 @@ function lsbalance!(A::AbstractMatrix{T}, E::Union{AbstractMatrix{T},UniformScal
           ldiv!(dl,MA); ldiv!(dl,MB)
           el = minimum(dl.diag)/maximum(dl) 
           rdiv!(Dl,dl)
-         #  @show i, er, el
           max(1-er,1-el) < tol/2 && break
           conv = false
       end

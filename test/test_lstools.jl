@@ -4,6 +4,7 @@ using LinearAlgebra
 using MatrixPencils
 using Test
 using Polynomials
+using GenericLinearAlgebra
 
 @testset "Linear System Tools" begin
 
@@ -15,12 +16,19 @@ E = [0.0 0.0; 0.0 -1.0];
 B = [-1.0; 0.0];
 C = [1.0 0.0];
 D = [0.0];
+sys = (A,E,B,C,D)
+Ty = BigFloat
+sysb = (Ty.(A),Ty.(E),Ty.(B),Ty.(C),Ty.(D))
 
-@time  G = lseval(A,E,B,C,D,1)
+@time  G = lseval(sys...,1)
 @test G ≈ ones(1,1)
 
-@time  G = lseval(A,E,B,C,D,Inf)
+@test lseval(sysb...,1) ≈ ones(Ty,1,1)
+
+@time  G = lseval(sys...,Inf)
 @test G ≈ Inf*ones(1,1)
+
+@test lseval(sysb...,Inf) ≈ Inf*ones(Ty,1,1)
 
 
 # g = [z 1/(z-1)]
@@ -169,13 +177,23 @@ sys = ([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
 [-1.0 -4.0 -2.0; -0.0 -0.0 -0.0; -1.0 -4.0 -2.0], 
 [1.0 2.0 -2.0; 0.0 -1.0 -2.0; 0.0 0.0 0.0], 
 [0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]);
+sysb = (Ty.([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]), 
+Ty.([0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]), 
+Ty.([0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]), 
+Ty.([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]), 
+Ty.([1.0 3.0 0.0; 1.0 4.0 2.0; 0.0 -1.0 -2.0]), 
+Ty.([-1.0 -4.0 -2.0; -0.0 -0.0 -0.0; -1.0 -4.0 -2.0]), 
+Ty.([1.0 2.0 -2.0; 0.0 -1.0 -2.0; 0.0 0.0 0.0]), 
+Ty.([0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0]));
+
+
 @time  G = lpseval(sys...,0)
 @test G ≈ [1.0 2.0 -2.0; 0.0 -1.0 -2.0; 0.0 0.0 0.0]
+@test lpseval(sysb...,0) ≈ Ty.([1.0 2.0 -2.0; 0.0 -1.0 -2.0; 0.0 0.0 0.0])
 
 @time  G = lpseval(sys...,Inf)
-@test G ≈ [Inf  Inf  Inf;
-Inf  Inf  Inf;
-Inf  Inf  Inf]
+@test G ≈ Inf*ones(3,3)
+@test lpseval(sysb...,Inf) ≈ Inf*ones(Ty,3,3)
 
 end
 
@@ -277,58 +295,112 @@ sysb = (Ty.(A2),Ty.(E2),Ty.(B2),Ty.(C2),Ty.(D2))
 sys1 = lsminreal(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
 
-#fails
 sys2 = lsminreal(sysb..., fast = fast)
 @test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
 
 # an order reduction without enforcing controllability and observability may not be possible
 sys1 = lsminreal(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 !!
+
+sys2 = lsminreal(sysb...,contr=false,obs=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 !!
+
 # compute an irreducible realization which still contains a non-dynamic mode
 sys1 = lsminreal(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
+sys2 = lsminreal(sysb...,noseig=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
+
+
 sys = (E2,A2,B2,C2,D2); 
+Ty = BigFloat
+sysb = (Ty.(E2),Ty.(A2),Ty.(B2),Ty.(C2),Ty.(D2))
+
 # compute minimal realization for a standard system (i.e., irreducible realization)
 sys1 = lsminreal(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
+
+sys2 = lsminreal(sysb..., fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
+
 # an order reduction without enforcing controllability and observability may not be possible
 sys1 = lsminreal(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 
+
+sys2 = lsminreal(sysb...,contr=false,obs=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 
+
 # compute an irreducible realization which still contains a non-dynamic mode
 sys1 = lsminreal(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
+sys2 = lsminreal(sysb...,noseig=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
 sys = (A2,E2,B2,C2,D2);
+Ty = BigFloat
+sysb = (Ty.(A2),Ty.(E2),Ty.(B2),Ty.(C2),Ty.(D2))
+
 # compute minimal realization 
 sys1 = lsminreal2(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
+
+sys2 = lsminreal2(sysb..., fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 1
+
 # minimal realization is possible only applying the infinite controllability/observability algorithm
 sys1 = lsminreal2(sys...,finite = false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 0
+
+sys2 = lsminreal2(sysb...,finite = false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,1)  # nuc == 2 && nuo == 0 && nse == 0
+
 # order reduction may results even when applying the finite controllability/observability algorithm
 sys1 = lsminreal2(sys...,infinite = false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (1,0,0)  # nuc == 1 && nuo == 0 && nse == 0
+
+sys2 = lsminreal2(sysb...,infinite = false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[7:8] == (0,0)  # nuc == 1 && nuo == 0 && nse == 0
+
 # an order reduction without enforcing controllability and observability may not be possible
 sys1 = lsminreal2(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 !!
+
+sys2 = lsminreal2(sysb...,contr=false,obs=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 !!
+
 # compute an irreducible realization which still contains a non-dynamic mode
 sys1 = lsminreal2(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
-
+sys2 = lsminreal2(sysb...,noseig=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
 sys = (E2,A2,B2,C2,D2); 
+Ty = BigFloat
+sysb = (Ty.(E2),Ty.(A2),Ty.(B2),Ty.(C2),Ty.(D2))
+
 # compute minimal realization for a standard system (i.e., irreducible realization)
 sys1 = lsminreal2(sys..., fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
+
+sys2 = lsminreal2(sysb..., fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
+
 # an order reduction without enforcing controllability and observability may not be possible
 sys1 = lsminreal2(sys...,contr=false,obs=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 
+
+sys2 = lsminreal2(sysb...,contr=false,obs=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (0,0,0)  # nuc == 0 && nuo == 0 && nse == 0 
+
 # compute an irreducible realization which still contains a non-dynamic mode
 sys1 = lsminreal2(sys...,noseig=false, fast = fast)
 @test lsequal(sys...,sys1[1:5]...) && sys1[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
+
+sys2 = lsminreal2(sysb...,noseig=false, fast = fast)
+@test lsequal(sysb...,sys2[1:5]...) && sys2[6:8] == (2,0,0)  # nuc == 2 && nuo == 0 && nse == 0
 
 # Example Van Dooren & Dewilde, LAA 1983.
 # P = zeros(3,3,3)
@@ -383,7 +455,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2); D = copy(D2);
 @test lsequal(A2,E2,B2,C2,D2,A1,E1,B1,C1,D1) &&
       nuc == 5 && nuo == 0 && nse == 1
 val, iz, info = spzeros(A1,E1,B1,C1,D1; atol1 = 1.e-7, atol2 = 1.e-7) 
-println("val, iz, info = $((val, iz, info))")
+# println("val, iz, info = $((val, iz, info))")
 @test val ≈ [1.0] && iz == [] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
 val, info = speigvals(A1,E1,B1,C1,D1) 
 @test val ≈ [1., Inf, Inf, Inf] &&  (info.rki, info.lki, info.id, info.nf) == ([0], [1], [1, 1, 1], 1)
