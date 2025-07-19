@@ -890,7 +890,8 @@ function _preduce2!(n::Int, m::Int, p::Int, M::AbstractMatrix{T}, N::AbstractMat
       #LinearAlgebra.LAPACK.ormqr!('R','N',DT,τau,EE)
       #EE[:,:] = EE[:,jt]      # BE*Q*P2
       #D[:,:] = [ zeros(p,m-τ)  QR.R[τ:-1:1,p:-1:1]' ]
-      D[:,:] = τ > 0 ? [ zeros(T,p,m-τ)  reverse(reverse(triu(F.R),dims=1),dims=2)' ] : zeros(T,p,m)
+      #D[:,:] = τ > 0 ? [ zeros(T,p,m-τ)  reverse(reverse(triu(F.R),dims=1),dims=2)' ] : zeros(T,p,m)
+      D[:,:] = τ > 0 ? [ zeros(T,p,m-τ)  F.R[τ:-1:1,p:-1:1]' ] : zeros(T,p,m)
       C[:,:] = C[jpvt,:]
       C[:,:] = reverse(C,dims=1)
 

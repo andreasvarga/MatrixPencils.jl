@@ -1,7 +1,7 @@
 # Release Notes
 
 ## Version 1.8.4
-Make regular pencil manipulations, linear system manipulation tools and several structured pencil reductions generic.    
+Make generic functions for regular pencil manipulations, linear system manipulation tools, general and several structured pencil reductions.    
 
 ## Version 1.8.3
 Make structured pencil applications `sklfapps.jl` and structured pencil reductions`lputil.jl` generic.    

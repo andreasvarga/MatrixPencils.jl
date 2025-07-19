@@ -710,7 +710,7 @@ function klf_right!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMa
                     Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}; 
                     fast::Bool = true, atol::Real = zero(real(eltype(M))), 
                     rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
-                    roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+                    roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where {T1}
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    (!isa(M,Adjoint) && !isa(N,Adjoint)) || error("No adjoint inputs are supported")
@@ -830,7 +830,7 @@ if `withZ = true`. Otherwise, `Z` is not modified.
 """
 function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Q::Union{AbstractMatrix{T1},Nothing},
    Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; fast::Bool = true, ut::Bool = false, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
-   withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+   withQ::Bool = true, withZ::Bool = true) where {T1}
    nb = length(ν)
    nb == length(μ) || throw(DimensionMismatch("ν and μ must have the same lengths"))
   
@@ -853,14 +853,26 @@ function klf_right_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T
       #                      [ 0 0  ]
       it = roff+1:roff+mri
       jt = coff+m+1:coff+nri
-      tau = similar(N,n)
       E11 = view(N,it,jt)
-      LinearAlgebra.LAPACK.geqrf!(E11,tau)
-      eltype(M) <: Complex ? tran = 'C' : tran = 'T'
-      LinearAlgebra.LAPACK.ormqr!('L',tran,E11,tau,view(M,it,coff+1:nM))
-      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E11,tau,view(Q,:,it)) 
-      LinearAlgebra.LAPACK.ormqr!('L',tran,E11,tau,view(N,it,coff+nri+1:nM))
-      triu!(E11)
+      if T1 <: BlasFloat      
+         tau = similar(N,n)
+         LinearAlgebra.LAPACK.geqrf!(E11,tau)
+         eltype(M) <: Complex ? tran = 'C' : tran = 'T'
+         LinearAlgebra.LAPACK.ormqr!('L',tran,E11,tau,view(M,it,coff+1:nM))
+         withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E11,tau,view(Q,:,it)) 
+         LinearAlgebra.LAPACK.ormqr!('L',tran,E11,tau,view(N,it,coff+nri+1:nM))
+         triu!(E11)
+      else
+         #LinearAlgebra.LAPACK.geqrf!(E11,tau)
+         F = qr!(E11)
+         #LinearAlgebra.LAPACK.ormqr!('L',tran,E11,tau,view(M,it,coff+1:nM))
+         lmul!(F.Q',view(M,it,coff+1:nM))
+         #withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E11,tau,view(Q,:,it)) 
+         withQ &&rmul!(view(Q,:,it),F.Q) 
+         #LinearAlgebra.LAPACK.ormqr!('L',tran,E11,tau,view(N,it,coff+nri+1:nM))
+         lmul!(F.Q',view(N,it,coff+nri+1:nM))
+         triu!(E11)
+      end
    end
    
    μr = Vector{Int}(undef,nb)
@@ -983,7 +995,7 @@ function klf_left!(n::Int, m::Int, p::Int, M::AbstractMatrix{T1}, N::AbstractMat
                    Q::Union{AbstractMatrix{T1},Nothing}, Z::Union{AbstractMatrix{T1},Nothing}; 
                    fast::Bool = true, atol::Real = zero(real(eltype(M))), 
                    rtol::Real = (min(size(M)...)*eps(real(float(one(eltype(M))))))*iszero(atol), 
-                   roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+                   roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where {T1}
    mM, nM = size(M)
    (mM,nM) == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
    (!isa(M,Adjoint) && !isa(N,Adjoint)) || error("No adjoint inputs are supported")
@@ -1106,7 +1118,7 @@ if `withZ = true`. Otherwise, `Z` is not modified.
 """
 function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1}, N::AbstractMatrix{T1}, Q::Union{AbstractMatrix{T1},Nothing},
    Z::Union{AbstractMatrix{T1},Nothing}, tol::Real; fast::Bool = true, ut::Bool = false, roff::Int = 0, coff::Int = 0, rtrail::Int = 0, ctrail::Int = 0, 
-   withQ::Bool = true, withZ::Bool = true) where T1 <: BlasFloat
+   withQ::Bool = true, withZ::Bool = true) where {T1}
    nb = length(ν)
    nb == length(μ) || throw(DimensionMismatch("ν and μ must have the same lengths"))
  
@@ -1125,16 +1137,29 @@ function klf_left_refine!(ν::Vector{Int}, μ::Vector{Int}, M::AbstractMatrix{T1
       #                    [ 0 0  ]
       it = roff+1:roff+n
       jt = coff+1:coff+nli
-      tau = similar(N,n)
       E11 = view(N,it,jt)
-      LinearAlgebra.LAPACK.gerqf!(E11,tau)
-      eltype(M) <: Complex ? tran = 'C' : tran = 'T'
-      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(M,1:mM,jt))
-      withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt)) 
-      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(N,1:roff,jt))
-      triu!(E11,m)
+      if T1 <: BlasFloat
+         tau = similar(N,n)
+         LinearAlgebra.LAPACK.gerqf!(E11,tau)
+         eltype(M) <: Complex ? tran = 'C' : tran = 'T'
+         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(M,1:mM,jt))
+         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt)) 
+         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(N,1:roff,jt))
+         triu!(E11,m)
+      else
+         #LinearAlgebra.LAPACK.gerqf!(E11,tau)
+         F = qr!(reverse(E11,dims=1)')
+         #LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(M,1:mM,jt))
+         reverse!(rmul!(view(M,1:mM,jt),F.Q),dims=2)
+         #withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt)) 
+         withZ && reverse!(rmul!(view(Z,:,jt),F.Q),dims=2)
+         #LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(N,1:roff,jt))
+         reverse!(rmul!(view(N,1:roff,jt),F.Q),dims=2)
+         #triu!(E11,m)
+         E11[:,:] = [zeros(T1,n,nli-n) reverse(reverse(F.R,dims=1),dims = 2)']
+      end
    end
-       
+    
    μl = Vector{Int}(undef,nb)
    νl = Vector{Int}(undef,nb)
    νi = Vector{Int}(undef,nb)
@@ -1261,6 +1286,70 @@ function klf_right_refineut!(ν::AbstractVector{Int}, μ::AbstractVector{Int}, M
    end
    return 
 end
+function klf_right_refineut!(ν::AbstractVector{Int}, μ::AbstractVector{Int}, M::AbstractMatrix{T}, N::AbstractMatrix{T}, 
+                             Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}; 
+                             rtrail::Int = 0, ctrail::Int = 0, withQ::Bool = true, withZ::Bool = true) where {T}
+
+
+   nb = length(ν)
+   nb == 0 && return 
+   nb == length(μ) || throw(DimensionMismatch("ν and μ must have the same lengths"))
+   mri = sum(ν)
+   nri = sum(μ)
+   nM = nri + ctrail
+   # mM, nM == size(M) || throw(DimensionMismatch("Incompatible ν, μ, rtrail and ctrail with the dimensions of M"))
+   # mM, nM == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
+   ki2 = mri
+   kj2 = nri
+   for i = nb:-1:1 
+      #i == 1 && return
+      ni1 = ν[i]
+      ki1 = ki2-ni1+1
+      kki = ki1:ki2
+      nj1 = μ[i]
+      kj1 = kj2-nj1+1
+      kkj = kj1:kj2
+      if nj1 > 1
+         Mij = view(M,kki,kkj) 
+         # tau = similar(M,ni1)
+         # LinearAlgebra.LAPACK.gerqf!(Mij,tau)
+         F = qr!(reverse(Mij,dims=1)')
+         #LinearAlgebra.LAPACK.ormrq!('R',tran,Mij,tau,view(M,1:ki1-1,kkj))
+         reverse!(rmul!(view(M,1:ki1-1,kkj),F.Q),dims=2)
+         #LinearAlgebra.LAPACK.ormrq!('R',tran,Mij,tau,view(N,1:ki1-1,kkj))
+         reverse!(rmul!(view(N,1:ki1-1,kkj),F.Q),dims=2)
+         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Mij,tau,view(Z,:,kkj)) 
+         withZ && reverse!(rmul!(view(Z,:,kkj),F.Q),dims=2) 
+         #M[kki,kkj] = [ zeros(T,ni1,nj1-ni1) triu(view(Mij,:,nj1-ni1+1:nj1))]
+         M[kki,kkj] = [ zeros(T,ni1,nj1-ni1) reverse(reverse(F.R))']
+      end
+      if i > 1
+         nim1 = ν[i-1]
+         kim1 = ki1-nim1
+         kim2 = ki1-1
+         kkim = kim1:kim2
+         if nim1 > 1
+            Nimj = view(N,kkim,kkj)
+            # tau = similar(N,nj1)
+            # LinearAlgebra.LAPACK.geqrf!(Nimj,tau)
+            F = qr!(Nimj)
+            njm1 = μ[i-1]
+            kjm1 = kj1-njm1 
+            kjm2 = kj1-1
+            #LinearAlgebra.LAPACK.ormqr!('L',tran,Nimj,tau,view(M,kkim,kjm1:nM))
+            lmul!(F.Q',view(M,kkim,kjm1:nM))
+            #LinearAlgebra.LAPACK.ormqr!('L',tran,Nimj,tau,view(N,kkim,kj2+1:nM))
+            lmul!(F.Q',view(N,kkim,kj2+1:nM))
+             #withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Nimj,tau,view(Q,:,kkim))
+            withQ && rmul!(view(Q,:,kkim),F.Q)
+            triu!(Nimj)
+         end
+      end
+      ki2 = ki1-1
+      kj2 = kj1-1
+   end
+   return 
+end
 """
     klf_left_refineut!(ν, μ, M, N, Q, Z; roff = 0, coff = 0, withQ = true, withZ = true) 
 
@@ -1332,6 +1421,73 @@ function klf_left_refineut!(ν::AbstractVector{Int}, μ::AbstractVector{Int}, M:
             LinearAlgebra.LAPACK.ormrq!('R',tran,Nijp,tau,view(N,1:ki1-1,kkjp))
             withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Nijp,tau,view(Z,:,kkjp)) 
             N[kki,kkjp] = [ zeros(T,ni1,njp1-ni1) triu(view(Nijp,:,njp1-ni1+1:njp1))]
+         end
+      end
+      ki1 = ki2+1
+      kj1 = kj2+1
+   end
+   return 
+end
+function klf_left_refineut!(ν::AbstractVector{Int}, μ::AbstractVector{Int}, M::AbstractMatrix{T}, N::AbstractMatrix{T}, 
+                             Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}; 
+                             roff::Int = 0, coff::Int = 0, withQ::Bool = true, withZ::Bool = true) where {T}
+
+
+   nb = length(ν)
+   nb == 0 && return 
+   nb == length(μ) || throw(DimensionMismatch("ν and μ must have the same lengths"))
+   mli = sum(ν)
+   nli = sum(μ)
+   mM = mli + roff
+   nM = nli + coff
+   # mM, nM == size(M) || throw(DimensionMismatch("Incompatible ν, μ, rtrail and ctrail with the dimensions of M"))
+   # mM, nM == size(N) || throw(DimensionMismatch("M and N must have the same dimensions"))
+   ki1 = roff+1
+   kj1 = coff+1
+   for i = 1:nb 
+      ni1 = ν[i]
+      ki2 = ki1+ni1-1
+      kki = ki1:ki2
+      nj1 = μ[i]
+      kj2 = kj1+nj1-1
+      kkj = kj1:kj2
+      if ni1 > 1 && nj1 > 0
+         Mij = view(M,kki,kkj) 
+         # tau = similar(M,nj1)
+         # LinearAlgebra.LAPACK.geqrf!(Mij,tau)
+         F = qr!(Mij)
+         #LinearAlgebra.LAPACK.ormqr!('L',tran,Mij,tau,view(M,kki,kj2+1:nM))
+         lmul!(F.Q',view(M,kki,kj2+1:nM))
+         #LinearAlgebra.LAPACK.ormqr!('L',tran,Mij,tau,view(N,kki,kj1+1:nM))
+         lmul!(F.Q',view(N,kki,kj1+1:nM))
+         #withQ && LinearAlgebra.LAPACK.ormqr!('R','N',Mij,tau,view(Q,:,kki))
+         withQ && rmul!(view(Q,:,kki),F.Q)
+         triu!(Mij)
+      end
+      if i < nb
+         nip1 = ν[i+1]
+         njp1 = μ[i+1]
+         kjp1 = kj2+1
+         kjp2 = kj2+njp1
+         kkjp = kjp1:kjp2
+         if nip1 > 1 
+            Nijp = view(N,kki,kkjp)
+            # tau = similar(N,ni1)
+            # LinearAlgebra.LAPACK.gerqf!(Nijp,tau)
+            F = qr!(reverse(Nijp,dims=1)')
+            nip1 = ν[i+1]
+            kip1 = ki2+1
+            kip2 = ki2+nip1
+            #LinearAlgebra.LAPACK.ormrq!('R',tran,Nijp,tau,view(M,1:kip2,kkjp))
+            reverse!(rmul!(view(M,1:kip2,kkjp),F.Q),dims=2)
+            #LinearAlgebra.LAPACK.ormrq!('R',tran,Nijp,tau,view(N,kip1:kip2,kkjp))
+            reverse!(rmul!(view(N,kip1:kip2,kkjp),F.Q),dims=2)
+            #LinearAlgebra.LAPACK.ormrq!('R',tran,Nijp,tau,view(N,1:ki1-1,kkjp))
+            reverse!(rmul!(view(N,1:ki1-1,kkjp),F.Q),dims=2)
+            #withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Nijp,tau,view(Z,:,kkjp)) 
+            withZ && reverse!(rmul!(view(Z,:,kkjp),F.Q),dims=2) 
+            #N[kki,kkjp] = [ zeros(T,ni1,njp1-ni1) triu(view(Nijp,:,njp1-ni1+1:njp1))]
+            N[kki,kkjp] = [ zeros(T,ni1,njp1-ni1) reverse(reverse(F.R,dims=1),dims=2)']
          end
       end
       ki1 = ki2+1

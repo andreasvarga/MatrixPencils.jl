@@ -5,6 +5,7 @@ using LinearAlgebra
 using SparseArrays
 using MatrixPencils
 using Test
+using GenericLinearAlgebra
 
    
 Random.seed!(2351);
@@ -793,7 +794,7 @@ M = copy(M2); N = copy(N2);
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       νr == [2, 0 ] && μr == [2, 2] && ν == [1, 1] && μ == [1, 1] && nf == 2
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},BigFloat)
 
 abstol = sqrt(eps(one(real(Ty))))
 
@@ -1194,7 +1195,7 @@ M = copy(M2); N = copy(N2);
 
 Ty = Float64; 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},BigFloat)
 
 abstol = sqrt(eps(one(real(Ty))))
 
