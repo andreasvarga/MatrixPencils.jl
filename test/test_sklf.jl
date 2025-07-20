@@ -1390,7 +1390,7 @@ A = copy(A2); B = copy(B2); C = copy(C2);
       νr == [4, 0, 1, 0] && nc == 5 && nu == 0
 
 #Ty = Complex{Float64}
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},BigFloat)
 
 A2 = rand(Ty,3,3); B2 = rand(Ty,3,1); C2 = rand(Ty,2,3);
 A = copy(A2); B = copy(B2); C = copy(C2);
@@ -1591,7 +1591,7 @@ A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
 
 #fast = false; Ty = Float64; Ty = Complex{Float64}
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},BigFloat)
 
 A2 = rand(Ty,1,1); E2 = triu(rand(Ty,1,1),1); B2 = rand(Ty,1,1); C2 = rand(Ty,2,1);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 

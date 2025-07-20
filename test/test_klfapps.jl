@@ -4,6 +4,8 @@ using Random
 using LinearAlgebra
 using MatrixPencils
 using Test
+using GenericLinearAlgebra
+using GenericSchur
 
 @testset "Matrix Pencils Applications" begin
 
@@ -84,7 +86,7 @@ M = copy(M2); N = copy(N2);
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
 Ty = Float64
 Ty = Complex{Float64}
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat)
 
 #Ty = Complex{Float64}
 abstol = sqrt(eps(one(real(Ty))))
@@ -196,7 +198,7 @@ M = copy(M2); N = copy(N2);
 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
 #Ty = Float64; fast = true;
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat)
 
 # given structure 
 mr = 2; nr = 3; ni = 4; nf = 10; ml = 5; nl = 4;
@@ -308,7 +310,7 @@ M = copy(M2); N = copy(N2);
 
 
 #Ty = Float64; fast = true;
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},BigFloat)
 
 abstol = sqrt(eps(one(real(Ty))))
 

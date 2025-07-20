@@ -1040,7 +1040,7 @@ References
 function sklf_rightfin2!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractMatrix{T}, m1::Int, C::Union{AbstractMatrix{T},Missing}; 
                         fast::Bool = true, atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                         rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
-                        withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+                        withQ::Bool = true, withZ::Bool = true) where {T}
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    n1, m = size(B)
@@ -1601,7 +1601,7 @@ References:
 function sklf_right2!(A::AbstractMatrix{T}, B::AbstractMatrix{T}, m1::Int, C::Union{AbstractMatrix{T},Missing}; fast::Bool = true, 
                      atol1::Real = zero(real(T)), atol2::Real = zero(real(T)), 
                      rtol::Real = ((size(A,1)+1)*eps(real(float(one(T)))))*iszero(max(atol1,atol2)), 
-                     withQ::Bool = true) where T <: BlasFloat
+                     withQ::Bool = true) where {T}
    n = LinearAlgebra.checksquare(A)
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
@@ -1956,16 +1956,32 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
          At = [ A1 B1; C1 D1]; Et = [ E1 zeros(T,n,m); zeros(T,p,nm)] 
          AB = view(At,1:n,:); CD = view(At,n+1:np,:); EF = view(Et,1:n,:)
          # compress columns using an RQ-decomposition based reduction
-         T <: Complex ? tran = 'C' : tran = 'T'
          Ak = view(At,i2,:)
-         tau = similar(At,nsinf)
-         LinearAlgebra.LAPACK.gerqf!(Ak,tau)
-         LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(At,i1,:))
-         LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Et,i1,:))
-         LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,CD)
-         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,Z) 
-         At[i2,1:nm-nsinf] = zeros(T,nsinf,nm-nsinf) 
-         triu!(view(At,i2,nm-nsinf+1:nm))
+         if T <: BlasFloat
+            tau = similar(At,nsinf)
+            LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+            T <: Complex ? tran = 'C' : tran = 'T'
+            LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(At,i1,:))
+            LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Et,i1,:))
+            LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,CD)
+            withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,Z) 
+            At[i2,1:nm-nsinf] = zeros(T,nsinf,nm-nsinf) 
+            triu!(view(At,i2,nm-nsinf+1:nm))
+         else
+            # LinearAlgebra.LAPACK.gerqf!(Ak,tau)
+            F = qr!(reverse(Ak,dims=1)')
+            #LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(At,i1,:))
+            reverse!(rmul!(view(At,i1,:),F.Q),dims=2)
+            #LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,view(Et,i1,:))
+            reverse!(rmul!(view(Et,i1,:),F.Q),dims=2)
+            #LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,CD)
+            reverse!(rmul!(CD,F.Q),dims=2)
+            #withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Ak,tau,Z) 
+            withZ && reverse!(rmul!(Z,F.Q),dims=2)
+            # At[i2,1:nm-nsinf] = zeros(T,nsinf,nm-nsinf) 
+            # triu!(view(At,i2,nm-nsinf+1:nm))
+            At[i2,1:nm] = [zeros(T,nsinf,nm-nsinf) reverse(reverse(F.R,dims=1),dims=2)']
+         end
       else
          withQ ? Q = Matrix{T}(I,n,n) : Q = nothing
          withZ ? Z = Matrix{T}(I,nm,nm) : Z = nothing
@@ -2170,24 +2186,38 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    if nbl > 0
       T <: Complex ? tran = 'C' : tran = 'T'
       ir1 = 1:(nc+ns); 
-      E2 = view(Et,ir,jr)
-      _, τ = LinearAlgebra.LAPACK.geqrf!(E2)
       jt = mrg+1:nm
       j4 = n1m+1:nm
-      # A <- Q1'*A
-      LinearAlgebra.LAPACK.ormqr!('L',tran,E2,τ,view(At,ir,jt))
-      LinearAlgebra.LAPACK.ormqr!('L',tran,E2,τ,view(Et,ir,j4))
-      # Q <- Q*Q1
-      withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E2,τ,view(Q,:,ir))
       j1 = mrg+1:mrg+nbl
-      # compute in-place the complete orthogonal decomposition E2*Z1 = [E11 0; 0 0] with E11 nonsingular and UT
-      _, tau = LinearAlgebra.LAPACK.tzrzf!(E2)
-      # A <- A*Z1
-      LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(At,1:n1,jr))
-      LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(Et,ir1,jr))
-      LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(CD,:,jr))
-      withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(Z,:,jr))
-      EF[ir,jr] = [ triu(EF[ir,j1]) zeros(T,nbl,mbl) ]
+      E2 = view(Et,ir,jr)
+      if T <: BlasFloat
+         _, τ = LinearAlgebra.LAPACK.geqrf!(E2)
+         # A <- Q1'*A
+         LinearAlgebra.LAPACK.ormqr!('L',tran,E2,τ,view(At,ir,jt))
+         LinearAlgebra.LAPACK.ormqr!('L',tran,E2,τ,view(Et,ir,j4))
+         # Q <- Q*Q1
+         withQ && LinearAlgebra.LAPACK.ormqr!('R','N',E2,τ,view(Q,:,ir))
+         # compute in-place the complete orthogonal decomposition E2*Z1 = [E11 0; 0 0] with E11 nonsingular and UT
+         _, tau = LinearAlgebra.LAPACK.tzrzf!(E2)
+         # A <- A*Z1
+         LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(At,1:n1,jr))
+         LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(Et,ir1,jr))
+         LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(CD,:,jr))
+         withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(Z,:,jr))
+         EF[ir,jr] = [ triu(EF[ir,j1]) zeros(T,nbl,mbl) ]
+      else
+         F = qr!(E2)
+         lmul!(F.Q',view(At,ir,jt))
+         lmul!(F.Q',view(Et,ir,j4))
+         withQ && rmul!(view(Q,:,ir),F.Q)
+         #_, tau = LinearAlgebra.LAPACK.tzrzf!(E2)
+         F = qr(reverse(E2,dims=1)')
+         reverse!(rmul!(view(At,1:n1,jr),F.Q),dims=2)
+         reverse!(rmul!(view(Et,ir1,jr),F.Q),dims=2)
+         reverse!(rmul!(view(CD,:,jr),F.Q),dims=2)
+         withZ && reverse!(rmul!(view(Z,:,jr),F.Q),dims=2)
+         EF[ir,jr] = [ reverse(reverse(F.R,dims=1),dims=2)' zeros(T,nbl,mbl) ]
+      end
    end 
     
    

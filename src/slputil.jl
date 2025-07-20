@@ -475,7 +475,7 @@ function _sreduceBA!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractVecOrMat{T},C
       if n > m
          # B1, τ = LinearAlgebra.LAPACK.geqrf!(B1)
          # T <: Complex ? tran = 'C' : tran = 'T'
-         F = qr(B1)
+         F = qr!(B1)
          #LinearAlgebra.LAPACK.ormqr!('L',tran,B1,τ,A1)
          lmul!(F.Q',A1)
          #LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(A,ia,ja))
@@ -603,6 +603,101 @@ function _sreduceBA2!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C:
    end
    return ρ 
 end
+function _sreduceBA2!(n::Int,m::Int,A::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
+                     Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
+                     fast::Bool = true, coff::Int = 0, withQ::Bool = true) where {T} 
+   (m == 0 || n == 0) && (return 0)
+   nA, mB = size(B) 
+   roff = nA - n 
+   ZERO = zero(T)
+   ib = roff+1:nA    # row range of [B1, B2] and [A21 A22]
+   ia = 1:nA         # row range of [A12; A22]
+   ja = ib           # column rabge of A2 = [A12; A22]
+   ja1 = coff+1:nA   # column range of A1 = [A21 A22]
+   B1 = view(B,ib,1:m)
+   B2mat = (m < mB)  # B2 is present if B has more columns than m
+   B2mat && (B2 = view(B,ib,m+1:mB))
+   A1 = view(A,ib,ja1)  
+   A2 = view(A,ia,ja)
+   if m == 1 
+      b = view(B1,:,1)
+      n == 1 && (abs(b[1]) > tol ? (return 1) : (b[1] = ZERO; return 0))
+      #τ, β = larfg!(b)
+      τ = LinearAlgebra.reflector!(b)
+      β = b[1]
+      if abs(β) <= tol
+         b[:] = zeros(T,n)
+         return 0
+      else
+         #larf!('L', b, conj(τ), A1)  
+         LinearAlgebra.reflectorApply!(b, conj(τ),A1)
+         #B2mat &&  larf!('L', b, conj(τ), B2)  
+         B2mat &&  LinearAlgebra.reflectorApply!(b, conj(τ),B2) 
+         #larf!('R', b, τ, A2)  
+         reflectorApply!(A2, b, τ)
+         #ismissing(C) || larf!('R', b, τ, view(C,:,ja))  
+         ismissing(C) || reflectorApply!(view(C,:,ja), b, τ)  
+         #withQ && larf!('R', b, τ, view(Q,:,ib)) 
+         withQ && reflectorApply!(view(Q,:,ib), b, τ)  
+         b[:] = [ fill(β,1); zeros(T,n-1)] 
+         return 1
+      end
+   end
+   if fast
+      # B1, τ, jpvt = LinearAlgebra.LAPACK.geqp3!(B1)
+      # ρ = count(x -> x > tol, abs.(diag(B1))) 
+      F = qr!(B1,ColumnNorm())
+      ρ = count(x -> x > tol, abs.(diag(B1))) 
+      jpvt = F.p
+      #LinearAlgebra.LAPACK.ormqr!('L',tran,B1,τ,A1)
+      lmul!(F.Q',A1)
+      #B2mat &&  LinearAlgebra.LAPACK.ormqr!('L', tran, B1, τ, B2)  
+      B2mat &&  lmul!(F.Q',B2) 
+      #LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,A2)
+      rmul!(A2,F.Q)
+      #withQ && LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(Q,:,ib)) 
+      withQ && rmul!(view(Q,:,ib),F.Q)
+      #ismissing(C) || LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(C,:,ja)) 
+      ismissing(C) || rmul!(view(C,:,ja),F.Q)
+      B1[:,:] = [ triu(B1[1:ρ,:])[:,invperm(jpvt)]; zeros(T,n-ρ,m) ]
+   else
+      if n > m
+         #B1, τ = LinearAlgebra.LAPACK.geqrf!(B1)
+         F = qr!(B1)
+         #LinearAlgebra.LAPACK.ormqr!('L',tran,B1,τ,A1)
+         lmul!(F.Q',A1)
+         #B2mat && LinearAlgebra.LAPACK.ormqr!('L',tran,B1,τ,B2)
+         B2mat &&  lmul!(F.Q',B2) 
+         #LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,A2)
+         rmul!(A2,F.Q)
+         #withQ && LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(Q,:,ib)) 
+         withQ && rmul!(view(Q,:,ib),F.Q) 
+         #ismissing(C) || LinearAlgebra.LAPACK.ormqr!('R','N',B1,τ,view(C,:,ja)) 
+         ismissing(C) || rmul!(view(C,:,ja),F.Q) 
+         #B1[:,:] = [ triu(B1[1:m,:]); zeros(T,n-m,m) ]
+         B1[:,:] = [ F.R; zeros(T,n-m,m) ]
+      end
+      mn = min(n,m)
+      ics = 1:mn
+      jcs = 1:m
+      SVD = svd(B1[ics,jcs], full = true)
+      ρ = count(x -> x > tol, SVD.S) 
+      ρ == mn && (return ρ)
+      B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
+      ρ == 0 && (return ρ)
+      ibt = roff+1:roff+mn
+      withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
+      A[ibt,ja1] = SVD.U'*A[ibt,ja1]
+      B2mat &&  (B2[ics,:] = SVD.U'*B2[ics,:])  
+      #jt = coff+1:coff+mn
+      #A[ia,jt] = A[ia,jt]*SVD.U
+      A[ia,ibt] = A[ia,ibt]*SVD.U
+      #ismissing(C) || (C[:,jt] = C[:,jt]*SVD.U) 
+      ismissing(C) || (C[:,ibt] = C[:,ibt]*SVD.U) 
+   end
+   return ρ 
+end
+
 """
     _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::Union{AbstractMatrix{T},Missing},
                 Q::Union{AbstractMatrix{T},Nothing}, tol::Real; 
@@ -1104,7 +1199,7 @@ The rank decisions use the absolute tolerance `tol` for the nonzero elements of 
 """
 function _sreduceBAE2!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},C::Union{AbstractMatrix{T},Missing},
                       Q::Union{AbstractMatrix{T},Nothing}, Z::Union{AbstractMatrix{T},Nothing}, tol::Real; 
-                      fast::Bool = true, coff::Int = 0, withQ::Bool = true, withZ::Bool = true) where T <: BlasFloat
+                      fast::Bool = true, coff::Int = 0, withQ::Bool = true, withZ::Bool = true) where {T}
    (m == 0 || n == 0) && (return 0)
    nA, mB = size(B) 
    roff = nA - n 
@@ -1201,16 +1296,33 @@ function _sreduceBAE2!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B
       E[ibt,ja1] = SVD.U'*view(E,ibt,ja1)
       A[ibt,ja1] = SVD.U'*view(A,ibt,ja1)
       B2mat &&  (B2[ibt,:] = SVD.U'*B2[ibt,:])  
-      tau = similar(E,mn)
+      # tau = similar(E,mn)
       jt1 = coff+1:coff+mn
       E11 = view(E,ibt,jt1)
-      LinearAlgebra.LAPACK.gerqf!(E11,tau)
-      T <: Complex ? tran = 'C' : tran = 'T'
-      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
-      withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
-      LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
-      ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
-      triu!(E11)
+      # LinearAlgebra.LAPACK.gerqf!(E11,tau)
+      # T <: Complex ? tran = 'C' : tran = 'T'
+      # LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
+      # withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
+      # LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
+      # ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
+      # triu!(E11)
+      if T <: BlasFloat
+         tau = similar(E,mn)
+         LinearAlgebra.LAPACK.gerqf!(E11,tau)
+         T <: Complex ? tran = 'C' : tran = 'T'
+         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(A,:,jt1))
+         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(Z,:,jt1)) 
+         LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(E,1:roff,jt1))
+         ismissing(C) || LinearAlgebra.LAPACK.ormrq!('R',tran,E11,tau,view(C,:,jt1)) 
+         triu!(E11)
+      else
+         F = qr(reverse(E11,dims=1)')
+         reverse!(rmul!(view(A,:,jt1),F.Q),dims=2)
+         withZ && reverse!(rmul!(view(Z,:,jt1),F.Q),dims=2)
+         reverse!(rmul!(view(E,1:roff,jt1),F.Q),dims=2)
+         ismissing(C) || reverse!(rmul!(view(C,:,jt1),F.Q),dims=2)
+         E11[:,:] = reverse(reverse(F.R,dims=1),dims=2)'
+      end
    end
    return ρ 
 end
