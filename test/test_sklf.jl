@@ -419,7 +419,7 @@ A = copy(A2); E = copy(E2); C = copy(C2); B = copy(B2);
 
 @time Q, Z, μl, no, nfuo, niuo  = sklf_left!(A,E,C,B,fast=fast)
 @test norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
-      norm(Q'*A2*Z-A) < sqrt(eps(1.)) &&
+      norm(Q'*E2*Z-E) < sqrt(eps(1.)) &&
       norm(C2*Z-C) < sqrt(eps(1.)) &&
       (ismissing(B) || norm(Q'*B2-B) < sqrt(eps(1.))) && 
       μl == [1, 1, 1] && no == 3 && nfuo == 0 && niuo == 0
