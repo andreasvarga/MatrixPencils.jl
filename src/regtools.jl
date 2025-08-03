@@ -261,23 +261,32 @@ function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
       ismissing(C) || (C[:,:] = C[:,jpvt])
       
       # compute in-place the complete orthogonal decomposition E*Z1 = [E11 0; 0 0] with E11 nonsingular and UT
-      E1 = view(E,i1,:)
       #_, tau = LinearAlgebra.LAPACK.tzrzf!(E1)
-      F = qr(reverse(E1,dims=1)')
-      rmul!(E1,F.Q)
-      #E1[:,:] = [ triu(E[i1,i1]) zeros(T,rE,n2)  ] 
       i22 = rE+1:n
-      triu!(reverse!(view(E,i1,i1),dims=2)); fill!(view(E,i1,i22),zero(T))
-      #jp = [n2+1:n;i1]
-      # A <- A*Z1
-      #LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,A)
-      rmul!(A,F.Q)
-      reverse!(view(A,:,i1),dims=2)
-      #withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,Z)
-      withZ && (rmul!(Z,F.Q); reverse!(view(Z,:,i1),dims=2))
-      # C <- C*Z1
-      #ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,C); 
-      ismissing(C) || (rmul!(C,F.Q); reverse!(view(C,:,i1),dims=2)) 
+      for i = rE:-1:1
+          ind = [i; i22]
+          τ = MatrixPencils._reflector!(view(E,i,ind))
+          H = MatrixPencils.Householder(view(E,i,i22),τ)
+          rmul!(view(E,1:i-1,ind),H)
+          rmul!(view(A,:,ind),H)
+          withZ && rmul!(view(Z,:,ind),H)
+          ismissing(C) || rmul!(view(C,:,ind),H)
+      end
+      fill!(view(E,i1,i22),zero(T))
+      # F = qr(reverse(E1,dims=1)')
+      # rmul!(E1,F.Q)
+      # #E1[:,:] = [ triu(E[i1,i1]) zeros(T,rE,n2)  ] 
+      # triu!(reverse!(view(E,i1,i1),dims=2)); fill!(view(E,i1,i22),zero(T))
+      # #jp = [n2+1:n;i1]
+      # # A <- A*Z1
+      # #LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,A)
+      # rmul!(A,F.Q)
+      # reverse!(view(A,:,i1),dims=2)
+      # #withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,Z)
+      # withZ && (rmul!(Z,F.Q); reverse!(view(Z,:,i1),dims=2))
+      # # C <- C*Z1
+      # #ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,E1,tau,C); 
+      # ismissing(C) || (rmul!(C,F.Q); reverse!(view(C,:,i1),dims=2)) 
       n2 == 0 && (return rE, 0)
       tolA = max(atol1, rtol*opnorm(A,1))
       svdA || (return rE, rank(view(A,i22,i22), atol = tolA))
@@ -311,22 +320,30 @@ function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
       # R <- R*P1
       ismissing(C) || (C[:,i22] = C[:,i22[jpvt]])
       # compute in-place the complete orthogonal decomposition R2*Z2 = [A2 0; 0 0] with A22 nonsingular and UT
-      A2 = view(A,i2,i22)
       #_, tau = LinearAlgebra.LAPACK.tzrzf!(A2)
-      F = qr(reverse(A2,dims=1)')
-      i12 = 1:rE+rA22
-      # rmul!(A2,F.Q)
-      rmul!(view(A,i12,i22),F.Q)
-      reverse!(view(A,1:rE+rA22,i2),dims=2)
-      # A2[:,:] = [ triu(A[i2,i2]) zeros(T,rA22,n3)  ] 
-      triu!(view(A,i2,i2)); fill!(view(A,i2,rE+rA22+1:n),zero(T))
-      # A12 <- A12*Z2
-      #LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(A,i1,i22))
-      #withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(Z,:,i22))
-      withZ && (rmul!(view(Z,:,i22),F.Q); reverse!(view(Z,:,i2),dims=2))
-      # C <- C*Z2
-      #ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(C,:,i22)); 
-      ismissing(C) || (rmul!(view(C,:,i22),F.Q); reverse!(view(C,:,i2),dims=2))      
+      for i = rE+rA22:-1:rE+1
+          ind = [i; i3]
+          τ = MatrixPencils._reflector!(view(A,i,ind))
+          H = MatrixPencils.Householder(view(A,i,i3),τ)
+          rmul!(view(A,1:i-1,ind),H)
+          withZ && rmul!(view(Z,:,ind),H)
+          ismissing(C) || rmul!(view(C,:,ind),H)
+      end
+      fill!(view(A,i2,i3),zero(T))
+      # F = qr(reverse(A2,dims=1)')
+      # i12 = 1:rE+rA22
+      # # rmul!(A2,F.Q)
+      # rmul!(view(A,i12,i22),F.Q)
+      # reverse!(view(A,1:rE+rA22,i2),dims=2)
+      # # A2[:,:] = [ triu(A[i2,i2]) zeros(T,rA22,n3)  ] 
+      # triu!(view(A,i2,i2)); fill!(view(A,i2,rE+rA22+1:n),zero(T))
+      # # A12 <- A12*Z2
+      # #LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(A,i1,i22))
+      # #withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(Z,:,i22))
+      # withZ && (rmul!(view(Z,:,i22),F.Q); reverse!(view(Z,:,i2),dims=2))
+      # # C <- C*Z2
+      # #ismissing(C) || LinearAlgebra.LAPACK.ormrz!('R',tran,A2,tau,view(C,:,i22)); 
+      # ismissing(C) || (rmul!(view(C,:,i22),F.Q); reverse!(view(C,:,i2),dims=2))      
    else
       # compute the complete orthogonal decomposition of E using the SVD-decomposition
       # U, S, Vt = LinearAlgebra.LAPACK.gesdd!('A',E)

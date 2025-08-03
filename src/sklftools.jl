@@ -2078,7 +2078,7 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
             nmszer = count(t -> t == true, real(S.α[select] ./ S.β[select]) .>= -offset)
          end
          ns = count(t -> t == true, select)  
-          AB[izf,jzf], EF[izf,jzf], q, z = ordschur!(S, select)
+         AB[izf,jzf], EF[izf,jzf], q, z = ordschur!(S, select)
       
          if disc
             # apply q to the trailing columns including infinite zeros
@@ -2206,17 +2206,30 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
          withZ && LinearAlgebra.LAPACK.ormrz!('R',tran,E2,tau,view(Z,:,jr))
          EF[ir,jr] = [ triu(EF[ir,j1]) zeros(T,nbl,mbl) ]
       else
+         # This code has not been tested yet!!!
          F = qr!(E2)
          lmul!(F.Q',view(At,ir,jt))
          lmul!(F.Q',view(Et,ir,j4))
          withQ && rmul!(view(Q,:,ir),F.Q)
          #_, tau = LinearAlgebra.LAPACK.tzrzf!(E2)
-         F = qr(reverse(E2,dims=1)')
-         reverse!(rmul!(view(At,1:n1,jr),F.Q),dims=2)
-         reverse!(rmul!(view(Et,ir1,jr),F.Q),dims=2)
-         reverse!(rmul!(view(CD,:,jr),F.Q),dims=2)
-         withZ && reverse!(rmul!(view(Z,:,jr),F.Q),dims=2)
-         EF[ir,jr] = [ reverse(reverse(F.R,dims=1),dims=2)' zeros(T,nbl,mbl) ]
+         ne, me = size(E2)
+         ii22 = jr[ne+1:me]
+         for i = ne:-1:1
+             ind = [jr[i]; ii22]
+             τ = MatrixPencils._reflector!(view(Et,i,ind))
+             H = MatrixPencils.Householder(view(Et,i,ii22),τ)
+             rmul!(view(Et,ir1,ind),H)
+             rmul!(view(At,1:n1,ind),H)
+             rmul!(view(CD,:,ind),H)
+             withZ && rmul!(view(Z,:,ind),H)
+         end
+         EF[ir,jr] = [ triu(EF[ir,j1]) zeros(T,nbl,mbl) ]
+         # F = qr(reverse(E2,dims=1)')
+         # reverse!(rmul!(view(At,1:n1,jr),F.Q),dims=2)
+         # reverse!(rmul!(view(Et,ir1,jr),F.Q),dims=2)
+         # reverse!(rmul!(view(CD,:,jr),F.Q),dims=2)
+         # withZ && reverse!(rmul!(view(Z,:,jr),F.Q),dims=2)
+         # EF[ir,jr] = [ reverse(reverse(F.R,dims=1),dims=2)' zeros(T,nbl,mbl) ]
       end
    end 
     

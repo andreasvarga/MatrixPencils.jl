@@ -115,7 +115,7 @@ end
 Householder reflection represented as the essential part of the
 vector, the normalizing factor and pivot position information (first or last)
 """
-struct Householder{T,S<:StridedVector}
+struct Householder{T,S<:AbstractVector}
     v::S
     τ::T
     first::Bool
@@ -139,7 +139,7 @@ Base.convert(::Type{Matrix{T}}, H::Adjoint{<:Any,<:MatrixPencils.Householder{T}}
 
 
 
-function LinearAlgebra.lmul!(H::MatrixPencils.Householder, A::StridedMatrix)
+function LinearAlgebra.lmul!(H::MatrixPencils.Householder, A::AbstractMatrix)
     m, n = size(A)
     size(H,1) == m || throw(DimensionMismatch("A: $m,$n H: $(size(H))"))
     v = view(H.v, :)
@@ -170,7 +170,7 @@ function LinearAlgebra.lmul!(H::MatrixPencils.Householder, A::StridedMatrix)
     A
 end
 
-function LinearAlgebra.lmul!(adjH::Adjoint{<:Any,<:MatrixPencils.Householder}, A::StridedMatrix)
+function LinearAlgebra.lmul!(adjH::Adjoint{<:Any,<:MatrixPencils.Householder}, A::AbstractMatrix)
     H = parent(adjH)
     m, n = size(A)
     size(H,1) == m || throw(DimensionMismatch("A: $m,$n H: $(size(H))"))
@@ -202,7 +202,7 @@ function LinearAlgebra.lmul!(adjH::Adjoint{<:Any,<:MatrixPencils.Householder}, A
     A
 end
 
-function LinearAlgebra.rmul!(A::StridedMatrix, H::MatrixPencils.Householder) 
+function LinearAlgebra.rmul!(A::AbstractMatrix, H::MatrixPencils.Householder) 
     m, n = size(A)
     size(H,2) == n || throw(DimensionMismatch("A: $m,$n H: $(size(H))"))
     v = view(H.v, :)

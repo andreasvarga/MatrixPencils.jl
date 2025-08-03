@@ -1,5 +1,8 @@
 # Release Notes
 
+# Version 1.8.5
+Minor improvements of Householder reflector computation and manipulation; replace calls to LAPACK wrapper tzrzf! by explicit structured reductions using Householder reflectors.    
+
 ## Version 1.8.4
 Make generic functions for regular pencil manipulations, linear system manipulation tools, general and structured pencil reductions.    
 

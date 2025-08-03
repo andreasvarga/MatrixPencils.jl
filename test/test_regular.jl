@@ -39,7 +39,6 @@ evs = sort(eigvals(AA,EE),by=real)
 #@test evs ≈ D
 # compute the chordal distance between exact and computed eigenvalues
 cofin = norm(abs.(evs-D)./sqrt.(1. .+ evs .^2)./sqrt.(1. .+ D .^2))
-println("k = $k corig = $corig cofin = $cofin")
 @test ev ≈ D ? cofin/10 < corig :  cofin < corig 
 end
 
