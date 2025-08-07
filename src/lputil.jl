@@ -394,33 +394,19 @@ function _preduceBF!(M::AbstractMatrix{T}, N::AbstractMatrix{T},
           ind = [i; ii22]
           ii = roff+i
           τ = MatrixPencils._reflector!(view(N,ii,ind))
-          H = MatrixPencils.Householder(view(N,ii,ii22),τ)
+          T <: Complex && (N[ii,ind] = conj(view(N,ii,ind)))
+          H = MatrixPencils.Householder(view(N,ii,ii22),conj(τ))
           rmul!(view(N,1:ii-1,ind),H)
           rmul!(view(M,i12,ind),H)
           withZ && rmul!(view(Z,:,ind),H)
           ismissing(R) || rmul!(view(R,:,ind),H)
       end
       N22[:,:] = [ zeros(T,n,m) triu(N22[i1,i1]); zeros(T,p,npm) ]
-      #fill!(view(N,i1,ii22),zero(T))
       jp = [coff+n+1:coff+npm; coff+1:coff+n] 
       M[i12,j22] = M[i12,jp]
       N[i11,j22] = N[i11,jp]
       withZ && (Z[:,j22] = Z[:,jp]) 
       ismissing(R) || (R[:,j22] = R[:,jp])
-      # F = qr(reverse(view(N22,i1,:),dims=1)')
-      # # [M12; M22] <- [M12; M22]*Z2*Pc2
-      # rmul!(view(M,i12,j22),F.Q)
-      # reverse!(view(M,i12,j22),dims=2)
-      # # N12 <- N12*Z2*Pc2
-      # rmul!(view(N,i12,j22),F.Q)
-      # reverse!(view(N,i12,j22),dims=2)
-      # if withZ
-      #    rmul!(view(Z,:,j22),F.Q)
-      #    reverse!(view(Z,:,j22),dims=2)
-      # end
-      # # R <- R*Z2*Pc2
-      # ismissing(R) || (rmul!(view(R,:,j22),F.Q); reverse!(view(R,:,j22),dims=2)) 
-      # N22[:,:] = [ zeros(T,n,m) triu(N22[i1,coff+m+1:coff+npm]); zeros(T,p,npm) ]
    else
       # compute the complete orthogonal decomposition of N22 using the SVD-decomposition
       # N[i22,j22] = U*Diagonal(S)*Vt'

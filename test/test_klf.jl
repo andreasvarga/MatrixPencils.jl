@@ -453,7 +453,7 @@ M = copy(M2); N = copy(N2);
       ν == [1, 1, 2, 4] && μ == [0, 1, 2, 3] && n == 6 && m == 4  && p == 0
 
 Ty = Float64      
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 abstol = sqrt(eps(one(real(Ty))))
 
@@ -794,7 +794,7 @@ M = copy(M2); N = copy(N2);
       norm(Q1'*N2*Z1-N1) < sqrt(eps(1.)) &&
       νr == [2, 0 ] && μr == [2, 2] && ν == [1, 1] && μ == [1, 1] && nf == 2
 
-for Ty in (Float64, Complex{Float64},BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 abstol = sqrt(eps(one(real(Ty))))
 
@@ -1195,7 +1195,7 @@ M = copy(M2); N = copy(N2);
 
 Ty = Float64; 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
-for Ty in (Float64, Complex{Float64},BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 abstol = sqrt(eps(one(real(Ty))))
 

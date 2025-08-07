@@ -852,6 +852,7 @@ function sklf_right!(A::AbstractMatrix{T}, E::AbstractMatrix{T}, B::AbstractVecO
    else
       return Q, Z, νr[1:0], 0, n1, niu
    end
+
    if m1 > 0
       imA11 = 1:n-rtrail
       A11 = view(A,imA11,1:n)

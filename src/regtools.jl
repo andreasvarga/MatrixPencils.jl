@@ -266,7 +266,8 @@ function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
       for i = rE:-1:1
           ind = [i; i22]
           τ = MatrixPencils._reflector!(view(E,i,ind))
-          H = MatrixPencils.Householder(view(E,i,i22),τ)
+          T <: Complex && (E[i,ind] = conj(E[i,ind]))
+          H = MatrixPencils.Householder(view(E,i,i22),conj(τ))
           rmul!(view(E,1:i-1,ind),H)
           rmul!(view(A,:,ind),H)
           withZ && rmul!(view(Z,:,ind),H)
@@ -324,7 +325,8 @@ function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
       for i = rE+rA22:-1:rE+1
           ind = [i; i3]
           τ = MatrixPencils._reflector!(view(A,i,ind))
-          H = MatrixPencils.Householder(view(A,i,i3),τ)
+          T <: Complex && (A[i,ind] = conj(A[i,ind]))
+          H = MatrixPencils.Householder(view(A,i,i3),conj(τ))
           rmul!(view(A,1:i-1,ind),H)
           withZ && rmul!(view(Z,:,ind),H)
           ismissing(C) || rmul!(view(C,:,ind),H)

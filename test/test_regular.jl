@@ -418,7 +418,7 @@ Z = Matrix{T}(I,n,n)
       rE == 2 && rA22 == 1
 
 Ty = BigFloat
-for Ty in (Float64, Complex{Float64}, BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 n = 10; m = 3; p = 2;
 rE = 5;
@@ -592,7 +592,7 @@ N = [   13  26  25  17  24
 @test !isunimodular(BigFloat.(M), BigFloat.(N)) 
 
 Ty = Float64
-for Ty in (Float64, Complex{Float64}, BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
     abstol = sqrt(eps(one(real(Ty))))
     
@@ -716,7 +716,7 @@ fast = true; finite_infinite = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64}, BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = zeros(Ty,3,2); C2 = zeros(4,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 
@@ -795,7 +795,7 @@ fast = true; finite_infinite = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64}, BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = zeros(Ty,3,2); C2 = zeros(4,3);
 A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2); 

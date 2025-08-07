@@ -61,7 +61,9 @@ function _reflector!(x::AbstractVector{T}, first::Bool = true) where {T<:Complex
         α = first ? x[1] : x[end]
         v = first ? view(x,2:n) : view(x,1:n-1)
         αr, αi = reim(α)
-        xnorm = LinearAlgebra.norm2(v)
+        #xnorm = LinearAlgebra.norm2(v)
+        xnorm = LinearAlgebra.norm(v,2)
+
         if iszero(xnorm) && iszero(αi)
             return zero(T)
         end

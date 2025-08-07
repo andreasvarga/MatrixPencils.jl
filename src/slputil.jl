@@ -217,7 +217,8 @@ function _sreduceC!(A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{
          c[:] = zeros(T,n)
          return 0
       else
-         H  = Householder(view(c,1:n-1), τ, false)
+         T <: Complex && (c[:] = conj(c))
+         H  = Householder(view(c,1:n-1), conj(τ), false)
          rmul!(A,H)
          rmul!(E,H)
          withZ && rmul!(Z,H)  
@@ -237,7 +238,7 @@ function _sreduceC!(A::AbstractMatrix{T},E::AbstractMatrix{T},C::AbstractMatrix{
          v = reverse(temp[i:n,i]); v[end] = 1;
          T <: Complex && (v = conj(v))
          it = 1:n-i+1
-         H  = Householder(view(v,1:n-i), τ[i], false)
+         H  = Householder(view(v,1:n-i), conj(τ[i]), false)
          rmul!(view(A,:,it),H)
          rmul!(view(E,:,it),H)
          withZ && rmul!(view(Z,:,it),H)
@@ -761,7 +762,8 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::
          c[:] = zeros(T,n)
          return 0
       else
-         H  = Householder(view(c,1:n-1), τ, false)
+         T <: Complex && (c[:] = conj(c))
+         H  = Householder(view(c,1:n-1), conj(τ), false)
          lmul!(H',view(A, ia, :))
          rmul!(A1,H)
          ismissing(B) || lmul!(H',view(B, ia, :))
@@ -782,7 +784,7 @@ function _sreduceAC!(n::Int,p::Int,A::AbstractMatrix{T},C::AbstractMatrix{T},B::
          v = reverse(temp[i:n,i]); v[end] = 1;
          T <: Complex && (v = conj(v))
          it = 1:n-i+1
-         H  = Householder(view(v,1:n-i), τ[i], false)
+         H  = Householder(view(v,1:n-i), conj(τ[i]), false)
          lmul!(H',view(A,it,:))
          rmul!(view(A,:,it),H)
          ismissing(B) || lmul!(H',view(B,it,:))
@@ -1291,7 +1293,7 @@ function _sreduceAEC!(n::Int,p::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},C:
       else
          F = qr!(E22)
          lmul!(F.Q',view(A,jt,ja))
-         withQ && lmul!(view(Q,:,jt),F.Q) 
+         withQ && rmul!(view(Q,:,jt),F.Q) 
          lmul!(F.Q',view(E,jt,jt1))
          ismissing(B) || lmul!(F.Q',view(B,jt,:))
       end
