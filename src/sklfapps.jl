@@ -89,7 +89,8 @@ function spzeros(A::Union{AbstractMatrix,Missing}, E::Union{AbstractMatrix,Unifo
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvalsnosort!(view(M,if1,jf1),view(N,if1,jf1)); Inf*ones(real(T),niz) ], minf(id[2:i]), 
+   (M1, N1) = T <: BlasFloat ? (view(M,if1,jf1), view(N,if1,jf1)) : (collect(view(M,if1,jf1)),collect(view(N,if1,jf1)))
+   return [eigvalsnosort!(M1, N1); Inf*ones(real(T),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """

@@ -13,7 +13,7 @@ function _reflector!(x::AbstractVector{T},first::Bool = true) where {T<:Real}
     @inbounds begin
         α = first ? x[1] : x[end] 
         v = first ? view(x,2:n) : view(x,1:n-1)
-        xnorm = LinearAlgebra.norm2(v)
+        xnorm = LinearAlgebra.norm(v)
         if iszero(xnorm)
             return zero(T)
         end
@@ -34,7 +34,7 @@ function _reflector!(x::AbstractVector{T},first::Bool = true) where {T<:Real}
                 smallβ = (abs(β) < sfmin) && (kount < 20)
             end
             # now β ∈ [sfmin,1]
-            xnorm = LinearAlgebra.norm2(v)
+            xnorm = LinearAlgebra.norm(v)
             β = -copysign(hypot(α, xnorm), α)
         end
         τ = (β - α) / β
@@ -61,8 +61,7 @@ function _reflector!(x::AbstractVector{T}, first::Bool = true) where {T<:Complex
         α = first ? x[1] : x[end]
         v = first ? view(x,2:n) : view(x,1:n-1)
         αr, αi = reim(α)
-        #xnorm = LinearAlgebra.norm2(v)
-        xnorm = LinearAlgebra.norm(v,2)
+        xnorm = LinearAlgebra.norm(v)
 
         if iszero(xnorm) && iszero(αi)
             return zero(T)
@@ -85,7 +84,7 @@ function _reflector!(x::AbstractVector{T}, first::Bool = true) where {T<:Complex
                 smallβ = (abs(β) < sfmin) && (kount < 20)
             end
             # now β ∈ [sfmin,1]
-            xnorm = LinearAlgebra.norm2(v)
+            xnorm = LinearAlgebra.norm(v)
             α = complex(αr, αi)
             β = -copysign(_hypot3(αr, αi, xnorm), αr)
             #β = -copysign(hypot3(αr, αi, xnorm), αr)

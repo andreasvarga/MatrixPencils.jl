@@ -2218,7 +2218,8 @@ function gsklf(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
          for i = ne:-1:1
              ind = [jr[i]; ii22]
              τ = MatrixPencils._reflector!(view(Et,i,ind))
-             H = MatrixPencils.Householder(view(Et,i,ii22),τ)
+             T <: Complex && (Et[i,ind] = conj(Et[i,ind]))
+             H = MatrixPencils.Householder(view(Et,i,ii22),conj(τ))
              rmul!(view(Et,ir1,ind),H)
              rmul!(view(At,1:n1,ind),H)
              rmul!(view(CD,:,ind),H)

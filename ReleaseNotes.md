@@ -1,5 +1,8 @@
 # Release Notes
 
+# Version 1.8.7
+Fix generic functions to compute pencil eigenvalues in the complex case 
+
 # Version 1.8.6
 Make generic functions for manipulation of extended precision complex pencils 
 
