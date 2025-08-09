@@ -1,7 +1,7 @@
 # Release Notes
 
 # Version 1.8.7
-Fix generic functions to compute pencil eigenvalues in the complex case 
+Fix generic functions to compute pencil eigenvalues in the complex case; make function `gsklf` generic for the complex case. 
 
 # Version 1.8.6
 Make generic functions for manipulation of extended precision complex pencils 
@@ -13,7 +13,7 @@ Minor improvements of Householder reflector computation and manipulation; replac
 Make generic functions for regular pencil manipulations, linear system manipulation tools, general and structured pencil reductions.    
 
 ## Version 1.8.3
-Make structured pencil applications `sklfapps.jl` and structured pencil reductions`lputil.jl` generic.    
+Make structured pencil applications `sklfapps.jl` and structured pencil reductions `lputil.jl` generic.    
 
 ## Version 1.8.2
 Fix issue [#18](https://github.com/andreasvarga/MatrixPencils.jl/issues/18).   

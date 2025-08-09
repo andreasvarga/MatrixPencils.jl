@@ -88,7 +88,8 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScalin
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvalsnosort!(view(M1,if1,jf1),view(N1,if1,jf1)); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
+   (M2, N2) = eltype(M1) <: BlasFloat ? (view(M1,if1,jf1), view(N1,if1,jf1)) : (collect(view(M1,if1,jf1)),collect(view(N1,if1,jf1)))
+   return [eigvalsnosort!(M2,N2); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
            KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """

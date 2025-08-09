@@ -3,6 +3,8 @@ module Test_gsklf
 using LinearAlgebra
 using MatrixPencils
 using Test
+using GenericLinearAlgebra
+using GenericSchur
 
 
 @testset "gsklf" begin
@@ -296,11 +298,11 @@ zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl)
 
 
 Ty = Complex{Float64};  fast = false; 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},Complex{BigFloat})
 n = 5; m = 4; p = 3;  
 A = rand(Ty,n,n); B = rand(Ty,n,m); C = rand(Ty,p,n); D = rand(Ty,p,m); 
 E = I;
-M2 = [A B; C D]; N2 = [E zeros(n,m); zeros(p,n+m)];
+M2 = [A B; C D]; N2 = [E zeros(Ty,n,m); zeros(Ty,p,n+m)];
 zerref, ziref, = pzeros(M2,N2)
 
 M, N, Q, Z, dimsc, nmsz, niz = gsklf(A, E, B, C, D, jobopt = "none", fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
@@ -340,7 +342,8 @@ Abl = M[il,jal]; Ebl = N[il,jal]; Bbl = M[il,jbl]; Cbl = M[icl,jal]; Dbl = M[icl
 zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl,atol1=1.e-7,atol2=1.e-7)
 @test norm(Q'*[A B]*Z-M[1:n,:]) < sqrt(eps(1.)) &&
       norm([C D]*Z-M[n+1:n+p,:]) < sqrt(eps(1.)) &&
-      norm(Q'*[E zeros(n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) 
+      norm(Q'*[E zeros(n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) &&
+      sort(zerref[real(zerref).> 0],by=real) ≈ sort(zer,by = real)
 
 M, N, Q, Z, dimsc, nmsz, niz = gsklf(A, E, B, C, D, jobopt = "unstable", disc = true, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
 nr = dimsc[1]; nl = dimsc[2]; ml = dimsc[3]; nsinf = dimsc[4]; 
@@ -349,7 +352,8 @@ Abl = M[il,jal]; Ebl = N[il,jal]; Bbl = M[il,jbl]; Cbl = M[icl,jal]; Dbl = M[icl
 zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl)
 @test norm(Q'*[A B]*Z-M[1:n,:]) < sqrt(eps(1.)) &&
       norm([C D]*Z-M[n+1:n+p,:]) < sqrt(eps(1.)) &&
-      norm(Q'*[E zeros(n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) 
+      norm(Q'*[E zeros(n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) &&
+      sort(zerref[abs.(zerref).> 1],by=abs) ≈ sort(zer,by = abs)
 end      
 
 end
