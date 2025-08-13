@@ -872,10 +872,10 @@ References:
     On stabilization methods of descriptor systems.
     Systems & Control Letters, vol. 24, pp.133-138, 1995.
 """
-function salocinf(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix; 
+function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3};  
                   atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
-                  fast::Bool = true)
+                  fast::Bool = true) where {T1 <: BlasFloat, T2 <: BlasFloat, T3 <: BlasFloat}
 
    n = LinearAlgebra.checksquare(A)
    
@@ -1021,6 +1021,9 @@ function salocinf(A::AbstractMatrix, E::AbstractMatrix, B::AbstractMatrix;
    return F, G, GeneralizedSchur(A1, E1, α, β, Q, Z), blkdims
    
    # end salocinf
+end
+function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3}; kwargs...) where {T1, T2, T3}
+    salocinf(ComplexF64.(A),ComplexF64.(E), ComplexF64.(B); kwargs...)
 end
 """
      ev = ordeigvals(A) 
@@ -1465,6 +1468,14 @@ function eigvalsnosort!(M::AbstractMatrix{T}, N::AbstractMatrix{T}; kwargs...) w
    return isreal(ev) ? real(ev) : ev
 end
 function eigvalsnosort!(M::AbstractMatrix{T}, N::AbstractMatrix{T}) where {T}
+   if T <: Complex 
+      ev = schur!(M, N).values
+   else
+      ev = schur!(complex(M), complex(N)).values
+   end
+   return isreal(ev) ? real(ev) : ev
+end
+function LinearAlgebra.eigvals!(M::AbstractMatrix{T}, N::AbstractMatrix{T}) where {T}
    if T <: Complex 
       ev = schur!(M, N).values
    else

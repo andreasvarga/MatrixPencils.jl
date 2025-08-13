@@ -4,6 +4,8 @@ using Random
 using LinearAlgebra
 using MatrixPencils
 using Test
+using GenericSchur
+using GenericLinearAlgebra
 
 Random.seed!(2351);
 function evsym!(ev) 
@@ -203,7 +205,7 @@ sdeg = [];
 
 # random examples
 Ty = Float64      
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 a = rand(Ty,6,6); b = rand(Ty,6,3);   evals = eigvals(a); 
 @time f, SF, blkdims = saloc(a,b, evals =  evals)
@@ -542,7 +544,7 @@ fast = true
 for fast in (true,false)
 
 Ty = Float64      
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},Complex{BigFloat})
 complx = Ty <: Complex
 
 a = rand(Ty,6,6); b = rand(Ty,6,3); e = rand(Ty,6,6); 
