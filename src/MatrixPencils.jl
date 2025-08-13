@@ -6,6 +6,7 @@ const BlasComplex = Union{ComplexF64,ComplexF32}
 
 using LinearAlgebra
 using Polynomials
+using MatrixEquations
 import LinearAlgebra: copy_oftype, BlasInt, lmul!, rmul!
 import Base: size, require_one_based_indexing
 

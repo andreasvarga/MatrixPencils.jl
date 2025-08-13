@@ -175,7 +175,8 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
    end
    if1 = mrinf+1:mrinf+n
    jf1 = nrinf+1:nrinf+n
-   return [eigvalsnosort!(view(M1,if1,jf1),view(N1,if1,jf1)); Inf*ones(real(eltype(M1)),ni) ], 
+   (M2, N2) = eltype(M1) <: BlasFloat ? (view(M1,if1,jf1), view(N1,if1,jf1)) : (collect(view(M1,if1,jf1)),collect(view(N1,if1,jf1)))
+   return [eigvalsnosort!(M2,N2); Inf*ones(real(eltype(M1)),ni) ], 
           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
 end
 """

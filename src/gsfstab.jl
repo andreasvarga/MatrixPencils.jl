@@ -177,10 +177,10 @@ References:
     A Schur method for pole assignment.
     IEEE Trans. on Automatic Control, vol. 26, pp. 517-519, 1981.
 """
-function saloc(A::AbstractMatrix, B::AbstractMatrix; disc::Bool = false, 
+function saloc(A::AbstractMatrix{T2}, B::AbstractMatrix{T3}; disc::Bool = false, 
                evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
                atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(B))),  
-               rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2)))
+               rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2))) where {T2 <: BlasFloat, T3 <: BlasFloat}
    n = LinearAlgebra.checksquare(A)
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
@@ -474,11 +474,11 @@ References:
     Systems & Control Letters, vol. 24, pp.133-138, 1995.
 
 """
-function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}, B::AbstractMatrix; 
+function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; 
                   disc::Bool = false, evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
                   atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
-                  fast::Bool = true, sepinf::Bool = true)
+                  fast::Bool = true, sepinf::Bool = true) where {T1 <: BlasFloat, T2 <: BlasFloat, T3 <: BlasFloat}
 
    n = LinearAlgebra.checksquare(A)
    if E == I
@@ -501,8 +501,8 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    if ismissing(evals)
       evals1 = evals
    else 
-      T1 = promote_type(T,eltype(evals)) 
-      evals1 = copy_oftype(evals,T1)
+      # T1 = promote_type(T,eltype(evals)) 
+      evals1 = copy_oftype(evals,promote_type(T,eltype(evals)) )
    end
    
    # quick exit for n = 0 or B = 0
@@ -757,6 +757,14 @@ function saloc(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}},
    return F, GeneralizedSchur(A1, E1, α, β, Q, Z), blkdims
    
    # end saloc
+end
+saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1, T2, T3} = 
+saloc(ComplexF64.(A),E == I ? I : ComplexF64.(E), ComplexF64.(B); kwargs...)
+function saloc(A::AbstractMatrix{T1}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T3 <: Real}
+    saloc(Float64.(A),Float64.(B); kwargs...)
+end
+function saloc(A::AbstractMatrix{T1}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Complex, T3 <: Complex}
+    saloc(ComplexF64.(A),ComplexF64.(B); kwargs...)
 end
 """
     salocinfd(A, E, C; atol1 = 0, atol2 = 0, atol3 = 0, rtol, sepinf = true, fast = true) -> (K, L, Scl, blkdims)

@@ -77,10 +77,47 @@ function fihess(A::AbstractMatrix, E::AbstractMatrix;
                          fast  = fast, finite_infinite = finite_infinite, 
                          atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = withQ, withZ = withZ)
     (ilo, ihi) = finite_infinite ? (1, blkdims[1]) : (blkdims[1]+1, n)
-    ilo > ihi || gghrd!(withQ ? 'V' : 'N', withZ ? 'V' : 'N', ilo, ihi, A1, E1, Q, Z)
-   
+    if ilo <= ihi 
+        if T <: BlasFloat
+           gghrd!(withQ ? 'V' : 'N', withZ ? 'V' : 'N', ilo, ihi, A1, E1, Q, Z)
+        else
+           _hessenberg!(A1, E1, withQ ? Q : [], withZ ? Z : []; ilo, ihi)
+        end
+    end
     return A1, E1, Q, Z, ν, blkdims                                             
 end
+# this function is taken from the GenericSchur.jl package developed by Ralph Smith
+function _hessenberg!(A::StridedMatrix{T}, B::StridedMatrix{T}, Q, Z;
+                      ilo=1, ihi=size(A,1)
+                      ) where T
+    n = LinearAlgebra.checksquare(A)
+    wantQ = !isempty(Q)
+    wantZ = !isempty(Z)
+
+    triu!(B)
+
+    for jc = ilo:ihi-2
+        for jr = ihi:-1:jc+2
+            # rotate rows jr-1,jr to null A[jr,jc]
+            Gq,r = givens(A,jr-1,jr,jc)
+            lmul!(Gq, A)
+            lmul!(Gq, B)
+            if wantQ
+                rmul!(Q, Gq')
+            end
+            # rotate cols jr,jr-1 to null B[jr,jr-1]
+            Gz,r = givens(B',jr,jr-1,jr)
+            rmul!(A,Gz')
+            rmul!(B,Gz')
+            if wantZ
+                rmul!(Z, Gz')
+            end
+        end
+    end
+
+    return triu!(A,-1), triu!(B), Q, Z
+end
+
 """
     fischur(A, E; fast = true, finite_infinite = false, atol1 = 0, atol2 = 0, rtol, withQ = true, withZ = true) -> (At, Et, Q, Z, ν, blkdims)
 
@@ -164,10 +201,25 @@ function fischur(A::AbstractMatrix, E::AbstractMatrix;
                          atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = withQ, withZ = withZ)
     (ilo, ihi) = finite_infinite ? (1, blkdims[1]) : (blkdims[1]+1, n)
     if ilo < ihi 
-        compq = withQ ? 'V' : 'N'                    
-        compz = withZ ? 'V' : 'N'                    
-        gghrd!(compq, compz, ilo, ihi, A1, E1, Q, Z)
-        hgeqz!(compq, compz, ilo, ihi, A1, E1, Q, Z)
+        if T <: BlasFloat
+           compq = withQ ? 'V' : 'N'                    
+           compz = withZ ? 'V' : 'N'                    
+           gghrd!(compq, compz, ilo, ihi, A1, E1, Q, Z)
+           hgeqz!(compq, compz, ilo, ihi, A1, E1, Q, Z)
+        else
+           n1 = ilo-1; i1 = 1:n1
+           n2 = ihi-ilo+1; i2 = ilo:ihi
+           n3 = n-ihi; i3 = ihi+1:n 
+           F = schur!(collect(view(A1,i2,i2)),collect(view(E1,i2,i2))) 
+           A1 = [A1[i1,i1] A1[i1,i2]*F.Z A1[i1,i3]
+                 zeros(T,n2,n1) F.S F.Q'*A1[i2,i3]
+                 zeros(T,n3,n1+n2) A1[i3,i3]]
+           E1 = [E1[i1,i1] E1[i1,i2]*F.Z E1[i1,i3]
+                 zeros(T,n2,n1) F.T F.Q'*E1[i2,i3]
+                 zeros(T,n3,n1+n2) E1[i3,i3]]
+           withQ && (Q[:,i2] = Q[:,i2]*F.Q)
+           withZ && (Z[:,i2] = Z[:,i2]*F.Z)
+        end
     end
    
     return A1, E1, Q, Z, ν, blkdims                                             
@@ -263,27 +315,56 @@ function fischursep(A::AbstractMatrix, E::AbstractMatrix;
                          atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = withQ, withZ = withZ)
     (ilo, ihi) = finite_infinite ? (1, blkdims[1]) : (blkdims[1]+1, n)
     if ilo <= ihi 
-        compq = withQ ? 'V' : 'N'                    
-        compz = withZ ? 'V' : 'N'                    
-        gghrd!(compq, compz, ilo, ihi, A1, E1, Q, Z)
-        _, _, α, β, _, _ = hgeqz!(compq, compz, ilo, ihi, A1, E1, Q, Z)
-        i2 = ilo:ihi
-        ismissing(smarg) && (smarg = disc ? one(real(T)) : zero(real(T)))
-        select2 = disc ? abs.(α[i2]) .< smarg*abs.(β[i2]) : real.(α[i2] ./ β[i2]) .< smarg
-        stable_unstable || (select2 = .!select2)
+       i2 = ilo:ihi
+       ismissing(smarg) && (smarg = disc ? one(real(T)) : zero(real(T)))
+       if T <: BlasFloat
+           compq = withQ ? 'V' : 'N'                    
+           compz = withZ ? 'V' : 'N'                    
+           gghrd!(compq, compz, ilo, ihi, A1, E1, Q, Z)
+           _, _, α, β, _, _ = hgeqz!(compq, compz, ilo, ihi, A1, E1, Q, Z)
+           select2 = disc ? abs.(α[i2]) .< smarg*abs.(β[i2]) : real.(α[i2] ./ β[i2]) .< smarg
+           stable_unstable || (select2 = .!select2)
+           if finite_infinite
+              n3 = blkdims[2]
+              #n1 = length(select2[select2 .== true])
+              n1 = count(select2)
+              n2 = n-n3-n1
+              select = [Int.(select2); zeros(Int,n3)] 
+           else
+              n1 = blkdims[1]
+              #n2 = length(select2[select2 .== true])
+              n2 = count(select2)
+              n3 = n-n2-n1
+              select = [ones(Int,n1);Int.(select2)]
+           end
+           tgsen!(withQ, withZ, select, A1, E1, Q, Z) 
+       else
+           n1 = ilo-1; i1 = 1:n1
+           n2 = ihi-ilo+1; i2 = ilo:ihi
+           n3 = n-ihi; i3 = ihi+1:n 
+           F = schur!(collect(view(A1,i2,i2)),collect(view(E1,i2,i2))) 
+           select2 = disc ? abs.(F.α) .< smarg*abs.(F.β) : real.(F.α ./ F.β) .< smarg
+           stable_unstable || (select2 = .!select2)
+           ordschur!(F,select2)
+           A1 = [A1[i1,i1] A1[i1,i2]*F.Z A1[i1,i3]
+                 zeros(T,n2,n1) F.S F.Q'*A1[i2,i3]
+                 zeros(T,n3,n1+n2) A1[i3,i3]]
+           E1 = [E1[i1,i1] E1[i1,i2]*F.Z E1[i1,i3]
+                 zeros(T,n2,n1) F.T F.Q'*E1[i2,i3]
+                 zeros(T,n3,n1+n2) E1[i3,i3]]
+           withQ && (Q[:,i2] = Q[:,i2]*F.Q)
+           withZ && (Z[:,i2] = Z[:,i2]*F.Z)
+           if finite_infinite
+              n3 = blkdims[2]
+              n1 = count(select2)
+              n2 = n-n3-n1
+           else
+              n1 = blkdims[1]
+              n2 = length(select2[select2 .== true])
+              n3 = n-n2-n1
+           end
+       end
 
-        if finite_infinite
-           n3 = blkdims[2]
-           n1 = length(select2[select2 .== true])
-           n2 = n-n3-n1
-           select = [Int.(select2); zeros(Int,n3)] 
-        else
-           n1 = blkdims[1]
-           n2 = length(select2[select2 .== true])
-           n3 = n-n2-n1
-           select = [ones(Int,n1);Int.(select2)]
-        end
-        tgsen!(withQ, withZ, select, A1, E1, Q, Z) 
     else
         (n1,n2,n3) = finite_infinite ? (0,0,blkdims[2]) : (blkdims[1],0,0)
     end
@@ -387,24 +468,45 @@ function sfischursep(A::AbstractMatrix, E::AbstractMatrix;
     ni2 = blkdims1[3]
     (ilo, ihi) = (ni1+1, ni1+nf)
     if ilo <= ihi 
-        compq = withQ ? 'V' : 'N'                    
-        compz = withZ ? 'V' : 'N'                    
-        gghrd!(compq, compz, ilo, ihi, A1, E1, Q, Z)
-        _, _, α, β, _, _ = hgeqz!(compq, compz, ilo, ihi, A1, E1, Q, Z)
-        i2 = ilo:ihi
-        ismissing(smarg) && (smarg = disc ? one(real(T)) : zero(real(T)))
-        select2 = disc ? abs.(α[i2]) .< smarg*abs.(β[i2]) : real.(α[i2] ./ β[i2]) .< smarg
-        stable_unstable || (select2 = .!select2)
+       i2 = ilo:ihi
+       ismissing(smarg) && (smarg = disc ? one(real(T)) : zero(real(T)))
+       if T <: BlasFloat
+          compq = withQ ? 'V' : 'N'                    
+          compz = withZ ? 'V' : 'N'                    
+          gghrd!(compq, compz, ilo, ihi, A1, E1, Q, Z)
+           _, _, α, β, _, _ = hgeqz!(compq, compz, ilo, ihi, A1, E1, Q, Z)
+          select2 = disc ? abs.(α[i2]) .< smarg*abs.(β[i2]) : real.(α[i2] ./ β[i2]) .< smarg
+          stable_unstable || (select2 = .!select2)
 
-        select = [ones(Int,ni1); Int.(select2); zeros(Int,ni2) ]
-        n1 = length(select2[select2 .== true])
-        n2 = nf-n1
-        blkdims = (ni1, n1, n2, ni2)
-        tgsen!(withQ, withZ, select, A1, E1, Q, Z) 
+          select = [ones(Int,ni1); Int.(select2); zeros(Int,ni2) ]
+          #n1 = length(select2[select2 .== true])
+          n1 = count(select2)
+          n2 = nf-n1
+          blkdims = (ni1, n1, n2, ni2)
+          tgsen!(withQ, withZ, select, A1, E1, Q, Z) 
+       else
+           n1 = ilo-1; i1 = 1:n1
+           n2 = ihi-ilo+1; i2 = ilo:ihi
+           n3 = n-ihi; i3 = ihi+1:n 
+           F = schur!(collect(view(A1,i2,i2)),collect(view(E1,i2,i2))) 
+           select2 = disc ? abs.(F.α) .< smarg*abs.(F.β) : real.(F.α ./ F.β) .< smarg
+           stable_unstable || (select2 = .!select2)
+           ordschur!(F,select2)
+           A1 = [A1[i1,i1] A1[i1,i2]*F.Z A1[i1,i3]
+                 zeros(T,n2,n1) F.S F.Q'*A1[i2,i3]
+                 zeros(T,n3,n1+n2) A1[i3,i3]]
+           E1 = [E1[i1,i1] E1[i1,i2]*F.Z E1[i1,i3]
+                 zeros(T,n2,n1) F.T F.Q'*E1[i2,i3]
+                 zeros(T,n3,n1+n2) E1[i3,i3]]
+           withQ && (Q[:,i2] = Q[:,i2]*F.Q)
+           withZ && (Z[:,i2] = Z[:,i2]*F.Z)
+           n1 = count(select2)
+           n2 = nf-n1
+           blkdims = (ni1, n1, n2, ni2)
+       end
     else
         blkdims = (ni1, 0, 0, ni2)
     end
- 
     return A1, E1, Q, Z, ν, blkdims                                             
 end
 """
@@ -491,11 +593,16 @@ function fiblkdiag(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix
     i2 = n1+1:size(A,1)
     X = view(E1,i1,i2)
     Y = view(A1,i1,i2)
-    _, _, scale = tgsyl!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
-    
     ONE = one(T)
     ZERO = zero(T)
-    scale != 0 && (scale = ONE/scale)
+    if T <: BlasFloat
+       _, _, scale = tgsyl!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
+       scale != 0 && (scale = ONE/scale)
+    else
+       MatrixEquations.sylvsyss!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X)
+       rmul!(X,-ONE)
+       scale = ONE
+    end
 
     ismissing(B) || mul!(view(B1,i1,:),X,view(B1,i2,:),scale,ONE)
     ismissing(C) || mul!(view(C1,:,i2),view(C1,:,i1),Y,-scale,ONE)
@@ -617,11 +724,16 @@ function gsblkdiag(A::AbstractMatrix, E::AbstractMatrix, B::Union{AbstractMatrix
     i2 = n1+1:size(A,1)
     X = view(E1,i1,i2)
     Y = view(A1,i1,i2)
-    _, _, scale = tgsyl!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
-    
     ONE = one(T)
     ZERO = zero(T)
-    scale != 0 && (scale = ONE/scale)
+    if T <: BlasFloat
+       _, _, scale = tgsyl!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X) 
+       scale != 0 && (scale = ONE/scale)
+    else
+       MatrixEquations.sylvsyss!(view(A1,i1,i1), view(A1,i2,i2), Y, view(E1,i1,i1), view(E1,i2,i2), X)
+       rmul!(X,-ONE)
+       scale = ONE
+    end
 
     ismissing(B) || mul!(view(B1,i1,:),X,view(B1,i2,:),scale,ONE)
     ismissing(C) || mul!(view(C1,:,i2),view(C1,:,i1),Y,-scale,ONE)
@@ -683,7 +795,7 @@ where  `0 ≤ sep ≤ 1`. A value `sep ≈ 0` indicates that `A1` and `A2` have 
 """
 function ssblkdiag(A::AbstractMatrix{T}, B::Union{AbstractMatrix{T},Missing}, C::Union{AbstractMatrix{T},Missing}; 
                    smarg::Union{Real,Missing} = missing, disc::Bool = false, stable_unstable::Bool = false, 
-                   withQ::Bool = true, withZ::Bool = true ) where T <: BlasFloat
+                   withQ::Bool = true, withZ::Bool = true ) where T 
     
     n = LinearAlgebra.checksquare(A)
     S = schur(A)
@@ -704,11 +816,19 @@ function ssblkdiag(A::AbstractMatrix{T}, B::Union{AbstractMatrix{T},Missing}, C:
     i1 = 1:n1
     i2 = n1+1:size(A,1)
     Y = view(S.T,i1,i2)  # Y will contain the negative of solution -Y
-    _, scale = LAPACK.trsyl!('N', 'N', view(S.T,i1,i1), view(S.T,i2,i2), Y, -1) 
- 
+    Y1 = copy(Y)
     ONE = one(T)
     ZERO = zero(T)
-    scale != 0 && (scale = ONE/scale)
+    # if T <: BlasFloat
+    #    _, scale = LAPACK.trsyl!('N', 'N', view(S.T,i1,i1), view(S.T,i2,i2), Y, -1) 
+    #    scale != 0 && (scale = ONE/scale)
+    # else
+    #    MatrixEquations.sylvcs!(view(S.T,i1,i1), view(S.T,i2,i2), Y, -1)
+    #    scale = ONE
+    # end
+    MatrixEquations.sylvcs!(view(S.T,i1,i1), view(S.T,i2,i2), Y, -1)
+    scale = ONE
+ 
 
     ismissing(B) ? B1 = missing : (B1 = S.Z'*B; mul!(view(B1,i1,:),Y,view(B1,i2,:),scale,ONE))
     ismissing(C) ? C1 = missing : (C1 = C*S.Z; mul!(view(C1,:,i2),view(C1,:,i1),Y,-scale,ONE))

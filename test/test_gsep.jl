@@ -4,6 +4,9 @@ module Test_gsep
 using LinearAlgebra
 using MatrixPencils
 using Test
+using GenericLinearAlgebra
+using GenericSchur
+using MatrixEquations
 
 
 @testset "Spectrum separation functions" begin
@@ -58,7 +61,7 @@ fast = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); 
 A = copy(A2); E = copy(E2); 
@@ -168,7 +171,7 @@ fast = true; finite_infinite = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64},Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); 
 A = copy(A2); E = copy(E2); 
@@ -298,7 +301,7 @@ fast = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); 
 A = copy(A2); E = copy(E2); 
@@ -455,7 +458,7 @@ fast = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); 
 A = copy(A2); E = copy(E2); 
@@ -597,7 +600,7 @@ fast = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);
 
@@ -750,7 +753,7 @@ fast = true; Ty = Float64; Ty =  Complex{Float64};
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);
 
@@ -914,9 +917,9 @@ end # gsblkdiag
 
 Ty = Float64; Ty =  Complex{Float64};    
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
-A2 = rand(3,3); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);   
+A2 = rand(Ty,3,3); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);   
 F2, = saloc(A2,B2; evals = [-.1,-1,2])
 A2c = copy(A2+B2*F2); A = copy(A2c); B = copy(B2); C = copy(C2); 
 
