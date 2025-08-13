@@ -198,7 +198,7 @@ M = copy(M2); N = copy(N2);
 
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
 #Ty = Float64; fast = true;
-for Ty in (Float64, Complex{Float64}, BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 # given structure 
 mr = 2; nr = 3; ni = 4; nf = 10; ml = 5; nl = 4;
@@ -310,7 +310,7 @@ M = copy(M2); N = copy(N2);
 
 
 #Ty = Float64; fast = true;
-for Ty in (Float64, Complex{Float64},BigFloat)
+for Ty in (Float64, Complex{Float64},BigFloat, Complex{BigFloat})
 
 abstol = sqrt(eps(one(real(Ty))))
 
@@ -411,7 +411,7 @@ M = copy(M2); N = copy(N2);
 Ty = Float64
 Ty = Complex{Float64}
 #for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 abstol = sqrt(eps(one(real(Ty))))
 

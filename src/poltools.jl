@@ -2,9 +2,14 @@ function qrsolve!(A::AbstractMatrix{T},b::AbstractVector{T}) where {T}
     # Fast least-squares solver for full column rank Hessenberg-like matrices
     m, n = size(A) 
     m < n && error("Column dimension exceeds row dimension") 
-    _, τ = LinearAlgebra.LAPACK.geqrf!(A)
-    T <: Complex ? tran = 'C' : tran = 'T'
-    LinearAlgebra.LAPACK.ormqr!('L',tran,A,τ,view(b,:,1:1))
+    if T <: BlasFloat
+       _, τ = LinearAlgebra.LAPACK.geqrf!(A)
+       T <: Complex ? tran = 'C' : tran = 'T'
+       LinearAlgebra.LAPACK.ormqr!('L',tran,A,τ,view(b,:,1:1))
+    else
+       F = qr!(A) 
+       lmul!(F.Q',b)
+    end
     return UpperTriangular(triu(A[1:n,:]))\b[1:n]
 end
 

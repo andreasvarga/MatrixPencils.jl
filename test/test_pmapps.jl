@@ -5,6 +5,8 @@ using LinearAlgebra
 using MatrixPencils
 using Polynomials
 using Test
+using GenericLinearAlgebra
+using GenericSchur
 
 
 @testset "Polynomial Matrix Applications" begin
@@ -429,7 +431,7 @@ val, kinfo = pmeigvals(P, fast = fast, atol = 1.e-7)
       length(filter(y-> y == true,isfinite.(val))) == 3 &&
       (kinfo.rki,kinfo.lki,kinfo.id,kinfo.nf,kinfo.nrank) == ([0, 0, 1, 2], [0, 3], [1, 2], 3, 12)
 
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 P = rand(Ty,2,3,5);
 P1 = rand(Ty,3,2,5);

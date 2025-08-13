@@ -499,7 +499,7 @@ function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMa
                      D::Union{<:AbstractVecOrMat{T1},Missing}, H::Union{<:AbstractVecOrMat{T1},Missing}; 
                      fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), atol3::Real = zero(real(T1)), 
                      rtol::Real = ((size(A,1)+2)*eps(real(float(one(T1)))))*iszero(max(atol1,atol2,atol3)), 
-                     withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat}
+                     withQ::Bool = true, withZ::Bool = true) where {T1}
 
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
@@ -527,15 +527,23 @@ function sklf_right!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, B::AbstractMa
    ir = 1:nc
    jb = 1:m
    ja = m+1:mn
-   T1 <: Complex ? trans = 'C' : trans = 'T' 
 
    ind = [m+1:mnc;jb]
 
-   Z1, tau = LinearAlgebra.LAPACK.gerqf!(Z[jb,ind]) 
-   BAt[ir,ind] = LinearAlgebra.LAPACK.ormrq!('R', trans, Z1, tau, BAt[ir,ind])
-   FEt[ir,ind] = LinearAlgebra.LAPACK.ormrq!('R', trans, Z1, tau, FEt[ir,ind])
-   Z[ja,ind] = LinearAlgebra.LAPACK.ormrq!('R', trans, Z1, tau, Z[ja,ind] )
-   Z[jb,1:mnc] = [triu(Z1[:,mnc-m+1:mnc]) zeros(T1,m,nc)]
+   if T1 <: BlasFloat
+      T1 <: Complex ? trans = 'C' : trans = 'T' 
+      Z1, tau = LinearAlgebra.LAPACK.gerqf!(Z[jb,ind]) 
+      BAt[ir,ind] = LinearAlgebra.LAPACK.ormrq!('R', trans, Z1, tau, BAt[ir,ind])
+      FEt[ir,ind] = LinearAlgebra.LAPACK.ormrq!('R', trans, Z1, tau, FEt[ir,ind])
+      Z[ja,ind] = LinearAlgebra.LAPACK.ormrq!('R', trans, Z1, tau, Z[ja,ind] )
+      Z[jb,1:mnc] = [triu(Z1[:,mnc-m+1:mnc]) zeros(T1,m,nc)]
+   else
+      FT = qr!(reverse(view(Z,jb,ind),dims=1)')
+      rmul!(view(BAt,ir,ind),FT.Q)
+      rmul!(view(FEt,ir,ind),FT.Q)
+      rmul!(view(Z,ja,ind),FT.Q)
+      Z[jb,1:mnc] = [reverse(reverse(FT.R,dims=1),dims=2)' zeros(T1,m,nc)]
+   end
    
    ia = 1:n
    B[:,:] = BAt[ia,jb]
@@ -619,7 +627,7 @@ function sklf_left!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMat
                      D::Union{<:AbstractVecOrMat{T1},Missing}, H::Union{<:AbstractVecOrMat{T1},Missing}; 
                      fast::Bool = true, atol1::Real = zero(real(T1)), atol2::Real = zero(real(T1)), atol3::Real = zero(real(T1)), 
                      rtol::Real = ((size(A,1)+2)*eps(real(float(one(T1)))))*iszero(max(atol1,atol2,atol3)), 
-                     withQ::Bool = true, withZ::Bool = true) where {T1 <: BlasFloat}
+                     withQ::Bool = true, withZ::Bool = true) where {T1}
    n = LinearAlgebra.checksquare(A)
    n == LinearAlgebra.checksquare(E) || throw(DimensionMismatch("A and E must have the same dimensions"))          
    p, n1 = size(C)
@@ -647,13 +655,21 @@ function sklf_left!(A::AbstractMatrix{T1}, E::AbstractMatrix{T1}, C::AbstractMat
    ia = 1:n
    it = n-no+1:np
    jt = n-no+1:n
-   T1 <: Complex ? trans = 'C' : trans = 'T' 
    Q22 = view(Q,ic,it)
-    _, tau = LinearAlgebra.LAPACK.gerqf!(Q22) 
-   LinearAlgebra.LAPACK.ormrq!('L', 'N', Q22, tau, view(ACt,it,jt))
-   LinearAlgebra.LAPACK.ormrq!('L', 'N', Q22, tau, view(EGt,it,jt))
-   LinearAlgebra.LAPACK.ormrq!('R', trans, Q22, tau, view(Q,ia,it))
-   Q22[:,:] = [zeros(T1,p,no) triu(Q[ic,ic])]
+   if T1 <: BlasFloat
+      T1 <: Complex ? trans = 'C' : trans = 'T' 
+      _, tau = LinearAlgebra.LAPACK.gerqf!(Q22) 
+      LinearAlgebra.LAPACK.ormrq!('L', 'N', Q22, tau, view(ACt,it,jt))
+      LinearAlgebra.LAPACK.ormrq!('L', 'N', Q22, tau, view(EGt,it,jt))
+      LinearAlgebra.LAPACK.ormrq!('R', trans, Q22, tau, view(Q,ia,it))
+      Q22[:,:] = [zeros(T1,p,no) triu(Q[ic,ic])]
+   else
+      FT = qr!(reverse(Q22,dims=1)')
+      lmul!(FT.Q',view(ACt,it,jt))
+      lmul!(FT.Q',view(EGt,it,jt))
+      rmul!(view(Q,ia,it),FT.Q)
+      Q22[:,:] = [zeros(T1,p,no) reverse(reverse(FT.R,dims=1),dims=2)']
+   end
    
    ia = 1:n
    C[:,:] = ACt[ic,ia]

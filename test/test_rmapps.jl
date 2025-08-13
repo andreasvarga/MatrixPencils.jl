@@ -5,6 +5,8 @@ using LinearAlgebra
 using MatrixPencils
 using Polynomials
 using Test
+using GenericSchur
+using GenericLinearAlgebra
 
 # λ = Polynomial([0,1],:λ)
 # @time info, iz, nfp, ip = rmkstruct(λ, 1, fast = true)
@@ -328,12 +330,12 @@ D = [s s; 1 1];
 
 
 Ty = Float64
-for Ty in (Float64, Complex{Float64})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 N = rand(Ty,2,3,5);
 N1 = rand(Ty,3,2,5);
-D = ones(2,3);
-D1 = ones(3,2);
+D = ones(Ty,2,3);
+D1 = ones(Ty,3,2);
 
 abstol = sqrt(eps(one(real(Ty))))
 
