@@ -1,5 +1,8 @@
 # Release Notes
 
+# Version 1.8.8
+Make generic versions of eigenvalue assignment functions.
+
 # Version 1.8.7
 Fix generic functions to compute pencil eigenvalues in the complex case; make function `gsklf` generic for the complex case.
 Make functions for spectral decompositions generic for the complex case. 

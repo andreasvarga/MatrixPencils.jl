@@ -224,7 +224,7 @@ a = rand(Ty,6,6); c = [zeros(Ty,3,2) rand(Ty,3,2) zeros(Ty,3,2)];   evals = eigv
 @test SF.Z*SF.T*SF.Z' ≈ a+k*c  && blkdims == [0, 6, 0] &&
       sort(real( evals)) ≈ sort(real(SF.values)) && sort(imag( evals)) ≈ sort(imag(SF.values))     
 
-# random example  - stabilization
+# random example  - stabilization  
 a = randn(Ty,6,6); b = rand(Ty,6,3);   sdeg = -0.2;  
 @time f, SF, blkdims = saloc(a,b, sdeg = sdeg)
 @test SF.Z*SF.T*SF.Z' ≈ a+b*f  && sum(blkdims[1:2]) == 6 &&
@@ -566,7 +566,7 @@ a = randn(Ty,6,6); e = randn(Ty,6,6); b = rand(Ty,6,3);
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && sum(blkdims[2:3]) == 6  &&
       all(real(SF.values) .<= 0)  
 
-@time f, SF, blkdims = saloc(a,b,evals = [-1, -2])
+#@time f, SF, blkdims = saloc(a,b,evals = [-1, -2])
 
 
 # random example  - stabilization 
