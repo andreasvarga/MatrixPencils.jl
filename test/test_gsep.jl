@@ -367,10 +367,10 @@ A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2);
       norm(Q'*E2*Z-E1) < sqrt(eps(1.)) && isqtriu(A1) && istriu(E1) &&
       ν == [1] && blkdims == (1,1,1) 
 
-A2 = zeros(3,3); E2 = rand(3,3); B2 = rand(Ty,3,3);
+A2 = zeros(Ty,3,3); E2 = rand(Ty,3,3); B2 = rand(Ty,3,3);
 A = copy(A2); E = copy(E2); 
 
-F2, = saloc(A2,E2,B2; evals = [-.1,-2,2])
+F2, = saloc(A2,E2,B2; evals = [-.1,-2,2]) #
 A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2);  
 @time A1, E1, Q, Z, ν, blkdims  = fischursep(A,E,fast = fast, finite_infinite = true, stable_unstable=true)
 @test norm(Q'*A2c*Z-A1) < sqrt(eps(1.)) &&
@@ -524,7 +524,7 @@ A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2);
       norm(Q'*E2*Z-E1) < sqrt(eps(1.)) && isqtriu(A1) && istriu(E1) &&
       ν == [] && blkdims == (0,1,1,1) 
 
-A2 = zeros(3,3); E2 = rand(3,3); B2 = rand(Ty,3,3);
+A2 = zeros(Ty,3,3); E2 = rand(Ty,3,3); B2 = rand(Ty,3,3);
 A = copy(A2); E = copy(E2); 
 
 F2, = saloc(A2,E2,B2; evals = [-.1,-2,2])
@@ -783,7 +783,7 @@ A = copy(A2); E = copy(E2); B = copy(B2); C = copy(C2);
       istriu(A1) && istriu(E1) &&
       ν == [3] && blkdims == (0,0,3)   
 
-A2 = rand(3,3); E2 = triu(rand(Ty,3,3),1); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);   
+A2 = rand(Ty,3,3); E2 = triu(rand(Ty,3,3),1); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);   
 F2, = saloc(A2,E2,B2; evals = [-.1;2])
 A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2); B = copy(B2); C = copy(C2); 
 
@@ -796,7 +796,7 @@ A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2); B = copy(B2); C = copy(C2);
       ν == [1] && blkdims == (1,1,1) 
 
 
-A2 = rand(3,3); E2 = triu(rand(Ty,3,3),1); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);   
+A2 = rand(Ty,3,3); E2 = triu(rand(Ty,3,3),1); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);   
 F2, = saloc(A2,E2,B2; evals = [-.1;-2])
 A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2); B = copy(B2); C = copy(C2); 
 
@@ -866,7 +866,7 @@ A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2); B = copy(B2); C = copy(C2);
       isqtriu(A1) && istriu(E1) &&
       ν == [1] && blkdims == (1,1,1) 
 
-A2 = zeros(3,3); E2 = rand(3,3); B2 = rand(Ty,3,3); C2 = rand(Ty,3,3);   
+A2 = zeros(Ty,3,3); E2 = rand(Ty,3,3); B2 = rand(Ty,3,3); C2 = rand(Ty,3,3);   
 
 F2, = saloc(A2,E2,B2; evals = [-.1,-2,2])
 A2c = copy(A2+B2*F2); A = copy(A2c); E = copy(E2); B = copy(B2); C = copy(C2); 

@@ -544,7 +544,7 @@ fast = true
 for fast in (true,false)
 
 Ty = Float64      
-for Ty in (Float64, Complex{Float64},Complex{BigFloat})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 complx = Ty <: Complex
 
 a = rand(Ty,6,6); b = rand(Ty,6,3); e = rand(Ty,6,6); 
