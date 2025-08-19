@@ -737,12 +737,315 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
                   disc::Bool = false, evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
                   atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
+                  fast::Bool = true, sepinf::Bool = true) where {T1, T2, T3}
+
+   n = LinearAlgebra.checksquare(A)
+   if E == I
+      F, S, blkdims = saloc(A, B, evals = evals, sdeg = sdeg, atol1 = atol1, atol2 = atol3, rtol = rtol)
+      TS = eltype(S.T)
+      return F, GeneralizedSchur(S.T, Matrix{TS}(I,n,n), S.values, ones(TS,n), S.Z, S.Z), [[0]; blkdims]
+   end
+   
+   LinearAlgebra.checksquare(E) == n || throw(DimensionMismatch("E must be a $n x $n matrix"))
+
+   n1, m = size(B)
+   n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
+   
+   T = promote_type( eltype(A), eltype(B), eltype(E) )
+   T <: BlasFloat || (T = promote_type(Float64,T))
+   
+   A1 = copy_oftype(A,T)   
+   E1 = copy_oftype(E,T)
+   B1 = copy_oftype(B,T)
+   if ismissing(evals)
+      evals1 = evals
+   else 
+      # T1 = promote_type(T,eltype(evals)) 
+      evals1 = copy_oftype(evals,promote_type(T,eltype(evals)) )
+   end
+   
+   # quick exit for n = 0 or B = 0
+
+   # the following is not working for 0 dimensions
+   # n == 0 || (return zeros(T,m,n), schur(zeros(T,n,n), ones(T,n,n)), zeros(T,n,m), zeros(Int,4)) 
+   n == 0 && (return zeros(T,m,n), GeneralizedSchur(zeros(T,n,n),zeros(T,n,n),zeros(T,n),zeros(T,n),zeros(T,n,n),zeros(T,n,n)), zeros(Int,4)) 
+
+   ZERO = zero(T)
+
+   # check for zero rows in the leading positions
+   ilob = n+1
+   for i = 1:n
+       !iszero(view(B1,i,:)) && (ilob = i; break)
+   end
+
+   # return if B = 0
+   ilob > n && (return zeros(T,m,n), schur(A1,E1), [0, 0, 0, n] )
+
+   # check for zero rows in the trailing positions
+   ihib = ilob
+   for i = n:-1:ilob+1
+       !iszero(view(B1,i,:)) && (ihib = i; break)
+   end
+   
+   # operate only on the nonzero rows of B
+   ib = ilob:ihib
+   nrmB = opnorm(view(B1,ib,:),1)
+    
+   complx = (T <: Complex)
+   
+   # sort desired eigenvalues
+   if ismissing(evals1) 
+      evalsr = missing
+      evalsc = missing
+   else
+      if complx
+         evalsr = copy(evals1)
+         evalsc = missing
+      else
+         evalsr = evals1[imag.(evals1) .== 0]
+         isempty(evalsr) && (evalsr = missing)
+         tempc = evals1[imag.(evals1) .> 0]
+         if isempty(tempc)
+            evalsc = missing
+         else
+            tempc1 = conj(evals1[imag.(evals1) .< 0])
+            isequal(tempc[sortperm(real(tempc))],tempc1[sortperm(real(tempc1))]) ||
+                    error("evals must be a self-conjugated complex vector")
+            evalsc = [transpose(tempc[:]); transpose(conj.(tempc[:]))][:]
+         end
+      end
+      # check that all eigenvalues are inside of the stability region
+      !ismissing(sdeg) && ((disc && any(abs.(evals1) .> sdeg) )  || (!disc && any(real.(evals1) .> sdeg)))  &&
+            error("The elements of evals must lie in the stability region")
+   end    
+   
+   # set default values of sdeg if evals = missing
+   if ismissing(sdeg)
+      if ismissing(evals1) 
+         sdeg = disc ? real(T)(0.95) : real(T)(-0.05)
+         smarg = sdeg;   
+      else
+         smarg = disc ? real(T)(0) : real(T)(-Inf) 
+      end
+   else
+      sdeg = real(T)(sdeg)
+      disc && sdeg < 0 && error("sdeg must be non-negative if disc = true")
+      smarg = sdeg;  
+   end
+ 
+    
+   nrmA = opnorm(A1,1)
+   tola = max(atol1, rtol*nrmA)
+   tolb = max(atol3, rtol*nrmB)
+
+
+   rcond(E1) < eps(real(T)) && (sepinf = true)
+
+   if sepinf
+      Q = Matrix{T}(I,n,n)
+      Z = Matrix{T}(I,n,n) 
+      _, blkdims = fisplit!(A1, E1, Q, Z, missing, missing; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = true) 
+      ninf = blkdims[1]
+      i1 = 1:ninf
+      i2 = ninf+1:n
+      FS2 = schur(A1[i2,i2],E1[i2,i2])
+      Q[:,i2] = Q[:,i2]*FS2.Q
+      Z[:,i2] = Z[:,i2]*FS2.Z
+      A1[i2,i2] = FS2.S
+      E1[i2,i2] = FS2.T      
+      A1[i1,i2] = A1[i1,i2]*FS2.Z
+      E1[i1,i2] = E1[i1,i2]*FS2.Z
+      FS = GeneralizedSchur(A1, E1, [ones(T,ninf); FS2.α], [zeros(T,ninf); FS2.β], Q, Z)
+      if disc
+         select2 = abs.(FS2.α) .<= smarg*abs.(FS2.β)
+      else
+         select2 = real.(FS2.α ./ FS2.β) .< smarg
+      end
+      select = [trues(ninf);select2]
+   else
+      FS = schur(A1,E1)
+      ninf = 0
+      if disc
+         select = (abs.(FS.α) .<= smarg*abs.(FS.β)) 
+      else
+         select = (real.(FS.α ./ FS.β) .< smarg)
+      end
+   end
+   
+   
+
+   # separate stable and unstable eigenvalues 
+  
+   # compute orthogonal Q and Z such that
+   #                            
+   #                   [ Ai-λEi   *      *    ]
+   #      Q*(A-λE)*Z = [   0    Ag-λEg   *    ]
+   #                   [   0      0    Ab-λEb ]
+   #
+   # where Ag-λEg has eigenvalues within the stability degree region
+   # and Ab-λEb has eigenvalues outside the stability degree region.
+
+   ordschur!(FS,select)
+   A1 = view(FS.S,:,:)
+   E1 = view(FS.T,:,:)
+   nb = count(.!select)
+
+
+   # _, _, α, β, _, _ = LAPACK.tgsen!(select, A1, E1, Q, Z) 
+   # nb = length(select[select .== 0]) 
+
+   nfg = n-nb-ninf
+   fnrmtol = 1000*max(nrmA,1)/nrmB
+
+   nfu = 0; nfa = 0
+   nc = n  
+   F = zeros(T,m,n); 
+   ia = n-nb+1
+   ihf = 0
+   select[1:ia-1] .= true
+   select[ia:n] .= false
+   while nb > 0
+      noskip = true
+      if nb == 1 || complx || A1[nc,nc-1] == 0
+         k = 1
+      else
+         k = 2
+      end
+      kk = nc-k+1:nc
+      a2 = view(FS.S,kk,kk)
+      e2 = view(FS.T,kk,kk)
+      evb, = ordeigvals(a2,e2)
+      b2 = view(FS.Q,ib,kk)'*view(B1,ib,:)
+      if norm(b2,Inf) <= tolb
+         # deflate uncontrollable stable block
+         nb = nb-k; nc = nc-k; nfu = nfu+k; noskip = false
+      elseif k == 1 && nb > 1 && ismissing(evalsr) && !ismissing(evalsc)
+         # form a 2x2 block if there are no real no real eigenvalues to assign
+         k = 2
+         kk = nc-k+1:nc
+         a2 = view(FS.S,kk,kk)
+         e2 = view(FS.T,kk,kk)
+         if nb > 2 && FS.S[nc-1,nc-2] != ZERO
+            # interchange last two blocks
+            #tgexc!(true, true, nc, nc-2, A1, E1, Q, Z) 
+            selectw = [trues(nc); falses(n-nc)]; 
+            selectw[nc-2:nc-1] .= false
+            ordschur!(FS,selectw)
+            evb, = ordeigvals(a2,e2)
+         else
+            evb = disc ? maximum(abs.(ordeigvals(a2,e2)[1])) : maximum(real(ordeigvals(a2,e2)[1]))
+         end
+         b2 = view(FS.Q,ib,kk)'*view(B1,ib,:)
+         if norm(b2,Inf) <= tolb
+            # deflate uncontrollable block
+            nb = nb-k; nc = nc-k; nfu = nfu+k; noskip = false
+         end
+      end
+      if noskip 
+         if k == 1 
+            # assign a single eigenvalue 
+            γ, evalsr = eigselect1(evalsr, sdeg, complx ? evb[1] : real(evb[1]), disc; cflag = complx);
+            if γ === nothing
+                # no real pole available, adjoin a new 1x1 block if possible
+                if nb == 1
+                    # incompatible eigenvalues with the eigenvalue structure
+                    # assign the last real pole to the default value of sdeg
+                    γ = disc ? real(T)(0.95) : real(T)(-0.05)
+                    f2 = -b2\(a2-e2*γ)
+                else
+                    # adjoin a real block or interchange the last two blocks
+                    k = 2; kk = nc-k+1:nc; 
+                    a2 = view(FS.S,kk,kk)
+                    e2 = view(FS.T,kk,kk)
+                    if nb > 2 && FS.S[nc-1,nc-2] != ZERO
+                       # interchange last two blocks
+                       #tgexc!(true, true, nc, nc-2, A1, E1, Q, Z) 
+                       selectw = [trues(nc); falses(n-nc)]; 
+                       selectw[nc-2:nc-1] .= false
+                       ordschur!(FS,selectw)
+                    end
+                    # update evb 
+                    evb = maximum(real(ordeigvals(a2,e2)[1]))
+                    b2 = view(FS.Q,ib,kk)'*view(B1,ib,:)
+                end
+            else
+               f2 = -b2\(a2-e2*γ);
+            end
+         end
+         if k == 2
+            # assign a pair of eigenvalues 
+            γ, evalsr, evalsc = eigselect2(evalsr,evalsc,sdeg,evb[end],disc)
+            f2, u, v = saloc2(a2,e2,b2,γ,tola,tolb)
+            if f2 === nothing  # the case b2 = 0 can not occur
+               irow = 1:nc; jcol = nc-1:n;
+               A1[kk,jcol] = u'*view(A1,kk,jcol); A1[irow,kk] = view(A1,irow,kk)*v;
+               A1[nc,nc-1] = ZERO
+               E1[kk,jcol] = u'*view(E1,kk,jcol); E1[irow,kk] = view(E1,irow,kk)*v; 
+               E1[nc,nc-1] = ZERO
+               FS.Q[:,kk] = view(FS.Q,:,kk)*u;
+               FS.Z[:,kk] = view(FS.Z,:,kk)*v;
+               nb -= 1; nc -= 1; nfu += 1
+               # recover the failed selection 
+               imag(γ[1]) == 0 ? (ismissing(evalsr) ? evalsr = γ : evalsr = [γ; evalsr]) : (ismissing(evalsc) ? evalsc = γ : evalsc = [γ; evalsc])
+            end
+         end
+         if f2 !== nothing
+            norm(f2,Inf) > fnrmtol && (ihf += 1)
+            # update matrices Acl and F
+            X = view(B1,ib,:)*f2
+            A1[1:nc,kk] += view(FS.Q,ib,1:nc)'*X
+            F += f2*view(FS.Z,:,kk)'
+            if k == 2
+               # standardization step is necessary to use tgsen
+               i1 = 1:nc-2; lcol = nc+1:n;
+               #_, _, _, _, Q2, Z2 = LAPACK.gges!('V','V',a2,e2)
+               FS2 = schur(a2,e2)
+               Q2 = FS2.Q
+               Z2 = FS2.Z
+               a2[:,:] .= FS2.S
+               e2[:,:] .= FS2.T
+               A1[i1,kk] = view(A1,i1,kk)*Z2
+               E1[i1,kk] = view(E1,i1,kk)*Z2
+               A1[kk,lcol] = Q2'*view(A1,kk,lcol) 
+               E1[kk,lcol] = Q2'*view(E1,kk,lcol) 
+               FS.Q[:,kk] = view(FS.Q,:,kk)*Q2; 
+               FS.Z[:,kk] = view(FS.Z,:,kk)*Z2; 
+               tworeals = (A1[nc,nc-1] == 0)
+            else
+               tworeals = false
+            end
+            # reorder eigenvalues 
+            if nb > k
+               # tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
+               # tworeals && tgexc!(true, true, nc, ia+1, A1, E1, Q, Z) 
+               select[nc-k+1] = true
+               tworeals && (select[nc] = true)
+               ordschur!(FS,select)
+               select[ia] = true; select[nc-k+1] = false
+            end
+            nb -= k
+            ia += k 
+            nfa += k
+         end
+      end
+   end
+   ihf > 0 && @warn("Possible loss of numerical reliability due to high feedback gain")
+   blkdims = [ninf, nfg, nfa, nfu]
+   _, α, β = ordeigvals(A1,E1)
+   return F, GeneralizedSchur(FS.S, FS.T, α, β, FS.Q, FS.Z), blkdims
+   
+   # end saloc
+end
+function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; 
+                  disc::Bool = false, evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
+                  atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
+                  rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
                   fast::Bool = true, sepinf::Bool = true) where {T1 <: Union{BlasFloat,BlasInt}, T2 <: Union{BlasFloat,BlasInt}, T3 <: Union{BlasFloat,BlasInt}}
 
    n = LinearAlgebra.checksquare(A)
    if E == I
       F, S, blkdims = saloc(A, B, evals = evals, sdeg = sdeg, atol1 = atol1, atol2 = atol3, rtol = rtol)
-      TS = eltype(F)
+      TS = eltype(S.T)
       return F, GeneralizedSchur(S.T, Matrix{TS}(I,n,n), S.values, ones(TS,n), S.Z, S.Z), [[0]; blkdims]
    end
    
@@ -1019,14 +1322,6 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
 end
 saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T2 <: Real, T3 <: Real} = 
 saloc(Float64.(A),E == I ? I : Float64.(E), Float64.(B); kwargs...)
-saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Complex, T2 <: Complex, T3 <: Complex} = 
-saloc(ComplexF64.(A),E == I ? I : ComplexF64.(E), ComplexF64.(B); kwargs...)
-# function saloc(A::AbstractMatrix{T1}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T3 <: Real}
-#     saloc(Float64.(A),Float64.(B); kwargs...)
-# end
-# function saloc(A::AbstractMatrix{T1}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Complex, T3 <: Complex}
-#     saloc(ComplexF64.(A),ComplexF64.(B); kwargs...)
-# end
 """
     salocinfd(A, E, C; atol1 = 0, atol2 = 0, atol3 = 0, rtol, sepinf = true, fast = true) -> (K, L, Scl, blkdims)
 
@@ -1283,14 +1578,182 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
    
    # end salocinf
 end
+function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3};  
+                  atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
+                  rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
+                  fast::Bool = true) where {T1, T2, T3}
+
+   n = LinearAlgebra.checksquare(A)
+   
+   LinearAlgebra.checksquare(E) == n || throw(DimensionMismatch("E must be a $n x $n matrix"))
+
+   n1, m = size(B)
+   n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
+   
+   T = promote_type( eltype(A), eltype(B), eltype(E) )
+   T <: BlasFloat || (T = promote_type(Float64,T))
+
+   A1 = copy_oftype(A,T)   
+   E1 = copy_oftype(E,T)
+   B1 = copy_oftype(B,T)
+   
+   # quick exit for n = 0 or B = 0
+
+   # the following is not working for 0 dimensions
+   # n == 0 || (return zeros(T,m,n), schur(zeros(T,n,n), ones(T,n,n)), zeros(T,n,m), zeros(Int,4)) 
+   n == 0 && (return zeros(T,m,n), zeros(T,m,n), GeneralizedSchur(zeros(T,n,n),zeros(T,n,n),zeros(T,n),zeros(T,n),zeros(T,n,n),zeros(T,n,n)), zeros(Int,3)) 
+
+   ZERO = zero(T)
+
+   # check for zero rows in the leading positions
+   ilob = n+1
+   for i = 1:n
+       !iszero(view(B1,i,:)) && (ilob = i; break)
+   end
+
+   # return if B = 0
+   ilob > n && (return zeros(T,m,n), zeros(T,m,n), schur(A1,E1), [0, 0, n] )
+
+   # check for zero rows in the trailing positions
+   ihib = ilob
+   for i = n:-1:ilob+1
+       !iszero(view(B1,i,:)) && (ihib = i; break)
+   end
+   
+   # operate only on the nonzero rows of B
+   ib = ilob:ihib
+   nrmB = opnorm(view(B1,ib,:),1)
+    
+   complx = (T <: Complex)
+   
+       
+   nrmA = opnorm(A1,1)
+   nrmE = opnorm(E1,1)
+   tola = max(atol1, rtol*nrmA)
+   tole = max(atol2, rtol*nrmE)
+   tolb = max(atol3, rtol*nrmB)
+
+   Q = Matrix{T}(I,n,n)
+   Z = Matrix{T}(I,n,n) 
+   
+   _, blkdims = fisplit!(A1, E1, Q, Z, missing, missing; fast = fast, atol1 = atol1, atol2 = atol2, rtol = rtol, withQ = true, withZ = true) 
+   ninf = blkdims[1]
+   i1 = 1:ninf
+   i2 = ninf+1:n
+   FS2 = schur(A1[i2,i2],E1[i2,i2])
+   Q[:,i2] = Q[:,i2]*FS2.Q
+   Z[:,i2] = Z[:,i2]*FS2.Z
+   A1[i2,i2] = FS2.S
+   E1[i2,i2] = FS2.T      
+   A1[i1,i2] = A1[i1,i2]*FS2.Z
+   E1[i1,i2] = E1[i1,i2]*FS2.Z
+   FS = GeneralizedSchur(A1, E1, [ones(T,ninf); FS2.α], [zeros(T,ninf); FS2.β], Q, Z)
+
+   A1 = view(FS.S,:,:)
+   E1 = view(FS.T,:,:)
+
+   # ilo = ninf+1; 
+   # gghrd!('V','V',ilo, n, A1, E1, Q, Z)
+   # _, _, α, β, _, _ = hgeqz!('V','V',ilo, n, A1, E1, Q, Z)
+   # i2 = ilo:n
+
+   nb = n-ninf
+   fnrmtol = 1000*max(nrmA,nrmE,1)/nrmB
+   scale = max(nrmA,1)/10
+
+   nfu = 0; nia = 0
+   nc = n  
+   F = zeros(T,m,n); 
+   G = zeros(T,m,n); 
+   ia = ninf+1
+   ihf = 0
+
+   select = [trues(ninf);falses(nb)]
+   while nb > 0
+      noskip = true
+      if nb == 1 || complx || A1[nc,nc-1] == 0
+         k = 1
+      else
+         k = 2
+      end
+      kk = nc-k+1:nc
+      a2 = view(FS.S,kk,kk)
+      e2 = view(FS.T,kk,kk)
+      b2 = view(FS.Q,ib,kk)'*view(B1,ib,:)
+      if norm(b2,Inf) <= tolb
+         # deflate uncontrollable block
+         nb = nb-k; nc = nc-k; nfu = nfu+k; noskip = false
+      else 
+         # perturb a2 such that a2+b2*f2 is sufficiently nonzero 
+         if maximum(abs.(a2)) < maximum(abs.(e2)) /10000 || rank(a2,atol=tola) < k
+            f2 = lmul!(scale/nrmB,rand(T,m,k).+1)
+            # update A and F
+            X = view(B1,ib,:)*f2
+            A1[1:nc,kk] += view(FS.Q,ib,1:nc)'*X
+            F += f2*view(FS.Z,:,kk)'
+         end
+         if k == 1
+            # assign a single infinite eigenvalue 
+            g2 = -b2\e2
+            X = view(B1,ib,:)*g2
+            E1[1:nc,kk] += view(FS.Q,ib,1:nc)'*X
+            G += g2*view(Z,:,kk)'
+            # reorder eigenvalues 
+            if nb > k
+               # tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
+               select[nc] = true
+               ordschur!(FS,select)
+               select[ia] = true; select[nc] = false
+            end
+            E1[ia,ia] = ZERO
+         else
+            # assign two infinite eigenvalues 
+            g2,  = saloc2(e2,a2,b2,zeros(T,2),tole,tolb)  
+            # update E and G
+            X = view(B1,ib,:)*g2
+            E1[1:nc,kk] += view(FS.Q,ib,1:nc)'*X
+            G += g2*view(Z,:,kk)'
+            # perform standardization step to form two 1x1 blocks
+            Q2, e2[1,1] = givens(e2[1,1],e2[2,1],1,2)
+            e2[2,1] = ZERO; 
+            lmul!(Q2,view(E1,kk,nc:n))
+            e2[2,2] = ZERO
+            lmul!(Q2,view(A1,kk,nc-1:n))            
+            rmul!(view(Q,:,kk),Q2') 
+            Z2, r = givens(conj(a2[2,2]),conj(a2[2,1]),2,1)
+            a2[2,2] = conj(r)
+            a2[2,1] = ZERO
+            rmul!(view(E1,1:nc-1,kk),Z2')
+            rmul!(view(A1,1:nc-1,kk),Z2')
+            rmul!(view(Z,:,kk),Z2') 
+            # reorder eigenvalues 
+            if nb > k
+               # tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
+               # tgexc!(true, true, nc, ia+1, A1, E1, Q, Z) 
+               select[nc-k+1] = true
+               select[nc] = true
+               ordschur!(FS,select)
+               select[ia:ia+1] .= true 
+               select[nc-k+1] = false
+            end
+            E1[ia,ia] = ZERO
+            E1[ia+1,ia+1] = ZERO
+         end
+         nb -= k
+         ia += k 
+         nia += k
+      end
+   end
+   ihf > 0 && @warn("Possible loss of numerical reliability due to high feedback gain")
+   blkdims = [ninf, nia, nfu]
+   _, α, β = ordeigvals(A1,E1)
+   return F, G, GeneralizedSchur(FS.S, FS.T, α, β, FS.Q, FS.Z), blkdims
+   
+   # end salocinf
+end
 salocinf(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T2 <: Real, T3 <: Real} = 
 salocinf(Float64.(A),E == I ? I : Float64.(E), Float64.(B); kwargs...)
-salocinf(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Complex, T2 <: Complex, T3 <: Complex} = 
-salocinf(ComplexF64.(A),E == I ? I : ComplexF64.(E), ComplexF64.(B); kwargs...)
 
-# function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3}; kwargs...) where {T1, T2, T3}
-#     salocinf(ComplexF64.(A),ComplexF64.(E), ComplexF64.(B); kwargs...)
-# end
 """
      ev = ordeigvals(A) 
 

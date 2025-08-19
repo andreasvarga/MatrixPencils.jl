@@ -2,6 +2,7 @@
 
 # Version 1.8.8
 Make generic versions of eigenvalue assignment functions.
+TODO: Make generalized real case generic when the generic real QZ will be available in `GenericSchur.jl`. 
 
 # Version 1.8.7
 Fix generic functions to compute pencil eigenvalues in the complex case; make function `gsklf` generic for the complex case.

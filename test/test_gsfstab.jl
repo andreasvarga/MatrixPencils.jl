@@ -638,11 +638,13 @@ end # Ty loop
 
 for sepinf in (true,false)
 
+Ty = Float64      
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 ## proper system  
 n = 10;  ns = 3; m = 4; 
-e = [zeros(n,ns) randn(n,n-ns)]'; a = randn(n,n); b = randn(n,m);
-evals = complex(randn(n-ns))
+e = [zeros(Ty,n,ns) randn(Ty,n,n-ns)]'; a = randn(Ty,n,n); b = randn(Ty,n,m);
+evals = complex(randn(Ty,n-ns))
 nc = 2*floor(Int,floor((n-ns+2)/2)*rand())
 for ii = 1 : 2 : nc,
    evals[ii]   = evals[ii] + im*evals[ii+1];
@@ -654,8 +656,8 @@ end
 
 ## Simas' paper (standard system)  
 n = 10; m = 4; 
-a = randn(n,n); b = randn(n,m);
-evals = complex(randn(n));
+a = randn(Ty,n,n); b = randn(Ty,n,m);
+evals = complex(randn(Ty,n));
 nc = 2*floor(Int,floor((n+2)/2)*rand())
 for ii = 1 : 2 : nc,
    evals[ii]   = evals[ii] + im*evals[ii+1];
@@ -667,8 +669,8 @@ end
 
 ## Sima's paper (descriptor system)
 n = 10;  m = 4; 
-a = randn(n,n);  e = randn(n,n);  b = randn(n,m);
-evals = complex(randn(n));
+a = randn(Ty,n,n);  e = randn(Ty,n,n);  b = randn(Ty,n,m);
+evals = complex(randn(Ty,n));
 nc = 2*floor(Int,floor((n+2)/2)*rand())
 for ii = 1 : 2 : nc,
    evals[ii]   = evals[ii] + im*evals[ii+1];
@@ -681,8 +683,8 @@ end
 
 ## improper system R-stabilization  
 ni = [3, 2, 1, 1]; nf = 5; ninf = sum(ni); n = ninf+nf; m = 4;
-a = [triu(rand(ninf,n)); zeros(nf,ninf) rand(nf,nf)]; 
-ei = rand(ninf,n); b = randn(n,m);
+a = [triu(rand(Ty,ninf,n)); zeros(Ty,nf,ninf) rand(Ty,nf,nf)]; 
+ei = rand(Ty,ninf,n); b = randn(Ty,n,m);
 k1 = 0; 
 k2 = k1 + ni[1]
 ei[k1+1:ninf,1:k2] .= 0
@@ -696,11 +698,11 @@ k1 = k2
 k2 = k1 + ni[4]
 ei[k1+1:ninf,1:k2] .= 0
 
-e = [ei; zeros(nf,ninf) rand(nf,nf)]; 
-q = qr(rand(n,n)).Q; z = qr(rand(n,n)).Q; 
+e = [ei; zeros(Ty,nf,ninf) rand(Ty,nf,nf)]; 
+q = qr(rand(Ty,n,n)).Q; z = qr(rand(Ty,n,n)).Q; 
 a = q*a*z; e = q*e*z;
 
-evals = complex(-rand(nf) .- 1);
+evals = complex(-rand(Ty,nf) .- 1);
 nc = 2*floor(Int,floor((n-ninf+2)/2)*rand())
 for ii = 1 : 2 : nc,
    evals[ii]   = evals[ii] + im*evals[ii+1];
@@ -709,7 +711,7 @@ end
 @time f, SF, blkdims = saloc(a,e,b,evals = evals, fast = fast, sepinf = sepinf, atol1 = 1.e-7, atol2 = 1.e-7, atol3 = 1.e-7)
 @test SF.Q*SF.S*SF.Z' ≈ a+b*f && SF.Q*SF.T*SF.Z' ≈ e  && blkdims == [ninf, 0, nf, 0] && 
       sort(real(evals)) ≈ sort(real(SF.values[ninf+1:n])) && sort(imag(evals)) ≈ sort(imag(SF.values[ninf+1:n])) 
-
+end
 end # sepinf loop
 end # fast loop
 
