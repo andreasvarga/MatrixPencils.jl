@@ -7,6 +7,8 @@ using Test
 using GenericLinearAlgebra
 using GenericSchur
 
+println("Test_klfapps")
+
 @testset "Matrix Pencils Applications" begin
 
 Random.seed!(2351);

@@ -185,7 +185,7 @@ function saloc(A::AbstractMatrix{T2}, B::AbstractMatrix{T3}; disc::Bool = false,
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    
-   T = promote_type( eltype(A), eltype(B) )
+   T = promote_type( T2, T3 )
    T <: BlasFloat || (T = promote_type(Float64,T))
    
    A1 = copy_oftype(A,T)   
@@ -420,7 +420,7 @@ function saloc(A::AbstractMatrix{T2}, B::AbstractMatrix{T3}; disc::Bool = false,
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    
-   T = promote_type( eltype(A), eltype(B) )
+   T = promote_type( T2, T3 )
    T <: BlasFloat || (T = promote_type(Float64,T))
    
    A1 = copy_oftype(A,T)   
@@ -588,11 +588,10 @@ function saloc(A::AbstractMatrix{T2}, B::AbstractMatrix{T3}; disc::Bool = false,
                     k = 2; kk = nc-1:nc; 
                     a2 = view(FS.T,kk,kk)
                     if nb > 2 && FS.T[nc-1,nc-2] != ZERO
+                       # interchange last two blocks
                        selectw = [trues(nc); falses(n-nc)]; 
                        selectw[nc-2:nc-1] .= false
                        ordschur!(FS,selectw)
-                       # interchange last two blocks
-                       # LAPACK.trexc!('V', nc, nc-2, A1, Z) 
                        # update evb 
                        evb = ordeigvals(a2)
                     else
@@ -628,11 +627,6 @@ function saloc(A::AbstractMatrix{T2}, B::AbstractMatrix{T3}; disc::Bool = false,
             if k == 2
                # standardization step is necessary to use trexc 
                i1 = 1:nc-2; lcol = nc+1:n;
-               # alternative computation
-               # k1 = kk[1]; k2 = kk[2]
-               # RT1R, RT1I, RT2R, RT2I, CS, SN = lanv2(A1[k1,k1], A1[k1,k2], A1[k2,k1], A1[k2,k2]) 
-               #_, Z2, _ = LAPACK.gees!('V', a2)
-               #Z2 = schur!(a2).Z
                FS2 = schur(a2)
                Z2 = FS2.Z
                a2[:,:] .= FS2.T
@@ -650,11 +644,6 @@ function saloc(A::AbstractMatrix{T2}, B::AbstractMatrix{T3}; disc::Bool = false,
                ordschur!(FS,select)
                select[ia] = true; select[nc-k+1] = false
                (tworeals || k == 2) && (select[ia+1] = true; select[nc] = false)
-               # try
-               #    LAPACK.trexc!('V', nc-k+1, ia, A1, Z) 
-               #    tworeals && LAPACK.trexc!('V', nc, ia+1, A1, Z)
-               # catch
-               # end
             end
             nb -= k
             ia += k 
@@ -664,9 +653,7 @@ function saloc(A::AbstractMatrix{T2}, B::AbstractMatrix{T3}; disc::Bool = false,
    end
    ihf > 0 && @warn("Possible loss of numerical reliability due to high feedback gain")
    blkdims = [ng, na, nu]
-   #FS.values[:] = ordeigvals(FS.T)
    return F, Schur(FS.T, FS.Z, ordeigvals(A1)), blkdims
-   #return F, FS, blkdims
 
    # end saloc
 end
@@ -733,11 +720,11 @@ References:
     Systems & Control Letters, vol. 24, pp.133-138, 1995.
 
 """
-function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; 
+function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix,UniformScaling{Bool}}, B::AbstractMatrix{T3}; 
                   disc::Bool = false, evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
-                  atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
+                  atol1::Real = zero(real(float(T1))), atol2::Real = zero(real(float(T1))), atol3::Real = zero(real(float(T3))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
-                  fast::Bool = true, sepinf::Bool = true) where {T1, T2, T3}
+                  fast::Bool = true, sepinf::Bool = true) where {T1,T3} 
 
    n = LinearAlgebra.checksquare(A)
    if E == I
@@ -751,7 +738,7 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    
-   T = promote_type( eltype(A), eltype(B), eltype(E) )
+   T = promote_type( T1, T3, eltype(E) )
    T <: BlasFloat || (T = promote_type(Float64,T))
    
    A1 = copy_oftype(A,T)   
@@ -889,11 +876,6 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
    A1 = view(FS.S,:,:)
    E1 = view(FS.T,:,:)
    nb = count(.!select)
-
-
-   # _, _, α, β, _, _ = LAPACK.tgsen!(select, A1, E1, Q, Z) 
-   # nb = length(select[select .== 0]) 
-
    nfg = n-nb-ninf
    fnrmtol = 1000*max(nrmA,1)/nrmB
 
@@ -927,7 +909,6 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
          e2 = view(FS.T,kk,kk)
          if nb > 2 && FS.S[nc-1,nc-2] != ZERO
             # interchange last two blocks
-            #tgexc!(true, true, nc, nc-2, A1, E1, Q, Z) 
             selectw = [trues(nc); falses(n-nc)]; 
             selectw[nc-2:nc-1] .= false
             ordschur!(FS,selectw)
@@ -959,7 +940,6 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
                     e2 = view(FS.T,kk,kk)
                     if nb > 2 && FS.S[nc-1,nc-2] != ZERO
                        # interchange last two blocks
-                       #tgexc!(true, true, nc, nc-2, A1, E1, Q, Z) 
                        selectw = [trues(nc); falses(n-nc)]; 
                        selectw[nc-2:nc-1] .= false
                        ordschur!(FS,selectw)
@@ -996,9 +976,8 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
             A1[1:nc,kk] += view(FS.Q,ib,1:nc)'*X
             F += f2*view(FS.Z,:,kk)'
             if k == 2
-               # standardization step is necessary to use tgsen
+               # standardization step is necessary ?
                i1 = 1:nc-2; lcol = nc+1:n;
-               #_, _, _, _, Q2, Z2 = LAPACK.gges!('V','V',a2,e2)
                FS2 = schur(a2,e2)
                Q2 = FS2.Q
                Z2 = FS2.Z
@@ -1016,12 +995,11 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
             end
             # reorder eigenvalues 
             if nb > k
-               # tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
-               # tworeals && tgexc!(true, true, nc, ia+1, A1, E1, Q, Z) 
                select[nc-k+1] = true
                tworeals && (select[nc] = true)
                ordschur!(FS,select)
                select[ia] = true; select[nc-k+1] = false
+               tworeals && (select[ia+1] = true)
             end
             nb -= k
             ia += k 
@@ -1036,11 +1014,11 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
    
    # end saloc
 end
-function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; 
+function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{<:Union{BlasFloat,BlasInt}},UniformScaling{Bool}}, B::AbstractMatrix{T3}; 
                   disc::Bool = false, evals::Union{AbstractVector,Missing} = missing, sdeg::Union{Real,Missing} = missing, 
-                  atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
+                  atol1::Real = zero(real(float(T1))), atol2::Real = zero(real(float(T1))), atol3::Real = zero(real(float(T3))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
-                  fast::Bool = true, sepinf::Bool = true) where {T1 <: Union{BlasFloat,BlasInt}, T2 <: Union{BlasFloat,BlasInt}, T3 <: Union{BlasFloat,BlasInt}}
+                  fast::Bool = true, sepinf::Bool = true) where {T1 <: Union{BlasFloat,BlasInt}, T3 <: Union{BlasFloat,BlasInt}}
 
    n = LinearAlgebra.checksquare(A)
    if E == I
@@ -1054,7 +1032,7 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    
-   T = promote_type( eltype(A), eltype(B), eltype(E) )
+   T = promote_type( T1, T3, eltype(E) )
    T <: BlasFloat || (T = promote_type(Float64,T))
    
    A1 = copy_oftype(A,T)   
@@ -1219,7 +1197,7 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
          # deflate uncontrollable stable block
          nb = nb-k; nc = nc-k; nfu = nfu+k; noskip = false
       elseif k == 1 && nb > 1 && ismissing(evalsr) && !ismissing(evalsc)
-         # form a 2x2 block if there are no real no real eigenvalues to assign
+         # form a 2x2 block if there are no real eigenvalues to assign
          k = 2
          kk = nc-k+1:nc
          a2 = view(A1,kk,kk)
@@ -1320,8 +1298,8 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling
    
    # end saloc
 end
-saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T2 <: Real, T3 <: Real} = 
-saloc(Float64.(A),E == I ? I : Float64.(E), Float64.(B); kwargs...)
+saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{<: Real},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T3 <: Real} = 
+     saloc(Float64.(A),E == I ? I : Float64.(E), Float64.(B); kwargs...)
 """
     salocinfd(A, E, C; atol1 = 0, atol2 = 0, atol3 = 0, rtol, sepinf = true, fast = true) -> (K, L, Scl, blkdims)
 
@@ -1368,7 +1346,7 @@ References:
     Systems & Control Letters, vol. 24, pp.133-138, 1995.
 """
 function salocinfd(A::AbstractMatrix, E::AbstractMatrix, C::AbstractMatrix; fast::Bool = true,
-                atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(C))), 
+                atol1::Real = zero(real(float(eltype(A)))), atol2::Real = zero(real(float(eltype(A)))), atol3::Real = zero(real(float(eltype(C)))), 
                 rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)) )
 
    n = LinearAlgebra.checksquare(A) 
@@ -1429,7 +1407,7 @@ References:
     Systems & Control Letters, vol. 24, pp.133-138, 1995.
 """
 function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3};  
-                  atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
+                  atol1::Real = zero(real(float(T1))), atol2::Real = zero(real(float(T1))), atol3::Real = zero(real(float(T3))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
                   fast::Bool = true) where {T1 <: Union{BlasFloat,BlasInt}, T2 <: Union{BlasFloat,BlasInt}, T3 <: Union{BlasFloat,BlasInt}}
 
@@ -1440,7 +1418,7 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    
-   T = promote_type( eltype(A), eltype(B), eltype(E) )
+   T = promote_type( T1, T2, T3 )
    T <: BlasFloat || (T = promote_type(Float64,T))
 
    A1 = copy_oftype(A,T)   
@@ -1579,7 +1557,7 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
    # end salocinf
 end
 function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3};  
-                  atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), atol3::Real = zero(real(eltype(B))), 
+                  atol1::Real = zero(real(float(T1))), atol2::Real = zero(real(float(T1))), atol3::Real = zero(real(float(T3))), 
                   rtol::Real = ((size(A,1)+1)*eps(real(float(one(eltype(A))))))*iszero(max(atol1,atol2,atol3)), 
                   fast::Bool = true) where {T1, T2, T3}
 
@@ -1590,7 +1568,7 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
    n1, m = size(B)
    n == n1 || throw(DimensionMismatch("A and B must have the same number of rows"))
    
-   T = promote_type( eltype(A), eltype(B), eltype(E) )
+   T = promote_type( T1, T2, T3 )
    T <: BlasFloat || (T = promote_type(Float64,T))
 
    A1 = copy_oftype(A,T)   
@@ -1652,11 +1630,6 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
    A1 = view(FS.S,:,:)
    E1 = view(FS.T,:,:)
 
-   # ilo = ninf+1; 
-   # gghrd!('V','V',ilo, n, A1, E1, Q, Z)
-   # _, _, α, β, _, _ = hgeqz!('V','V',ilo, n, A1, E1, Q, Z)
-   # i2 = ilo:n
-
    nb = n-ninf
    fnrmtol = 1000*max(nrmA,nrmE,1)/nrmB
    scale = max(nrmA,1)/10
@@ -1700,7 +1673,6 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
             G += g2*view(Z,:,kk)'
             # reorder eigenvalues 
             if nb > k
-               # tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
                select[nc] = true
                ordschur!(FS,select)
                select[ia] = true; select[nc] = false
@@ -1728,8 +1700,6 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
             rmul!(view(Z,:,kk),Z2') 
             # reorder eigenvalues 
             if nb > k
-               # tgexc!(true, true, nc-k+1, ia, A1, E1, Q, Z) 
-               # tgexc!(true, true, nc, ia+1, A1, E1, Q, Z) 
                select[nc-k+1] = true
                select[nc] = true
                ordschur!(FS,select)
@@ -1751,8 +1721,10 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
    
    # end salocinf
 end
-salocinf(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{T2},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T2 <: Real, T3 <: Real} = 
-salocinf(Float64.(A),E == I ? I : Float64.(E), Float64.(B); kwargs...)
+salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T2 <: Real, T3 <: Real} = 
+salocinf(Float64.(A),Float64.(E), Float64.(B); kwargs...)
+salocinf(A::AbstractMatrix{T1}, E::UniformScaling{Bool}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T3 <: Real} = 
+salocinf(Float64.(A),E, Float64.(B); kwargs...)
 
 """
      ev = ordeigvals(A) 
@@ -2203,14 +2175,5 @@ function eigvalsnosort!(M::AbstractMatrix{T}, N::AbstractMatrix{T}) where {T}
    end
    return isreal(ev) ? real(ev) : ev
 end
-function LinearAlgebra.eigvals!(M::AbstractMatrix{T}, N::AbstractMatrix{T}) where {T}
-   if T <: Complex 
-      ev = schur!(M, N).values
-   else
-      ev = schur!(Float64.(M), Float64.(N)).values
-   end
-   return isreal(ev) ? real(ev) : ev
-end
-
 
         

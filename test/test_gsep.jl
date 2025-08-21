@@ -8,6 +8,7 @@ using GenericLinearAlgebra
 using GenericSchur
 using MatrixEquations
 
+println("Test_gsep")
 
 @testset "Spectrum separation functions" begin
 

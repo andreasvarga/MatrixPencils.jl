@@ -7,6 +7,7 @@ using Test
 using GenericLinearAlgebra
 using GenericSchur
 
+println("Test_sklfapps")
 
 @testset "Structured Matrix Pencils Applications" begin
 

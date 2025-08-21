@@ -8,6 +8,7 @@ using Test
 using GenericLinearAlgebra
 using GenericSchur
 
+println("Test_pmapps")
 
 @testset "Polynomial Matrix Applications" begin
 

@@ -5,6 +5,8 @@ using MatrixPencils
 using Polynomials 
 using Test
 
+println("Test_rmtools")
+
 @testset "Rational Matrix Tools" begin
 
 

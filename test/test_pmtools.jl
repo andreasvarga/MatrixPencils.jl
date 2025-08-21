@@ -5,6 +5,8 @@ using MatrixPencils
 using Polynomials
 using Test
 
+println("Test_pmtools")
+
 @testset "Polynomial Matrix Tools" begin
 
 @testset "Conversions" begin

@@ -6,6 +6,8 @@ using Test
 using Polynomials
 using GenericLinearAlgebra
 
+println("Test_lstools")
+
 @testset "Linear System Tools" begin
 
 @testset "lseval, lpseval & lps2ls" begin

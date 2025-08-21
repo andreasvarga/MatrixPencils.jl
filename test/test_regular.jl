@@ -7,6 +7,7 @@ using Test
 using GenericLinearAlgebra
 using GenericSchur
 
+println("Test_regular")
 
 @testset "Regular Matrix Pencils Utilities" begin
 

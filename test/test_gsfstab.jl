@@ -13,6 +13,18 @@ function evsym!(ev)
    return ev
 end
 
+# tolerate type piracy in tests
+function LinearAlgebra.eigvals!(M::AbstractMatrix{T}, N::AbstractMatrix{T}) where {T}
+   if T <: Complex 
+      ev = schur!(M, N).values
+   else
+      ev = schur!(Float64.(M), Float64.(N)).values
+   end
+   return isreal(ev) ? real(ev) : ev
+end
+
+
+println("Test_gsfstab")
 
 @testset "Spectrum allocation functions" begin
 

@@ -1,5 +1,8 @@
 # Release Notes
 
+# Version 1.9.0
+Version bump to the (almost) generic version of this package. Excepting a few functions relying on the generalized real Schur decomposition, the functions in this version perform well on various extended precision data representations, for which computational software is provided in the `GenericSchur.jl` and `GenericLinearAlgebra.jl` packages. The `MatrixPencils.jl` package jointly with the collection of generic matrix equation solvers of the `MatrixEquations.jl` form the computational basis of the control systems package `DescriptorSystems.jl`, which fully benefits of the new generic functionality. This unique feature allows to perform control system related computations with unprecedented accuracy, which is possible only using this software.  
+
 # Version 1.8.8
 Make generic versions of eigenvalue assignment functions.
 TODO: Make generalized real case generic when the generic real QZ will be available in `GenericSchur.jl`. 

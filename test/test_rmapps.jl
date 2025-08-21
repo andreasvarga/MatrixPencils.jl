@@ -12,6 +12,8 @@ using GenericLinearAlgebra
 # @time info, iz, nfp, ip = rmkstruct(λ, 1, fast = true)
 Random.seed!(21235)
 
+println("Test_rmapps")
+
 @testset "Rational Matrix Applications" begin
 
 fast = true
