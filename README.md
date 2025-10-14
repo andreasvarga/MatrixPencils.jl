@@ -3,15 +3,17 @@
 [![DocBuild](https://github.com/andreasvarga/MatrixPencils.jl/workflows/CI/badge.svg)](https://github.com/andreasvarga/MatrixPencils.jl/actions)
 [![codecov.io](https://codecov.io/gh/andreasvarga/MatrixPencils.jl/coverage.svg?branch=master)](https://codecov.io/gh/andreasvarga/MatrixPencils.jl?branch=master)
 [![Latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://andreasvarga.github.io/MatrixPencils.jl/dev/)
-[![The MIT License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](https://github.com/andreasvarga/MatrixPencils.jl/blob/master/LICENSE.md)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 [![Downloads](https://img.shields.io/badge/dynamic/json?url=http%3A%2F%2Fjuliapkgstats.com%2Fapi%2Fv1%2Fmonthly_downloads%2FMatrixPencils&query=total_requests&suffix=%2Fmonth&label=Downloads)](http://juliapkgstats.com/pkg/MatrixPencils)
+[![LinkedIn Badge](https://img.shields.io/badge/LinkedIn-Article-informational?style=flat&logo=linkedin&logoColor=white&color=0D76A8)](https://www.linkedin.com/pulse/matrixpencils-julia-package-advanced-linear-system-analysis-varga-x3nce/?trackingId=CsI6pK8FSlq0vIbhJFVysA%3D%3D)
+[![The MIT License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](https://github.com/andreasvarga/MatrixPencils.jl/blob/master/LICENSE.md)
+
 
 **Matrix pencil manipulation using [Julia](http://julialang.org)**
 
 ## Compatibility
 
-Julia 1.8 and higher.
+Julia 1.10 and higher.
 
 ## How to Install
 
