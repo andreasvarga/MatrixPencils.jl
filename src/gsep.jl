@@ -826,7 +826,7 @@ function ssblkdiag(A::AbstractMatrix{T}, B::Union{AbstractMatrix{T},Missing}, C:
     #    MatrixEquations.sylvcs!(view(S.T,i1,i1), view(S.T,i2,i2), Y, -1)
     #    scale = ONE
     # end
-    MatrixEquations.sylvcs!(view(S.T,i1,i1), view(S.T,i2,i2), Y, -1)
+    MatrixEquations.sylvcs!(view(S.T,i1,i1), view(S.T,i2,i2), Y, isgn = -1)
     scale = ONE
  
 

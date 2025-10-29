@@ -58,6 +58,7 @@ function rm2lspm(NUM::AbstractArray{T1,3},DEN::AbstractArray{T2,3}; contr::Bool 
         end
     end
     T = eltype(one(T1)/one(T2))
+    T = promote_type(T,T1,T2)
     degQ1 ≤ 1 ? D = zeros(T,p,m) : D = zeros(T,p,m,max(degQ1,1))
     A = zeros(T,n,n)
     B = zeros(T,n,m)

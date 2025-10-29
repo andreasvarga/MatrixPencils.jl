@@ -59,6 +59,7 @@ function poldivrem(a::Vector{T}, b::Vector{S}) where {T <: Number, S <: Number }
     nb1 == 0 && throw(DivideError())
     
     R = eltype(one(T)/one(S))
+    R = promote_type(R,S,T)
 
     if na1 < nb1
        return zeros(R, 1), a
