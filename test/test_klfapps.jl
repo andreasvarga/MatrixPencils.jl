@@ -85,10 +85,7 @@ M = copy(M2); N = copy(N2);
 @test info.rki == [0, 0, 1, 2] && info.lki == [0, 3] && info.id == [1,2] && info.nf == 3 && info.nrank == 12
 
 
-#for Ty in (Float64, Float32, Complex{Float64},  Complex{Float32})
-Ty = Float64
-Ty = Complex{Float64}
-for Ty in (Float64, Complex{Float64}, BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 #Ty = Complex{Float64}
 abstol = sqrt(eps(one(real(Ty))))
@@ -100,17 +97,22 @@ nM = nr+ni+nf+nl;
 M = [rand(Ty,mr,nM); 
      zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
-     zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
+     zeros(Ty,ml,nr+ni+nf) rand(Ty,ml,nl)]
 N = [rand(Ty,mr,nM); 
      zeros(Ty,ni,nr) diagm(1 => ones(Ty,ni-1)) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
-     zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
-Q = qr(rand(Ty,mM,mM)).Q;
-Z = qr(rand(Ty,nM,nM)).Q; 
-M = Q*M*Z;
-N = Q*N*Z;
+     zeros(Ty,ml,nr+ni+nf) rand(Ty,ml,nl)]
 
-atol1 = 1.e-7; atol2 = 1.e-7;
+ir = randperm(mM); ic = randperm(nM);
+M = M[ir,ic]
+N = N[ir,ic]     
+
+# Q = qr(rand(Ty,mM,mM)).Q;
+# Z = qr(rand(Ty,nM,nM)).Q; 
+# M = Q*M*Z;
+# N = Q*N*Z;
+
+atol1 = 1.e-6; atol2 = 1.e-6;
 @time info = pkstruct(M, N, fast = fast, atol1 = atol1, atol2 = atol2)
 @test info.rki == [mr] && info.lki == [nl] && info.id == [ni] && info.nf == nf && info.nrank == mr+nl+ni+nf
 
@@ -214,10 +216,15 @@ N = [rand(Ty,mr,nM);
      zeros(Ty,ni,nr) diagm(1 => ones(Ty,ni-1)) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
-Q = qr(rand(Ty,mM,mM)).Q;
-Z = qr(rand(Ty,nM,nM)).Q; 
-M = Q*M*Z;
-N = Q*N*Z;
+
+ir = randperm(mM); ic = randperm(nM);
+M = M[ir,ic]
+N = N[ir,ic]     
+
+# Q = qr(rand(Ty,mM,mM)).Q;
+# Z = qr(rand(Ty,nM,nM)).Q; 
+# M = Q*M*Z;
+# N = Q*N*Z;
 
 @time val, kinfo = peigvals(M, N, fast = fast, atol1 = 1.e-5, atol2 = 1.e-7) 
 @test length(val) == ni+nf &&
@@ -312,7 +319,7 @@ M = copy(M2); N = copy(N2);
 
 
 #Ty = Float64; fast = true;
-for Ty in (Float64, Complex{Float64},BigFloat, Complex{BigFloat})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 abstol = sqrt(eps(one(real(Ty))))
 
@@ -320,20 +327,25 @@ abstol = sqrt(eps(one(real(Ty))))
 mr = 2; nr = mr+1; ni = 4; nf = 8; nl = 4; ml = nl+1; 
 mM = mr+ni+nf+ml;
 nM = nr+ni+nf+nl;
-M2 = [rand(Ty,mr,nM); 
+M = [rand(Ty,mr,nM); 
      zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
-N2 = [rand(Ty,mr,nM); 
+N = [rand(Ty,mr,nM); 
      zeros(Ty,ni,nr) diagm(1 => ones(Ty,ni-1)) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(ml,nr+ni+nf) rand(Ty,ml,nl)]
-Q = qr(rand(Ty,mM,mM)).Q;
-Z = qr(rand(Ty,nM,nM)).Q; 
-M2 = Q*M2*Z;
-N2 = Q*N2*Z;
 
-M = copy(M2); N = copy(N2);
+ir = randperm(mM); ic = randperm(nM);
+M = M[ir,ic]
+N = N[ir,ic]     
+
+# Q = qr(rand(Ty,mM,mM)).Q;
+# Z = qr(rand(Ty,nM,nM)).Q; 
+# M2 = Q*M2*Z;
+# N2 = Q*N2*Z;
+
+# M = copy(M2); N = copy(N2);
 atol1 = 1.e-7; atol2 = 1.e-7; 
 @time val, iz, kinfo  = pzeros(M, N, fast = fast, atol1 = atol1, atol2 = atol2)
 @test length(val) == ni+nf-1 &&

@@ -42,10 +42,9 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScalin
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
 
-   maxmn = max(mM,nM)
-   rki = Vector{Int}(undef,maxmn)
-   id = Vector{Int}(undef,maxmn)
-   lki = Vector{Int}(undef,maxmn)
+   rki = Vector{Int}(undef,0)
+   id = Vector{Int}(undef,0)
+   lki = Vector{Int}(undef,0)
 
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
@@ -60,8 +59,8 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScalin
                         fast = fast, withQ = false, withZ = false)
       i += 1
       mui = ρ+τ
-      rki[i] = m - mui
-      id[i]  = τ
+      push!(rki, m - mui)
+      push!(id, τ)
       mrinf += mui
       nrinf += m
       i > 1 && (niz += τ*(i-1))
@@ -82,7 +81,7 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScalin
       j += 1
       rtrail += p
       ctrail += ρ
-      lki[j] = p - ρ
+      push!(lki, p - ρ)
       n -= ρ
       p = ρ
    end
@@ -90,7 +89,7 @@ function pzeros(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing,UniformScalin
    jf1 = nrinf+1:nrinf+n
    (M2, N2) = eltype(M1) <: BlasFloat ? (view(M1,if1,jf1), view(N1,if1,jf1)) : (collect(view(M1,if1,jf1)),collect(view(N1,if1,jf1)))
    return [eigvalsnosort!(M2,N2); Inf*ones(real(eltype(M1)),niz) ], minf(id[2:i]), 
-           KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
+           KRInfo(kroni(rki), kroni(lki), minf(id), n, r)
 end
 """
     peigvals(M, N; fast = false, atol1::Real = 0, atol2::Real = 0, rtol::Real=min(atol1,atol2)>0 ? 0 : n*ϵ) -> (val, KRInfo)
@@ -128,10 +127,9 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
 
-   maxmn = max(mM,nM)
-   rki = Vector{Int}(undef,maxmn)
-   id = Vector{Int}(undef,maxmn)
-   lki = Vector{Int}(undef,maxmn)
+   rki = Vector{Int}(undef,0)
+   id = Vector{Int}(undef,0)
+   lki = Vector{Int}(undef,0)
 
    tol1 = max(atol1, rtol*opnorm(M,1))
    mrinf = 0
@@ -146,8 +144,8 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
                         fast = fast, withQ = false, withZ = false)
       i += 1
       mui = ρ+τ
-      rki[i] = m - mui
-      id[i]  = τ
+      push!(rki, m - mui)
+      push!(id, τ)
       mrinf += mui
       nrinf += m
       ni += τ*i
@@ -169,7 +167,7 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
       rtrail += p
       ctrail += ρ
       j += 1
-      lki[j] = p - ρ
+      push!(lki, p - ρ)
       n -= ρ
       p = ρ
    end
@@ -177,7 +175,7 @@ function peigvals(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast::Boo
    jf1 = nrinf+1:nrinf+n
    (M2, N2) = eltype(M1) <: BlasFloat ? (view(M1,if1,jf1), view(N1,if1,jf1)) : (collect(view(M1,if1,jf1)),collect(view(N1,if1,jf1)))
    return [eigvalsnosort!(M2,N2); Inf*ones(real(eltype(M1)),ni) ], 
-          KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
+          KRInfo(kroni(rki), kroni(lki), minf(id), n, r)
 end
 """
     KRInfo
@@ -264,12 +262,12 @@ function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = fa
    # Step 0: Reduce to the standard form
    M1, N1, Q, Z, n, m, p = preduceBF(M, N; atol = atol2, rtol = rtol, fast = fast, withQ = false, withZ = false) 
    
-   maxmn = max(mM,nM)
-   rki = Vector{Int}(undef,maxmn)
-   id = Vector{Int}(undef,maxmn)
-   lki = Vector{Int}(undef,maxmn)
-  
+   rki = Vector{Int}(undef,0)
+   id = Vector{Int}(undef,0)
+   lki = Vector{Int}(undef,0)
+
    tol1 = max(atol1, rtol*opnorm(M,1))
+
    mrinf = 0
    nrinf = 0
    ni = 0
@@ -282,17 +280,17 @@ function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = fa
                         fast = fast, withQ = false, withZ = false)
       i += 1
       mui = ρ+τ
-      rki[i] = m - mui
-      id[i]  = τ
+      # rki[i] = m - mui
+      # id[i]  = τ
+      push!(rki, m - mui)
+      push!(id, τ)
       mrinf += mui
       nrinf += m
       n -= ρ
       m = ρ
       p -= τ 
    end
-
    r = mrinf + n
-
    rtrail = 0
    ctrail = 0
    j = 0
@@ -304,11 +302,12 @@ function pkstruct(M::AbstractMatrix, N::Union{AbstractMatrix,Nothing}; fast = fa
       j += 1
       rtrail += p
       ctrail += ρ
-      lki[j] = p - ρ
+      # lki[j] = p - ρ
+      push!(lki,p - ρ)
       n -= ρ
       p = ρ
    end
-   return KRInfo(kroni(rki[1:i]), kroni(lki[1:j]), minf(id[1:i]), n, r)
+   return KRInfo(kroni(rki), kroni(lki), minf(id), n, r)
 end
 function kroni(ind)
    # Kronecker indices evaluated from the ranks of blocks of the staircase form
