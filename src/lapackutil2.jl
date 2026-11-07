@@ -110,9 +110,13 @@ lag2(A::StridedMatrix{BlasReal}, B::StridedMatrix{BlasReal}, SAFMIN::BlasReal)
 
 #lag2(A::StridedMatrix{T}, B::StridedMatrix{T}) where T <: BlasReal = lag2(A,B,safemin(T))
 
-function safemin(::Type{T}) where T <: BlasReal
-    SMLNUM = (T == Float64) ? reinterpret(Float64, 0x2000000000000000) : reinterpret(Float32, 0x20000000)
-    return SMLNUM * 2/ eps(T)
+# function safemin(::Type{T}) where T <: BlasReal
+#     SMLNUM = (T == Float64) ? reinterpret(Float64, 0x2000000000000000) : reinterpret(Float32, 0x20000000)
+#     return SMLNUM * 2/ eps(T)
+# end
+function safemin(::Type{T}) where {T <: AbstractFloat}
+    SMLNUM = floatmin(T)
+    return SMLNUM * 2 / eps(T)
 end
 
 ## Tools to compute and apply elementary reflectors

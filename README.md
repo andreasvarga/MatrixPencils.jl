@@ -27,10 +27,10 @@ pkg> test MatrixPencils
 The Kronecker-canonical form of a linear matrix pencil `M − λN` basically characterizes the right and left singular structure and the eigenvalue structure of the pencil. The computation of the Kronecker-canonical form may involve the use of ill-conditioned similarity transformations and, therefore, is potentially numerically unstable. Fortunately, alternative staircase forms, called *Kronecker-like forms* (KLFs), can be determined by employing exclusively orthogonal or unitary similarity transformations and allow to obtain basically the same (or only a part of) structural information on the pencil `M − λN`. Various KLFs can serve to address, in a numerically reliable way, the main applications of the Kronecker form,
 such as the computation of minimal left or right nullspace bases, the computation of eigenvalues and zeros, the determination of the normal rank of polynomial and rational matrices, the computation of various factorizations of rational matrices, as well as the solution of linear equations with polynomial or rational matrices. The KLFs are also instrumental for solving computational problems in the analysis of generalized systems described by linear differential- or difference-algebraic equations (also known as descriptor systems).
 
-This collection of Julia functions is an attemp to implement high performance numerical software to compute a range of
-KLFs which reveal the full or partial Kronecker structure of a linear pencil. The KLFs are computed by performing several pencil reduction operations on a reduced basic form of the initial pencil. These operations efficiently compress the rows or columns of certain submatrices to full rank matrices and simultaneously maintain the reduced basic form. The rank decisions involve the use of rank revealing QR-decompositions with column pivoting or, the more reliable, SVD-decompositions. The overall computational complexity of all reduction algorithms is ``O(n^3)``, where ``n`` is the largest dimension of the pencil.
+This collection of Julia functions provides high performance numerical software to compute a range of
+KLFs which reveal the full or partial Kronecker structure of a linear pencil. The KLFs are computed by performing several pencil reduction operations on a reduced basic form of the initial pencil. These operations efficiently compress the rows or columns of certain submatrices to full rank matrices and simultaneously maintain the reduced basic form. The rank decisions involve the use of the rank revealing QR-decomposition with column pivoting or, the more reliable, SVD-decomposition. The overall computational complexity of all reduction algorithms is ``O(n³)``, where ``n`` is the largest dimension of the pencil.  All functions perform as well on various extended precision data representations, for which computational software is provided in the [`GenericSchur.jl`](https://github.com/RalphAS/GenericSchur.jl) and [`GenericLinearAlgebra.jl`](https://github.com/JuliaLinearAlgebra/GenericLinearAlgebra.jl/) packages. The `MatrixPencils.jl` package jointly with the collection of generic matrix equation solvers of the [`MatrixEquations.jl`](https://github.com/andreasvarga/MatrixEquations.jl) package form the computational basis of the control systems package [`DescriptorSystems.jl`](https://github.com/andreasvarga/DescriptorSystems.jl), which fully benefits of the new generic functionality. This unique feature allows to perform control system related computations with unprecedented accuracy, which is possible only using this software.
 
-Many of the implemented pencil manipulation algorithms are extensions of computational procedures proposed by Professor Paul Van Dooren (Université catholique de Louvain, Belgium) in several seminal contributions in the field of linear algebra and its applications in control systems theory. The author expresses his gratitude to Paul Van Dooren for his friendly support during the implementation of functions for manipulation of polynomial matrices. Therefore, the release v1.0 of the **MatrixPencils** package is dedicated in his honor on the occasion of his 70th birthday in 2020.
+Many of the implemented pencil manipulation algorithms are extensions of computational procedures proposed by Professor Paul Van Dooren (Université catholique de Louvain, Belgium) in several seminal contributions in the field of linear algebra and its applications in control systems theory. The author expresses his gratitude to Paul Van Dooren for his friendly support during the implementation of functions for manipulation of polynomial matrices. Therefore, the release v1.0 of the **MatrixPencils** package was dedicated in his honor on the occasion of his 70th birthday in 2020. 
 
 The current version of the package includes the following functions:
 
@@ -153,13 +153,7 @@ The current version of the package includes the following functions:
 * **rmpoles1**  Computation of the finite and infinite poles using linear pencil based structured linearization.
 * **rmrank**  Determination of the normal rank.
 
-A complete list of implemented functions is available
-[here](https://sites.google.com/view/andreasvarga/home/software/matrix-pencils-in-julia).
 
-## Future plans
-
-Functional extensions and performance enhancements of some functions will be performed as needs arise.
-
-## Supplementary information
+#### *Supplementary information*
 
 The mathematical background and the computational aspects which underly the implementation of functions for polynomial and rational matrices are presented in the eprint [arXiv:2006.06825](https://arxiv.org/pdf/2006.06825).

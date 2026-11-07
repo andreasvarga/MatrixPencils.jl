@@ -259,7 +259,6 @@ function _svdlikeAE!(A::AbstractMatrix{T}, E::AbstractMatrix{T},
       E[:,:] = [ triu(E[i1,:]); zeros(T,n2,n) ]
       # C <- C*P1
       ismissing(C) || (C[:,:] = C[:,jpvt])
-      
       # compute in-place the complete orthogonal decomposition E*Z1 = [E11 0; 0 0] with E11 nonsingular and UT
       #_, tau = LinearAlgebra.LAPACK.tzrzf!(E1)
       i22 = rE+1:n

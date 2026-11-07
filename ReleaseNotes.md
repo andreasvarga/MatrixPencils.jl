@@ -1,5 +1,8 @@
 # Release Notes
 
+# Version 2.0.0
+Version bump to the fully generic version of this package. 
+
 # Version 1.9.1
 Fix #20 .
 

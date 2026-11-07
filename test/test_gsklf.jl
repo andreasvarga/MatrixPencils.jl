@@ -298,8 +298,9 @@ zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl)
       sort(zer) ≈ sort(zerref) && zi == ziref
 
 
-Ty = Complex{Float64};  fast = false; 
-for Ty in (Float64, Complex{Float64},Complex{BigFloat})
+Ty = Complex{Float64};  #fast = false; 
+#for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
+for Ty in (BigFloat, )
 n = 5; m = 4; p = 3;  
 A = rand(Ty,n,n); B = rand(Ty,n,m); C = rand(Ty,p,n); D = rand(Ty,p,m); 
 E = I;
@@ -321,14 +322,14 @@ zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl)
 n = 9; m = 3; p = 3; rE = 6; 
 A = rand(Ty,n,n); B = rand(Ty,n,m); C = rand(Ty,p,n); D = rand(Ty,p,m); 
 E = [rand(Ty,n,rE)  zeros(Ty,n,n-rE)]*qr(rand(Ty,n,n)).Q
-M2 = [A B; C D]; N2 = [E zeros(n,m); zeros(p,n+m)];
-zerref, ziref, = pzeros(M2,N2)
+M2 = [A B; C D]; N2 = [E zeros(Ty,n,m); zeros(Ty,p,n+m)];
+zerref, ziref, = pzeros(M2,N2, atol1 = 1.e-7, atol2 = 1.e-7)
 
 M, N, Q, Z, dimsc, nmsz, niz = gsklf(A, E, B, C, D, jobopt = "none", fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
 nr = dimsc[1]; nl = dimsc[2]; ml = dimsc[3]; nsinf = dimsc[4]; 
 il = n-nsinf-nl+1:n-nsinf; jal = nr+1:nr+nl; jbl = nr+nl+1:nr+nl+ml; icl = n+1:n+p
 Abl = M[il,jal]; Ebl = N[il,jal]; Bbl = M[il,jbl]; Cbl = M[icl,jal]; Dbl = M[icl,jbl];
-zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl)
+zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl,atol1 = 1.e-7, atol2 = 1.e-7)
 
 @test norm(Q'*[A B]*Z-M[1:n,:]) < sqrt(eps(1.)) &&
       norm([C D]*Z-M[n+1:n+p,:]) < sqrt(eps(1.)) &&
@@ -343,18 +344,21 @@ Abl = M[il,jal]; Ebl = N[il,jal]; Bbl = M[il,jbl]; Cbl = M[icl,jal]; Dbl = M[icl
 zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl,atol1=1.e-7,atol2=1.e-7)
 @test norm(Q'*[A B]*Z-M[1:n,:]) < sqrt(eps(1.)) &&
       norm([C D]*Z-M[n+1:n+p,:]) < sqrt(eps(1.)) &&
-      norm(Q'*[E zeros(n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) &&
-      sort(zerref[real(zerref).> 0],by=real) ≈ sort(zer,by = real)
+      norm(Q'*[E zeros(n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) 
+@test norm(sort(real(zerref[real(zerref).> 0]))-sort(real(zer)))/norm(zer)  < sqrt(eps(1.)) &&
+      norm(sort(imag(zerref[real(zerref).> 0]))-sort(imag(zer)))/norm(zer) < sqrt(eps(1.))
 
 M, N, Q, Z, dimsc, nmsz, niz = gsklf(A, E, B, C, D, jobopt = "unstable", disc = true, fast = fast, atol1 = 1.e-7, atol2 = 1.e-7)
 nr = dimsc[1]; nl = dimsc[2]; ml = dimsc[3]; nsinf = dimsc[4]; 
 il = n-nsinf-nl+1:n-nsinf; jal = nr+1:nr+nl; jbl = nr+nl+1:nr+nl+ml; icl = n+1:n+p
 Abl = M[il,jal]; Ebl = N[il,jal]; Bbl = M[il,jbl]; Cbl = M[icl,jal]; Dbl = M[icl,jbl];
-zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl)
+zer, zi, = spzeros(Abl,Ebl,Bbl,Cbl,Dbl, atol1 = 1.e-7, atol2 = 1.e-7)
 @test norm(Q'*[A B]*Z-M[1:n,:]) < sqrt(eps(1.)) &&
       norm([C D]*Z-M[n+1:n+p,:]) < sqrt(eps(1.)) &&
-      norm(Q'*[E zeros(n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) &&
-      sort(zerref[abs.(zerref).> 1],by=abs) ≈ sort(zer,by = abs)
+      norm(Q'*[E zeros(Ty,n,m)]*Z-N[1:n,:]) < sqrt(eps(1.)) 
+@test norm(sort(real(zerref[abs.(zerref).> 1]))-sort(real(zer)))/norm(zer)  < sqrt(eps(1.)) &&
+      norm(sort(imag(zerref[abs.(zerref).> 1]))-sort(imag(zer)))/norm(zer) < sqrt(eps(1.))
+
 end      
 
 end

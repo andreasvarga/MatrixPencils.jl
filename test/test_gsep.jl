@@ -601,7 +601,7 @@ fast = true; Ty = Float64
 
 for fast in (true, false)
 
-for Ty in (Float64, Complex{Float64}, Complex{BigFloat})
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
 A2 = rand(Ty,3,3); E2 = zeros(Ty,3,3); B2 = rand(Ty,3,2); C2 = rand(Ty,3,3);
 

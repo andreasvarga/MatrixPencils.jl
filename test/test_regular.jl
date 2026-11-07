@@ -506,7 +506,7 @@ N = [   13  26  25  17  24
 @test !isregular(BigFloat.(M), BigFloat.(N)) 
 
 Ty = Float64
-for Ty in (Float64, Complex{Float64}, BigFloat)
+for Ty in (Float64, Complex{Float64}, BigFloat, Complex{BigFloat})
 
     abstol = sqrt(eps(one(real(Ty))))
     

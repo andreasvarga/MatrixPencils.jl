@@ -750,7 +750,6 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix,UniformScaling{Boo
       # T1 = promote_type(T,eltype(evals)) 
       evals1 = copy_oftype(evals,promote_type(T,eltype(evals)) )
    end
-   
    # quick exit for n = 0 or B = 0
 
    # the following is not working for 0 dimensions
@@ -858,8 +857,7 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix,UniformScaling{Boo
          select = (real.(FS.α ./ FS.β) .< smarg)
       end
    end
-   
-   
+  
 
    # separate stable and unstable eigenvalues 
   
@@ -1298,8 +1296,6 @@ function saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{<:Union{BlasFloat,
    
    # end saloc
 end
-saloc(A::AbstractMatrix{T1}, E::Union{AbstractMatrix{<: Real},UniformScaling{Bool}}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T3 <: Real} = 
-     saloc(Float64.(A),E == I ? I : Float64.(E), Float64.(B); kwargs...)
 """
     salocinfd(A, E, C; atol1 = 0, atol2 = 0, atol3 = 0, rtol, sepinf = true, fast = true) -> (K, L, Scl, blkdims)
 
@@ -1721,10 +1717,10 @@ function salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatri
    
    # end salocinf
 end
-salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T2 <: Real, T3 <: Real} = 
-salocinf(Float64.(A),Float64.(E), Float64.(B); kwargs...)
-salocinf(A::AbstractMatrix{T1}, E::UniformScaling{Bool}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T3 <: Real} = 
-salocinf(Float64.(A),E, Float64.(B); kwargs...)
+# salocinf(A::AbstractMatrix{T1}, E::AbstractMatrix{T2}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T2 <: Real, T3 <: Real} = 
+# salocinf(Float64.(A),Float64.(E), Float64.(B); kwargs...)
+# salocinf(A::AbstractMatrix{T1}, E::UniformScaling{Bool}, B::AbstractMatrix{T3}; kwargs...) where {T1 <: Real, T3 <: Real} = 
+# salocinf(Float64.(A),E, Float64.(B); kwargs...)
 
 """
      ev = ordeigvals(A) 
@@ -1883,7 +1879,8 @@ function ordeigvals(A::AbstractMatrix{T}, B::AbstractMatrix{T}) where T
          pair = (i < n && A[i+1,i] != ZERO) 
          if pair
             ii = i:i+1
-            β[i], β[i+1], αr[i], αr[i+1], wi  = lag2(A[ii,ii],B[ii,ii],small)
+            #β[i], β[i+1], αr[i], αr[i+1], wi  = lag2(A[ii,ii],B[ii,ii],small)
+            β[i], β[i+1], αr[i], αr[i+1], wi  = MatrixEquations._lag2(A[i,i],A[i,i+1],A[i+1,i],A[i+1,i+1],B[i,i],B[i,i+1],B[i+1,i+1],small)
             iszero(wi) ? (αi[i] = wi; αi[i+1] = wi) : (αi[i] = wi; αi[i+1] = -wi; β[i+1] = β[i])
             i += 2
          else
@@ -1975,8 +1972,6 @@ matrices such that the transformed pair `(U'*A*V-λU'*E*V, U'*B)` is in the form
  
 where the pair `(A1-λE1,B1)` is controllable. If `norm(B) < tolb`, then `U` and `V` are `2x2` identity matrices.
 """
-   
-
 function saloc2(A::AbstractMatrix{T},E::AbstractMatrix{T},B::AbstractMatrix{T},evc::AbstractVector{T1},tola,tolb) where {T, T1}
     
     # check controllability and determine rank of B
@@ -2168,11 +2163,13 @@ function eigvalsnosort!(M::AbstractMatrix{T}, N::AbstractMatrix{T}; kwargs...) w
    return isreal(ev) ? real(ev) : ev
 end
 function eigvalsnosort!(M::AbstractMatrix{T}, N::AbstractMatrix{T}) where {T}
-   if T <: Complex 
-      ev = schur!(M, N).values
-   else
-      ev = schur!(complex(M), complex(N)).values
-   end
+   # if T <: Complex 
+   #    ev = schur!(M, N).values
+   # else
+   #    ev = schur!(complex(M), complex(N)).values
+   # end
+   size(M,1) == 0 && (return zeros(T,0))
+   ev = schur(M, N).values
    return isreal(ev) ? real(ev) : ev
 end
 

@@ -1,7 +1,7 @@
 name = "MatrixPencils"
 uuid = "48965c70-4690-11ea-1f13-43a2532b2fa8"
 authors = ["Andreas Varga <varga.andreas@gmail.com>"]
-version = "1.9.1"
+version = "2.0.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
@@ -19,7 +19,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 GenericLinearAlgebra = "0.3"
 GenericSchur = "0.5"
 LinearAlgebra = "1"
-MatrixEquations = "2.5"
+MatrixEquations = "2.7, 3.0"
 Polynomials = "4"
 Random = "1"
 SparseArrays = "1"
