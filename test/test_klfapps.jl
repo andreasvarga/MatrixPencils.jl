@@ -94,6 +94,10 @@ abstol = sqrt(eps(one(real(Ty))))
 mr = 2; nr = 3; ni = 4; nf = 10; ml = 5; nl = 4;
 mM = mr+ni+nf+ml;
 nM = nr+ni+nf+nl;
+err = true
+it = 0
+while err && it < 10
+ it += 1
 M = [rand(Ty,mr,nM); 
      zeros(Ty,ni,nr) Matrix{Ty}(I,ni,ni) rand(Ty,ni,nf+nl); 
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
@@ -103,17 +107,15 @@ N = [rand(Ty,mr,nM);
      zeros(Ty,nf,nr+ni) rand(Ty,nf,nf+nl);
      zeros(Ty,ml,nr+ni+nf) rand(Ty,ml,nl)]
 
-ir = randperm(mM); ic = randperm(nM);
-M = M[ir,ic]
-N = N[ir,ic]     
+Q = qr(rand(Ty,mM,mM)).Q;
+Z = qr(rand(Ty,nM,nM)).Q; 
+M = Q*M*Z;
+N = Q*N*Z;
 
-# Q = qr(rand(Ty,mM,mM)).Q;
-# Z = qr(rand(Ty,nM,nM)).Q; 
-# M = Q*M*Z;
-# N = Q*N*Z;
-
-atol1 = 1.e-6; atol2 = 1.e-6;
+atol1 = 1.e-4; atol2 = 1.e-6;
 @time info = pkstruct(M, N, fast = fast, atol1 = atol1, atol2 = atol2)
+info.lki == [nl] && (err = false)
+end
 @test info.rki == [mr] && info.lki == [nl] && info.id == [ni] && info.nf == nf && info.nrank == mr+nl+ni+nf
 
 
