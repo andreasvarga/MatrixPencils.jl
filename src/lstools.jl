@@ -27,7 +27,6 @@ function lseval(A::AbstractMatrix, E::Union{AbstractMatrix,UniformScaling{Bool}}
                 B::AbstractVecOrMat, C::AbstractMatrix, D::AbstractVecOrMat, val::Number;  
                 atol1::Real = zero(real(eltype(A))), atol2::Real = zero(real(eltype(A))), 
                 rtol::Real =  (size(A,1)+1)*eps(float(real(eltype(A))))*iszero(max(atol1,atol2)), fast::Bool = true)
-
    T = promote_type(eltype(A), eltype(B), eltype(C), eltype(D),typeof(val))
    E == I || (T = promote_type(T,eltype(E)))
    T <: BlasFloat || (T = promote_type(Float64,T))  

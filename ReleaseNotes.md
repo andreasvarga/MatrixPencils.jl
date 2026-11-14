@@ -1,5 +1,8 @@
 # Release Notes
 
+# Version 2.0.1
+Fix bugs in function `klf_right_refineut!`. 
+
 # Version 2.0.0
 Version bump to the fully generic version of this package. 
 

@@ -1318,10 +1318,10 @@ function klf_right_refineut!(ν::AbstractVector{Int}, μ::AbstractVector{Int}, M
          reverse!(rmul!(view(M,1:ki1-1,kkj),F.Q),dims=2)
          #LinearAlgebra.LAPACK.ormrq!('R',tran,Mij,tau,view(N,1:ki1-1,kkj))
          reverse!(rmul!(view(N,1:ki1-1,kkj),F.Q),dims=2)
-         withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Mij,tau,view(Z,:,kkj)) 
+         # withZ && LinearAlgebra.LAPACK.ormrq!('R',tran,Mij,tau,view(Z,:,kkj)) 
          withZ && reverse!(rmul!(view(Z,:,kkj),F.Q),dims=2) 
          #M[kki,kkj] = [ zeros(T,ni1,nj1-ni1) triu(view(Mij,:,nj1-ni1+1:nj1))]
-         M[kki,kkj] = [ zeros(T,ni1,nj1-ni1) reverse(reverse(F.R))']
+         M[kki,kkj] = [ zeros(T,ni1,nj1-ni1) reverse(reverse(F.R,dims=1),dims=2)']
       end
       if i > 1
          nim1 = ν[i-1]
