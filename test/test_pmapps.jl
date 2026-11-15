@@ -271,8 +271,11 @@ P[:,:,3] = [1 4 2; 0 0 0; 1 4 2]
 val, iz, info  = pmzeros1(P, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2) 
 
+# error
 @time val, ip, id = pmpoles1(P, fast = fast)
+@show val, ip, id
 @test val ≈ [Inf, Inf] && ip == [2] && id == [1, 1, 1, 1, 3]
+@test val ≈ [Inf, Inf] && ip == 2 && id == [1, 1, 1, 1, 3]
 
 @time val, iz, info = pmzeros2(P, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1, 1, 1, 1], 1, 2) 
@@ -322,6 +325,7 @@ P = [λ^2 + λ + 1 4λ^2 + 3λ + 2 2λ^2 - 2;
 @time val, iz, info = pmzeros1(P, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2) 
 
+# error
 @time val, ip, id = pmpoles1(P, fast = fast)
 @test val ≈ [Inf, Inf] && ip == [2] && id == [1, 1, 1, 1, 3]
 

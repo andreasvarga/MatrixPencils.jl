@@ -1107,11 +1107,13 @@ function _sreduceBAE2!(n::Int,m::Int,A::AbstractMatrix{T},E::AbstractMatrix{T},B
       ρ == mn && (return ρ)
       B1[ics,jcs] = [ Diagonal(SVD.S[1:ρ])*SVD.Vt[1:ρ,:]; zeros(T,mn-ρ,m) ]
       ρ == 0 && (return ρ)
+      @show roff
       ibt = roff+1:roff+mn
+      ibt1 = 1:mn
       withQ && (Q[:,ibt] = Q[:,ibt]*SVD.U)
       E[ibt,ja1] = SVD.U'*view(E,ibt,ja1)
       A[ibt,ja1] = SVD.U'*view(A,ibt,ja1)
-      B2mat &&  (B2[ibt,:] = SVD.U'*B2[ibt,:])  
+      B2mat &&  (B2[ibt1,:] = SVD.U'*B2[ibt1,:])  
       jt1 = coff+1:coff+mn
       E11 = view(E,ibt,jt1)
       if T <: BlasFloat
