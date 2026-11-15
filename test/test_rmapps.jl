@@ -222,13 +222,10 @@ D = ones(3,3);
 @time val, iz, info  = rmzeros1(N, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2) 
 
-#error
-@time val, ip, id = rmpoles1(N, fast = fast)
-@show val, ip, id
+@time val, ip, id = rmpoles1(N, fast = fast, atol = 1.e-7)
 @test val ≈ [Inf, Inf] && ip == [2] && id == [1, 1, 1, 1, 3]
 
-#error
-@time val, ip, id = rmpoles1(N, D, fast = fast)
+@time val, ip, id = rmpoles1(N, D, fast = fast, atol = 1.e-7)
 @show val, ip, id
 @test val ≈ [Inf, Inf] && ip == [2] && id == [1, 1, 1, 1, 3]
 
@@ -267,9 +264,7 @@ D = ones(3,3);
 @time val, iz, info = rmzeros1(N, fast = fast)
 @test val ≈ [1] && iz == [] && (info.rki, info.lki,info.id, info.nf,info.nrank) == ([0], [1], [1], 1, 2) 
 
-#error
-@time val, ip, id = rmpoles1(N, fast = fast)
-@show val, ip, id
+@time val, ip, id = rmpoles1(N, fast = fast, atol = 1.e-7)
 @test val ≈ [Inf, Inf] && ip == [2] && id == [1, 1, 1, 1, 3]
 
 
